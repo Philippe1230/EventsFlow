@@ -3,14 +3,17 @@
 
 import { AppShell } from '@/components/layout/AppShell';
 import { useAuth } from '@/hooks/use-auth-context';
-import { useState, useEffect } from 'react';
-import { collection, query, where, addDoc, doc, setDoc, getDoc, orderBy } from 'firebase/firestore';
+import { useState } from 'react';
+import { collection, query, where, doc, getDoc, orderBy, serverTimestamp, addDoc } from 'firebase/firestore';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { ShoppingCart, Trash2, Printer, CreditCard, Banknote, QrCode, RefreshCcw, Loader2, Plus, Minus } from 'lucide-react';
 import { PrintTickets } from '@/components/pdv/PrintTickets';
+import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 interface Product {
   id: string;
@@ -41,7 +44,7 @@ const JuninaFlagsIcon = (props: React.SVGProps<SVGSVGElement>) => (
 );
 
 export default function PDVPage() {
-  const { tenantId, loading: authLoading } = useAuth();
+  const { tenantId, user, loading: authLoading } = useAuth();
   const db = useFirestore();
   const { toast } = useToast();
   
@@ -51,8 +54,6 @@ export default function PDVPage() {
   const [printableTickets, setPrintableTickets] = useState<any[]>([]);
 
   const productsQuery = useMemoFirebase(() => {
-    // IMPORTANTE: Aguarda o authLoading ser false para garantir que o usuário está logado (anônimo)
-    // antes de tentar listar a coleção, evitando erro de permissão.
     if (!tenantId || authLoading) return null;
     return query(
       collection(db, 'tenants', tenantId, 'products'),
@@ -92,7 +93,7 @@ export default function PDVPage() {
   const total = cart.reduce((acc, item) => acc + item.price * item.quantity, 0);
 
   const finalizeOrder = async () => {
-    if (cart.length === 0 || !tenantId) return;
+    if (cart.length === 0 || !tenantId || !user) return;
     setSubmitting(true);
 
     try {
@@ -103,46 +104,65 @@ export default function PDVPage() {
       if (counterSnap.exists()) {
         nextNumber = (counterSnap.data().orderNumber || 0) + 1;
       }
-      await setDoc(counterRef, { orderNumber: nextNumber }, { merge: true });
+      
+      // Atualiza o contador de forma não bloqueante
+      setDocumentNonBlocking(counterRef, { orderNumber: nextNumber }, { merge: true });
 
       const orderData = {
         tenantId,
-        items: cart,
+        userId: user.uid,
+        items: cart.map(i => ({
+          productId: i.id,
+          name: i.name,
+          price: i.price,
+          quantity: i.quantity
+        })),
         total,
         paymentMethod,
         orderNumber: nextNumber,
-        createdAt: new Date(),
+        createdAt: serverTimestamp(),
         status: 'completed'
       };
 
-      const orderRef = await addDoc(collection(db, 'tenants', tenantId, 'orders'), orderData);
+      const ordersColRef = collection(db, 'tenants', tenantId, 'orders');
       
-      const tickets: any[] = [];
-      cart.forEach(item => {
-        for (let i = 0; i < item.quantity; i++) {
-          tickets.push({
-            orderId: orderRef.id,
-            orderNumber: nextNumber,
-            productName: item.name,
-            timestamp: new Date()
-          });
-        }
+      // Fazemos o addDoc manualmente aqui para capturar o ID para os tickets
+      addDoc(ordersColRef, orderData).then((orderRef) => {
+        const tickets: any[] = [];
+        cart.forEach(item => {
+          for (let i = 0; i < item.quantity; i++) {
+            tickets.push({
+              orderId: orderRef.id,
+              orderNumber: nextNumber,
+              productName: item.name,
+              timestamp: new Date()
+            });
+          }
+        });
+
+        setPrintableTickets(tickets);
+        
+        setTimeout(() => {
+          window.print();
+          clearCart();
+          setPrintableTickets([]);
+          toast({ title: 'Pedido Finalizado!', description: `Pedido #${nextNumber} enviado para impressão.` });
+          localStorage.setItem(`last_order_${tenantId}`, JSON.stringify(cart));
+          setSubmitting(false);
+        }, 300);
+      }).catch((err) => {
+        const permissionError = new FirestorePermissionError({
+          path: ordersColRef.path,
+          operation: 'create',
+          requestResourceData: orderData,
+        });
+        errorEmitter.emit('permission-error', permissionError);
+        setSubmitting(false);
       });
 
-      setPrintableTickets(tickets);
-      
-      setTimeout(() => {
-        window.print();
-        clearCart();
-        setPrintableTickets([]);
-        toast({ title: 'Pedido Finalizado!', description: `Pedido #${nextNumber} enviado para impressão.` });
-        localStorage.setItem(`last_order_${tenantId}`, JSON.stringify(cart));
-      }, 300);
-
     } catch (e) {
-      console.error(e);
+      console.error("Erro ao finalizar pedido:", e);
       toast({ title: 'Erro', description: 'Erro ao processar pedido.', variant: 'destructive' });
-    } finally {
       setSubmitting(false);
     }
   };
@@ -176,14 +196,14 @@ export default function PDVPage() {
                 <Loader2 className="h-10 w-10 animate-spin text-primary" />
                 <p className="font-bold uppercase text-xs">Carregando cardápio...</p>
               </div>
-            ) : products?.length === 0 ? (
+            ) : !products || products.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full text-center bg-card rounded-xl border-2 border-dashed border-muted p-8">
-                <p className="text-muted-foreground font-bold uppercase">Nenhum produto ativo cadastrado.</p>
-                <Button variant="link" asChild className="mt-2"><a href="/products">Cadastrar agora</a></Button>
+                <p className="text-muted-foreground font-bold uppercase">Nenhum produto ativo encontrado.</p>
+                <Button variant="link" asChild className="mt-2"><a href="/products">Gerenciar Produtos</a></Button>
               </div>
             ) : (
               <div className="pdv-grid pb-4">
-                {products?.map(p => (
+                {products.map(p => (
                   <button
                     key={p.id}
                     onClick={() => addToCart(p)}

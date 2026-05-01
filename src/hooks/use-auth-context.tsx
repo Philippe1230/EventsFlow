@@ -3,8 +3,9 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { signInAnonymously, User } from 'firebase/auth';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, collection, getDocs } from 'firebase/firestore';
 import { useAuth as useFirebaseAuth, useFirestore, useUser } from '@/firebase';
+import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
 interface AuthContextType {
   user: User | null;
@@ -37,7 +38,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setLoading(false);
         }
       } else if (user) {
-        // Garante que o tenant padrão existe
+        // Garante que o tenant padrão existe e popula com produtos iniciais se estiver vazio
         try {
           const tenantRef = doc(db, 'tenants', DEFAULT_TENANT_ID);
           const tenantSnap = await getDoc(tenantRef);
@@ -48,6 +49,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               createdAt: new Date(),
               members: { [user.uid]: 'owner' }
             });
+          }
+
+          // Seed de produtos iniciais para facilitar o teste
+          const productsRef = collection(db, 'tenants', DEFAULT_TENANT_ID, 'products');
+          const productsSnap = await getDocs(productsRef);
+          if (productsSnap.empty) {
+            const initialProducts = [
+              { name: 'Pipoca', price: 5.0, category: 'Comida', active: true },
+              { name: 'Quentão', price: 8.0, category: 'Bebida', active: true },
+              { name: 'Milho Cozido', price: 6.0, category: 'Comida', active: true },
+              { name: 'Cachorro Quente', price: 10.0, category: 'Comida', active: true },
+              { name: 'Pé de Moleque', price: 4.0, category: 'Doces', active: true },
+              { name: 'Pescaria', price: 5.0, category: 'Brincadeira', active: true },
+            ];
+            for (const p of initialProducts) {
+              addDocumentNonBlocking(productsRef, { 
+                ...p, 
+                tenantId: DEFAULT_TENANT_ID, 
+                createdAt: new Date() 
+              });
+            }
           }
         } catch (e) {
           console.error("Erro ao verificar tenant:", e);
