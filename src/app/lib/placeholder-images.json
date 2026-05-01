@@ -1,0 +1,17 @@
+
+{
+  "placeholderImages": [
+    {
+      "id": "hero-pdv",
+      "description": "Festa Junina colorful flags and food",
+      "imageUrl": "https://picsum.photos/seed/junina1/1200/600",
+      "imageHint": "festa junina food"
+    },
+    {
+      "id": "corn",
+      "description": "Corn on the cob",
+      "imageUrl": "https://picsum.photos/seed/corn/400/400",
+      "imageHint": "corn cob"
+    }
+  ]
+}
