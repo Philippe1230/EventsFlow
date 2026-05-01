@@ -4,11 +4,11 @@
 import { AppShell } from '@/components/layout/AppShell';
 import { useAuth } from '@/hooks/use-auth-context';
 import { useState, useEffect } from 'react';
-import { collection, query, where, getDocs, addDoc, getCountFromServer, serverTimestamp, doc, setDoc, getDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { collection, query, where, getDocs, addDoc, doc, setDoc, getDoc } from 'firebase/firestore';
+import { useFirestore } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { toast } from '@/hooks/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { ShoppingCart, Trash2, Printer, CreditCard, Banknote, QrCode, RefreshCcw, Loader2 } from 'lucide-react';
 import { PrintTickets } from '@/components/pdv/PrintTickets';
 
@@ -24,7 +24,9 @@ interface CartItem extends Product {
 }
 
 export default function PDVPage() {
-  const { tenantId } = useAuth();
+  const { tenantId, loading: authLoading } = useAuth();
+  const db = useFirestore();
+  const { toast } = useToast();
   const [products, setProducts] = useState<Product[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -33,14 +35,18 @@ export default function PDVPage() {
   const [printableTickets, setPrintableTickets] = useState<any[]>([]);
 
   useEffect(() => {
-    if (tenantId) fetchProducts();
-  }, [tenantId]);
+    if (tenantId && !authLoading) fetchProducts();
+  }, [tenantId, authLoading, db]);
 
   async function fetchProducts() {
     setLoading(true);
-    const q = query(collection(db, 'products'), where('tenantId', '==', tenantId), where('active', '==', true));
-    const snap = await getDocs(q);
-    setProducts(snap.docs.map(d => ({ id: d.id, ...d.data() } as Product)));
+    try {
+      const q = query(collection(db, 'products'), where('tenantId', '==', tenantId), where('active', '==', true));
+      const snap = await getDocs(q);
+      setProducts(snap.docs.map(d => ({ id: d.id, ...d.data() } as Product)));
+    } catch (e) {
+      console.error("Erro ao buscar produtos:", e);
+    }
     setLoading(false);
   }
 
@@ -63,12 +69,12 @@ export default function PDVPage() {
   const total = cart.reduce((acc, item) => acc + item.price * item.quantity, 0);
 
   const finalizeOrder = async () => {
-    if (cart.length === 0) return;
+    if (cart.length === 0 || !tenantId) return;
     setSubmitting(true);
 
     try {
       // Get next order number for tenant
-      const counterRef = doc(db, 'tenant_counters', tenantId!);
+      const counterRef = doc(db, 'tenant_counters', tenantId);
       const counterSnap = await getDoc(counterRef);
       let nextNumber = 1;
       
@@ -109,7 +115,6 @@ export default function PDVPage() {
         clearCart();
         setPrintableTickets([]);
         toast({ title: 'Pedido Finalizado', description: 'Fichas enviadas para impressão.' });
-        // Store last order for "Repeat Last"
         localStorage.setItem(`last_order_${tenantId}`, JSON.stringify(cart));
       }, 500);
 
@@ -132,7 +137,6 @@ export default function PDVPage() {
   return (
     <AppShell>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
-        {/* Products Grid */}
         <div className="lg:col-span-2 space-y-4">
           <div className="flex justify-between items-center">
             <h2 className="text-xl font-bold font-headline">Produtos</h2>
@@ -159,7 +163,6 @@ export default function PDVPage() {
           )}
         </div>
 
-        {/* Order Sidebar */}
         <div className="lg:col-span-1">
           <Card className="flex flex-col h-full shadow-lg border-2 border-primary/10">
             <CardHeader className="bg-primary/5 pb-4">

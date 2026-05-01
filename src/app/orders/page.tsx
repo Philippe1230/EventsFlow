@@ -5,11 +5,11 @@ import { AppShell } from '@/components/layout/AppShell';
 import { useAuth } from '@/hooks/use-auth-context';
 import { useState, useEffect } from 'react';
 import { collection, query, where, getDocs, orderBy, Timestamp } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { useFirestore } from '@/firebase';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Download, Calendar as CalendarIcon, Loader2 } from 'lucide-react';
+import { Download, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface Order {
@@ -22,19 +22,24 @@ interface Order {
 }
 
 export default function OrdersPage() {
-  const { tenantId } = useAuth();
+  const { tenantId, loading: authLoading } = useAuth();
+  const db = useFirestore();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (tenantId) fetchOrders();
-  }, [tenantId]);
+    if (tenantId && !authLoading) fetchOrders();
+  }, [tenantId, authLoading, db]);
 
   async function fetchOrders() {
     setLoading(true);
-    const q = query(collection(db, 'orders'), where('tenantId', '==', tenantId), orderBy('createdAt', 'desc'));
-    const snap = await getDocs(q);
-    setOrders(snap.docs.map(d => ({ id: d.id, ...d.data() } as Order)));
+    try {
+      const q = query(collection(db, 'orders'), where('tenantId', '==', tenantId), orderBy('createdAt', 'desc'));
+      const snap = await getDocs(q);
+      setOrders(snap.docs.map(d => ({ id: d.id, ...d.data() } as Order)));
+    } catch (e) {
+      console.error("Erro ao buscar pedidos:", e);
+    }
     setLoading(false);
   }
 
@@ -45,7 +50,8 @@ export default function OrdersPage() {
     csvContent += "Data,Pedido #,Produto,Quantidade,Valor,Pagamento\n";
 
     orders.forEach(order => {
-      const dateStr = format(order.createdAt instanceof Timestamp ? order.createdAt.toDate() : order.createdAt, 'dd/MM/yyyy HH:mm');
+      const date = order.createdAt instanceof Timestamp ? order.createdAt.toDate() : new Date(order.createdAt);
+      const dateStr = format(date, 'dd/MM/yyyy HH:mm');
       order.items.forEach(item => {
         csvContent += `${dateStr},${order.orderNumber},"${item.name}",${item.quantity},"${item.price.toFixed(2)}","${order.paymentMethod}"\n`;
       });
@@ -98,7 +104,7 @@ export default function OrdersPage() {
                 <TableRow key={o.id}>
                   <TableCell className="font-bold">#{o.orderNumber}</TableCell>
                   <TableCell>
-                    {format(o.createdAt instanceof Timestamp ? o.createdAt.toDate() : o.createdAt, 'dd/MM/yyyy HH:mm')}
+                    {format(o.createdAt instanceof Timestamp ? o.createdAt.toDate() : new Date(o.createdAt), 'dd/MM/yyyy HH:mm')}
                   </TableCell>
                   <TableCell className="max-w-[200px]">
                     <div className="flex flex-wrap gap-1">

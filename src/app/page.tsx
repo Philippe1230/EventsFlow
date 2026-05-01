@@ -5,15 +5,16 @@ import { AppShell } from '@/components/layout/AppShell';
 import { useAuth } from '@/hooks/use-auth-context';
 import { useEffect, useState } from 'react';
 import { collection, query, where, getDocs, orderBy, Timestamp } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { useFirestore } from '@/firebase';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 import { DollarSign, ShoppingBag, TrendingUp, Clock } from 'lucide-react';
-import { startOfDay, endOfDay, format } from 'date-fns';
+import { startOfDay, endOfDay } from 'date-fns';
 
 export default function DashboardPage() {
-  const { tenantId } = useAuth();
+  const { tenantId, loading: authLoading } = useAuth();
+  const db = useFirestore();
   const [stats, setStats] = useState({
     totalRevenue: 0,
     totalOrders: 0,
@@ -22,52 +23,57 @@ export default function DashboardPage() {
   });
 
   useEffect(() => {
-    if (!tenantId) return;
+    if (!tenantId || authLoading) return;
 
     async function fetchStats() {
       const today = new Date();
-      const q = query(
-        collection(db, 'orders'),
-        where('tenantId', '==', tenantId),
-        where('createdAt', '>=', startOfDay(today)),
-        where('createdAt', '<=', endOfDay(today)),
-        orderBy('createdAt', 'desc')
-      );
+      try {
+        const q = query(
+          collection(db, 'orders'),
+          where('tenantId', '==', tenantId),
+          where('createdAt', '>=', startOfDay(today)),
+          where('createdAt', '<=', endOfDay(today)),
+          orderBy('createdAt', 'desc')
+        );
 
-      const snap = await getDocs(q);
-      const orders = snap.docs.map(d => d.data());
-      
-      let revenue = 0;
-      const productCounts: Record<string, number> = {};
-      const hourlyData: Record<number, number> = {};
-
-      orders.forEach(order => {
-        revenue += order.total;
-        const hour = (order.createdAt as Timestamp).toDate().getHours();
-        hourlyData[hour] = (hourlyData[hour] || 0) + order.total;
+        const snap = await getDocs(q);
+        const orders = snap.docs.map(d => d.data());
         
-        order.items.forEach((item: any) => {
-          productCounts[item.name] = (productCounts[item.name] || 0) + item.quantity;
+        let revenue = 0;
+        const productCounts: Record<string, number> = {};
+        const hourlyData: Record<number, number> = {};
+
+        orders.forEach(order => {
+          revenue += order.total;
+          const date = order.createdAt instanceof Timestamp ? order.createdAt.toDate() : new Date(order.createdAt);
+          const hour = date.getHours();
+          hourlyData[hour] = (hourlyData[hour] || 0) + order.total;
+          
+          order.items.forEach((item: any) => {
+            productCounts[item.name] = (productCounts[item.name] || 0) + item.quantity;
+          });
         });
-      });
 
-      const bestSeller = Object.entries(productCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || '---';
-      
-      const hourlyChart = Array.from({ length: 24 }, (_, i) => ({
-        hour: `${i}h`,
-        value: hourlyData[i] || 0
-      })).filter(d => d.value > 0);
+        const bestSeller = Object.entries(productCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || '---';
+        
+        const hourlyChart = Array.from({ length: 24 }, (_, i) => ({
+          hour: `${i}h`,
+          value: hourlyData[i] || 0
+        })).filter(d => d.value > 0);
 
-      setStats({
-        totalRevenue: revenue,
-        totalOrders: orders.length,
-        bestSeller,
-        hourlySales: hourlyChart
-      });
+        setStats({
+          totalRevenue: revenue,
+          totalOrders: orders.length,
+          bestSeller,
+          hourlySales: hourlyChart
+        });
+      } catch (e) {
+        console.error("Erro ao buscar estatísticas:", e);
+      }
     }
 
     fetchStats();
-  }, [tenantId]);
+  }, [tenantId, authLoading, db]);
 
   return (
     <AppShell>

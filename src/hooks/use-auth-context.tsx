@@ -2,9 +2,9 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { signInAnonymously, onAuthStateChanged, User } from 'firebase/auth';
+import { signInAnonymously, User } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { auth, db } from '@/lib/firebase';
+import { useAuth as useFirebaseAuth, useFirestore, useUser } from '@/firebase';
 
 interface AuthContextType {
   user: User | null;
@@ -20,49 +20,59 @@ const DEFAULT_TENANT_ID = 'meu-arraial';
 const DEFAULT_ORG_NAME = 'Meu Arraial';
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const auth = useFirebaseAuth();
+  const db = useFirestore();
+  const { user, isUserLoading } = useUser();
   const [loading, setLoading] = useState(true);
-  const [tenantId, setTenantId] = useState<string | null>(DEFAULT_TENANT_ID);
-  const [organizationName, setOrganizationName] = useState<string | null>(DEFAULT_ORG_NAME);
+  const [tenantId] = useState<string | null>(DEFAULT_TENANT_ID);
+  const [organizationName] = useState<string | null>(DEFAULT_ORG_NAME);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      if (!currentUser) {
+    async function initAuth() {
+      if (!isUserLoading && !user) {
         try {
-          // Acesso automático anônimo para ser "sem login"
           await signInAnonymously(auth);
         } catch (error) {
           console.error("Erro ao entrar anonimamente:", error);
+          setLoading(false);
         }
-      } else {
-        setUser(currentUser);
-        
+      } else if (user) {
         // Garante que o tenant padrão existe
-        const tenantRef = doc(db, 'tenants', DEFAULT_TENANT_ID);
-        const tenantSnap = await getDoc(tenantRef);
-        
-        if (!tenantSnap.exists()) {
-          await setDoc(tenantRef, { 
-            name: DEFAULT_ORG_NAME, 
-            createdAt: new Date(),
-            members: { [currentUser.uid]: 'owner' }
-          });
+        try {
+          const tenantRef = doc(db, 'tenants', DEFAULT_TENANT_ID);
+          const tenantSnap = await getDoc(tenantRef);
+          
+          if (!tenantSnap.exists()) {
+            await setDoc(tenantRef, { 
+              name: DEFAULT_ORG_NAME, 
+              createdAt: new Date(),
+              members: { [user.uid]: 'owner' }
+            });
+          }
+        } catch (e) {
+          console.error("Erro ao verificar tenant:", e);
         }
+        setLoading(false);
       }
-      setLoading(false);
-    });
+    }
 
-    return () => unsubscribe();
-  }, []);
+    initAuth();
+  }, [user, isUserLoading, auth, db]);
 
   const signOut = async () => {
-    // Para um sistema "sem login", o signOut apenas limpa o estado local se necessário
-    // mas aqui mantemos a funcionalidade padrão do Firebase se desejado.
     await auth.signOut();
   };
 
+  const contextValue = {
+    user,
+    loading: isUserLoading || loading,
+    tenantId,
+    organizationName,
+    signOut
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading, tenantId, organizationName, signOut }}>
+    <AuthContext.Provider value={contextValue}>
       {children}
     </AuthContext.Provider>
   );

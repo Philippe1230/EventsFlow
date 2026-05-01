@@ -5,7 +5,7 @@ import { AppShell } from '@/components/layout/AppShell';
 import { useAuth } from '@/hooks/use-auth-context';
 import { useState, useEffect } from 'react';
 import { collection, query, where, getDocs, addDoc, updateDoc, deleteDoc, doc, orderBy } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { useFirestore } from '@/firebase';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,7 +14,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Pencil, Trash2, PlusCircle, Loader2 } from 'lucide-react';
-import { toast } from '@/hooks/use-toast';
+import { useToast } from '@/hooks/use-toast';
 
 interface Product {
   id: string;
@@ -25,7 +25,9 @@ interface Product {
 }
 
 export default function ProductsPage() {
-  const { tenantId } = useAuth();
+  const { tenantId, loading: authLoading } = useAuth();
+  const db = useFirestore();
+  const { toast } = useToast();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -33,14 +35,18 @@ export default function ProductsPage() {
   const [isEditing, setIsEditing] = useState(false);
 
   useEffect(() => {
-    if (tenantId) fetchProducts();
-  }, [tenantId]);
+    if (tenantId && !authLoading) fetchProducts();
+  }, [tenantId, authLoading, db]);
 
   async function fetchProducts() {
     setLoading(true);
-    const q = query(collection(db, 'products'), where('tenantId', '==', tenantId), orderBy('name'));
-    const snap = await getDocs(q);
-    setProducts(snap.docs.map(d => ({ id: d.id, ...d.data() } as Product)));
+    try {
+      const q = query(collection(db, 'products'), where('tenantId', '==', tenantId), orderBy('name'));
+      const snap = await getDocs(q);
+      setProducts(snap.docs.map(d => ({ id: d.id, ...d.data() } as Product)));
+    } catch (e) {
+      console.error("Erro ao buscar produtos:", e);
+    }
     setLoading(false);
   }
 
@@ -54,10 +60,10 @@ export default function ProductsPage() {
       if (isEditing && currentProduct.id) {
         await updateDoc(doc(db, 'products', currentProduct.id), currentProduct);
       } else {
-        // Initial setup for common products if requested or manually
         await addDoc(collection(db, 'products'), {
           ...currentProduct,
           tenantId,
+          active: true,
           createdAt: new Date()
         });
       }
