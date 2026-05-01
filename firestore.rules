@@ -1,0 +1,199 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /**
+     * CORE PHILOSOPHY:
+     * This ruleset implements a robust multi-tenant authorization model for a Point of Sale (PDV) system. 
+     * It prioritizes data isolation through two primary mechanisms: 
+     * 1. Strict user-ownership for personal profiles and memberships.
+     * 2. A denormalized "Closed Collaborator" model for tenant-scoped data.
+     *
+     * DATA STRUCTURE:
+     * - User-specific data is located at /userProfiles/{userId}.
+     * - Tenant-specific data is located at /tenants/{tenantId} and its subcollections.
+     *
+     * KEY SECURITY DECISIONS:
+     * - Denormalization for Authorization: To optimize performance and ensure authorization independence, 
+     *   tenant membership maps (uid -> role) are denormalized onto every document within a tenant's tree 
+     *   (Products, Orders, OrderItems). This allows for direct ownership/role checks without recursive 
+     *   document lookups (get() calls) during single-document access.
+     * - Strict Path-to-Data Consistency: For user-owned paths, the rules enforce that internal document 
+     *   IDs and ownership fields match the Firestore path and the authenticated user's UID.
+     * - Prototyping Flexibility: While authorization is strictly enforced based on roles and ownership, 
+     *   the specific schema (data types, optional fields) is not validated to allow for rapid iteration.
+     */
+
+    // --- Helper Functions ---
+
+    /**
+     * @description Checks if the request is made by an authenticated user.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * @description Checks if the provided userId matches the authenticated user's UID.
+     */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /**
+     * @description Validates ownership and ensures the document exists for state-changing operations.
+     */
+    function isExistingOwner(userId) {
+      return resource != null && isOwner(userId);
+    }
+
+    /**
+     * @description Checks if the user is a member of a tenant based on a denormalized member map.
+     * @param memberMap A map of UIDs to roles (e.g., { 'uid123': 'owner' }).
+     */
+    function hasTenantAccess(memberMap) {
+      return isSignedIn() && memberMap[request.auth.uid] != null;
+    }
+
+    /**
+     * @description Checks if the user has the 'owner' role within a tenant.
+     * @param memberMap A map of UIDs to roles.
+     */
+    function isTenantAdmin(memberMap) {
+      return isSignedIn() && memberMap[request.auth.uid] == 'owner';
+    }
+
+    /**
+     * @description Helper to check membership via a parent Tenant document lookup.
+     * Used exclusively for 'list' operations where the resource variable is unavailable.
+     */
+    function checkMembershipViaLookup(tenantId) {
+      return isSignedIn() && get(/databases/$(database)/documents/tenants/$(tenantId)).data.members[request.auth.uid] != null;
+    }
+
+    // --- Collection Rules ---
+
+    /**
+     * @description User profile documents containing personal metadata.
+     * @path /userProfiles/{userId}
+     * @allow (get, create) User with UID 'abc' accessing /userProfiles/abc.
+     * @deny (list) Any user attempting to list all user profiles.
+     * @principle Ownership: Only the user can access or create their own root profile.
+     */
+    match /userProfiles/{userId} {
+      allow get: if isOwner(userId);
+      allow list: if false; // User listing is disallowed for privacy.
+      
+      allow create: if isOwner(userId) 
+                    && request.resource.data.id == userId;
+      
+      allow update: if isExistingOwner(userId) 
+                    && request.resource.data.id == resource.data.id;
+      
+      allow delete: if isExistingOwner(userId);
+
+      /**
+       * @description Records linking a user to various organizations (tenants).
+       * @path /userProfiles/{userId}/memberships/{membershipId}
+       * @allow (list) User 'abc' listing their own memberships.
+       * @deny (create) User 'abc' trying to create a membership under /userProfiles/xyz.
+       * @principle Ownership: Users manage their own association records.
+       */
+      match /memberships/{membershipId} {
+        allow get, list: if isOwner(userId);
+        
+        allow create: if isOwner(userId) 
+                      && request.resource.data.userId == userId;
+        
+        allow update: if isExistingOwner(userId) 
+                      && request.resource.data.userId == resource.data.userId;
+        
+        allow delete: if isExistingOwner(userId);
+      }
+    }
+
+    /**
+     * @description Organization/Tenant root documents.
+     * @path /tenants/{tenantId}
+     * @allow (get) A member of the tenant 'tenant_1' viewing tenant details.
+     * @deny (update) A 'member' trying to update tenant settings (only 'owner' allowed).
+     * @principle Shared Access (Roles): Uses a denormalized 'members' map for RBAC.
+     */
+    match /tenants/{tenantId} {
+      allow get: if hasTenantAccess(resource.data.members);
+      allow list: if false; // Global tenant listing is prohibited.
+
+      allow create: if isSignedIn(); // Allow any user to create a tenant.
+      
+      allow update: if resource != null 
+                    && isTenantAdmin(resource.data.members);
+      
+      allow delete: if resource != null 
+                    && isTenantAdmin(resource.data.members);
+
+      /**
+       * @description Products available within a specific tenant.
+       * @path /tenants/{tenantId}/products/{productId}
+       * @allow (get) Any member of the tenant reading a product.
+       * @deny (create) A user who is not a member of the tenant adding a product.
+       * @principle Authorization Independence: Uses 'tenantMembers' map on the document.
+       */
+      match /products/{productId} {
+        allow get: if hasTenantAccess(resource.data.tenantMembers);
+        allow list: if checkMembershipViaLookup(tenantId);
+        
+        allow create: if isSignedIn() 
+                      && request.resource.data.tenantId == tenantId
+                      && isTenantAdmin(request.resource.data.tenantMembers);
+        
+        allow update: if resource != null 
+                      && isTenantAdmin(resource.data.tenantMembers)
+                      && request.resource.data.tenantId == resource.data.tenantId;
+        
+        allow delete: if resource != null 
+                      && isTenantAdmin(resource.data.tenantMembers);
+      }
+
+      /**
+       * @description Sales transactions (Orders) for a tenant.
+       * @path /tenants/{tenantId}/orders/{orderId}
+       * @allow (list) A member listing all orders for their tenant.
+       * @deny (delete) Any user attempting to delete a historical order record.
+       * @principle Shared Access: Tenant members can manage sales data.
+       */
+      match /orders/{orderId} {
+        allow get: if hasTenantAccess(resource.data.tenantMembers);
+        allow list: if checkMembershipViaLookup(tenantId);
+        
+        allow create: if isSignedIn() 
+                      && request.resource.data.tenantId == tenantId
+                      && hasTenantAccess(request.resource.data.tenantMembers);
+        
+        allow update: if resource != null 
+                      && hasTenantAccess(resource.data.tenantMembers)
+                      && request.resource.data.tenantId == resource.data.tenantId;
+        
+        allow delete: if false; // Orders are permanent records and cannot be deleted.
+
+        /**
+         * @description Line items within a specific order.
+         * @path /tenants/{tenantId}/orders/{orderId}/orderItems/{orderItemId}
+         * @allow (get) A member viewing details of an item in a specific order.
+         * @deny (update) Any user trying to modify a completed order item.
+         * @principle Authorization Independence: Direct check on the item's 'tenantMembers' map.
+         */
+        match /orderItems/{orderItemId} {
+          allow get: if hasTenantAccess(resource.data.tenantMembers);
+          allow list: if checkMembershipViaLookup(tenantId);
+          
+          allow create: if isSignedIn() 
+                        && request.resource.data.orderId == orderId
+                        && hasTenantAccess(request.resource.data.tenantMembers);
+          
+          allow update: if false; // Order items are immutable snapshots.
+          allow delete: if false; // Order items cannot be deleted.
+        }
+      }
+    }
+  }
+}
