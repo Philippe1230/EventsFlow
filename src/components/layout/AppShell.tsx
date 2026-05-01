@@ -4,19 +4,31 @@
 import React from 'react';
 import { SidebarProvider, Sidebar, SidebarContent, SidebarHeader, SidebarFooter, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import { useAuth } from '@/hooks/use-auth-context';
-import { LayoutDashboard, ShoppingCart, Package, ListOrdered, LogOut, Flame, Menu } from 'lucide-react';
+import { LayoutDashboard, ShoppingCart, Package, ListOrdered, LogOut } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+
+const JuninaFlagsIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    {...props}
+  >
+    <path d="M2 4c5 0 5 4 10 4s5-4 10-4" />
+    <path d="M4 4v7l3-2 3 2V4" />
+    <path d="M14 4v7l3-2 3 2V4" />
+  </svg>
+);
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { user, loading, organizationName, signOut } = useAuth();
   const pathname = usePathname();
 
-  if (loading) return <div className="flex h-screen items-center justify-center">Carregando...</div>;
-  if (!user) {
-    if (typeof window !== 'undefined') window.location.href = '/login';
-    return null;
-  }
+  if (loading) return <div className="flex h-screen items-center justify-center">Carregando Arraial...</div>;
 
   const navItems = [
     { name: 'Dashboard', href: '/', icon: LayoutDashboard },
@@ -30,7 +42,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <Sidebar collapsible="icon">
         <SidebarHeader className="p-4 flex flex-row items-center gap-2">
           <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-white">
-            <Flame className="h-5 w-5" />
+            <JuninaFlagsIcon className="h-5 w-5" />
           </div>
           <span className="font-bold text-lg truncate">{organizationName || 'Arraial PDV'}</span>
         </SidebarHeader>
@@ -51,9 +63,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <SidebarFooter>
           <SidebarMenu>
             <SidebarMenuItem>
-              <SidebarMenuButton onClick={signOut} className="text-destructive hover:text-destructive">
+              <SidebarMenuButton onClick={signOut} className="text-muted-foreground hover:text-destructive">
                 <LogOut />
-                <span>Sair</span>
+                <span>Reiniciar Sessão</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
