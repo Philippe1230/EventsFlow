@@ -1,4 +1,3 @@
-
 "use client";
 
 import { AppShell } from '@/components/layout/AppShell';
@@ -30,8 +29,7 @@ export default function DashboardPage() {
       const today = new Date();
       try {
         const q = query(
-          collection(db, 'orders'),
-          where('tenantId', '==', tenantId),
+          collection(db, 'tenants', tenantId!, 'orders'),
           where('createdAt', '>=', startOfDay(today)),
           where('createdAt', '<=', endOfDay(today)),
           orderBy('createdAt', 'desc')

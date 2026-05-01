@@ -52,8 +52,7 @@ export default function PDVPage() {
   const productsQuery = useMemoFirebase(() => {
     if (!tenantId) return null;
     return query(
-      collection(db, 'products'),
-      where('tenantId', '==', tenantId),
+      collection(db, 'tenants', tenantId, 'products'),
       where('active', '==', true),
       orderBy('name')
     );
@@ -113,7 +112,7 @@ export default function PDVPage() {
         status: 'completed'
       };
 
-      const orderRef = await addDoc(collection(db, 'orders'), orderData);
+      const orderRef = await addDoc(collection(db, 'tenants', tenantId, 'orders'), orderData);
       
       const tickets: any[] = [];
       cart.forEach(item => {

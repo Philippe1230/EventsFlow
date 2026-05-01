@@ -1,4 +1,3 @@
-
 "use client";
 
 import { AppShell } from '@/components/layout/AppShell';
@@ -41,7 +40,7 @@ export default function ProductsPage() {
   async function fetchProducts() {
     setLoading(true);
     try {
-      const q = query(collection(db, 'products'), where('tenantId', '==', tenantId), orderBy('name'));
+      const q = query(collection(db, 'tenants', tenantId!, 'products'), orderBy('name'));
       const snap = await getDocs(q);
       setProducts(snap.docs.map(d => ({ id: d.id, ...d.data() } as Product)));
     } catch (e) {
@@ -51,16 +50,16 @@ export default function ProductsPage() {
   }
 
   const handleSave = async () => {
-    if (!currentProduct.name || !currentProduct.price) {
+    if (!currentProduct.name || !currentProduct.price || !tenantId) {
       toast({ title: 'Erro', description: 'Preencha todos os campos.', variant: 'destructive' });
       return;
     }
 
     try {
       if (isEditing && currentProduct.id) {
-        await updateDoc(doc(db, 'products', currentProduct.id), currentProduct);
+        await updateDoc(doc(db, 'tenants', tenantId, 'products', currentProduct.id), currentProduct);
       } else {
-        await addDoc(collection(db, 'products'), {
+        await addDoc(collection(db, 'tenants', tenantId, 'products'), {
           ...currentProduct,
           tenantId,
           active: true,
@@ -76,8 +75,8 @@ export default function ProductsPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (confirm('Deseja excluir este produto?')) {
-      await deleteDoc(doc(db, 'products', id));
+    if (confirm('Deseja excluir este produto?') && tenantId) {
+      await deleteDoc(doc(db, 'tenants', tenantId, 'products', id));
       fetchProducts();
     }
   };

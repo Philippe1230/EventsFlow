@@ -1,4 +1,3 @@
-
 "use client";
 
 import { AppShell } from '@/components/layout/AppShell';
@@ -34,7 +33,7 @@ export default function OrdersPage() {
   async function fetchOrders() {
     setLoading(true);
     try {
-      const q = query(collection(db, 'orders'), where('tenantId', '==', tenantId), orderBy('createdAt', 'desc'));
+      const q = query(collection(db, 'tenants', tenantId!, 'orders'), orderBy('createdAt', 'desc'));
       const snap = await getDocs(q);
       setOrders(snap.docs.map(d => ({ id: d.id, ...d.data() } as Order)));
     } catch (e) {
