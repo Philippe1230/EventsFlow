@@ -12,6 +12,7 @@ interface AuthContextType {
   loading: boolean;
   tenantId: string | null;
   organizationName: string | null;
+  tenantMembers: Record<string, string> | null;
   signOut: () => Promise<void>;
 }
 
@@ -27,6 +28,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [tenantId, setTenantId] = useState<string | null>(null);
   const [organizationName, setOrganizationName] = useState<string | null>(null);
+  const [tenantMembers, setTenantMembers] = useState<Record<string, string> | null>(null);
 
   useEffect(() => {
     async function loadUserContext() {
@@ -35,9 +37,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!user) {
         setTenantId(null);
         setOrganizationName(null);
+        setTenantMembers(null);
         setLoading(false);
         
-        // Redireciona para login se não estiver em rotas públicas
         if (pathname !== '/login' && pathname !== '/register') {
           router.push('/login');
         }
@@ -45,7 +47,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       try {
-        // Busca a primeira membership do usuário para determinar o tenant
         const membershipsRef = collection(db, 'userProfiles', user.uid, 'memberships');
         const membershipsSnap = await getDocs(query(membershipsRef, limit(1)));
         
@@ -54,14 +55,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const tId = membershipData.tenantId;
           setTenantId(tId);
 
-          // Busca detalhes do tenant
           const tenantRef = doc(db, 'tenants', tId);
           const tenantSnap = await getDoc(tenantRef);
           if (tenantSnap.exists()) {
-            setOrganizationName(tenantSnap.data().name);
+            const data = tenantSnap.data();
+            setOrganizationName(data.name);
+            setTenantMembers(data.members || null);
           }
         } else {
-          // Se o usuário não tem tenant, ele precisa criar um ou ser convidado
           if (pathname !== '/register' && pathname !== '/login') {
             router.push('/register');
           }
@@ -80,6 +81,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await firebaseSignOut(auth);
     setTenantId(null);
     setOrganizationName(null);
+    setTenantMembers(null);
     router.push('/login');
   };
 
@@ -88,6 +90,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     loading: isUserLoading || loading,
     tenantId,
     organizationName,
+    tenantMembers,
     signOut
   };
 

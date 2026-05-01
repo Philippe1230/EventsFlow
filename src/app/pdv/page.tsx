@@ -3,7 +3,7 @@
 
 import { AppShell } from '@/components/layout/AppShell';
 import { useAuth } from '@/hooks/use-auth-context';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { collection, query, where, doc, getDoc, orderBy, serverTimestamp, addDoc } from 'firebase/firestore';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { Button } from '@/components/ui/button';
@@ -44,7 +44,7 @@ const JuninaFlagsIcon = (props: React.SVGProps<SVGSVGElement>) => (
 );
 
 export default function PDVPage() {
-  const { tenantId, user, loading: authLoading } = useAuth();
+  const { tenantId, user, tenantMembers, loading: authLoading } = useAuth();
   const db = useFirestore();
   const { toast } = useToast();
   
@@ -93,14 +93,13 @@ export default function PDVPage() {
   const total = cart.reduce((acc, item) => acc + item.price * item.quantity, 0);
 
   const finalizeOrder = async () => {
-    if (cart.length === 0 || !tenantId || !user) {
+    if (cart.length === 0 || !tenantId || !user || !tenantMembers) {
       toast({ title: 'Aviso', description: 'O carrinho está vazio ou você não está logado.' });
       return;
     }
     setSubmitting(true);
 
     try {
-      // 1. Gerar número do pedido
       const counterRef = doc(db, 'tenant_counters', tenantId);
       const counterSnap = await getDoc(counterRef);
       let nextNumber = 1;
@@ -109,16 +108,15 @@ export default function PDVPage() {
         nextNumber = (counterSnap.data().orderNumber || 0) + 1;
       }
       
-      // Atualiza o contador imediatamente (otimista)
       setDocumentNonBlocking(counterRef, { orderNumber: nextNumber }, { merge: true });
 
-      // 2. Preparar dados do pedido
       const orderData = {
         tenantId,
         userId: user.uid,
         orderNumber: nextNumber,
         total,
         paymentMethod,
+        tenantMembers, // Denormalização estratégica para regras de segurança
         items: cart.map(i => ({
           productId: i.id,
           name: i.name,
@@ -132,9 +130,7 @@ export default function PDVPage() {
 
       const ordersColRef = collection(db, 'tenants', tenantId, 'orders');
       
-      // 3. Salvar no Firestore
       addDoc(ordersColRef, orderData).then((orderRef) => {
-        // Gerar tickets para impressão
         const tickets: any[] = [];
         cart.forEach(item => {
           for (let i = 0; i < item.quantity; i++) {
@@ -149,7 +145,6 @@ export default function PDVPage() {
 
         setPrintableTickets(tickets);
         
-        // Simular fluxo de impressão e limpar
         setTimeout(() => {
           window.print();
           clearCart();

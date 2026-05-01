@@ -7,13 +7,13 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // Verifica se o usuário é membro do tenant (usando get direto para evitar circularidade em subcaminhos)
+    // Verifica se o usuário é membro do tenant (fallback via get)
     function isMember(tenantId) {
       return isSignedIn() && 
         get(/databases/$(database)/documents/tenants/$(tenantId)).data.members[request.auth.uid] != null;
     }
 
-    // Regras para Perfis de Usuário
+    // Regras para Perfis de Usuário e Memberships
     match /userProfiles/{userId} {
       allow read, write: if isSignedIn() && request.auth.uid == userId;
       
@@ -24,21 +24,24 @@ service cloud.firestore {
 
     // Regras para Tenancy (Organizações)
     match /tenants/{tenantId} {
-      // Permite criação se o usuário estiver logado
       allow create: if isSignedIn();
-      
-      // Leitura e escrita apenas para membros (verificando o campo members no próprio doc)
       allow read, write: if isSignedIn() && (resource == null || resource.data.members[request.auth.uid] != null);
       
-      // Regra para subcoleções (produtos, pedidos, etc.)
+      // Subcoleções (produtos, pedidos, etc.)
       match /{allPaths=**} {
-        allow read, write: if isMember(tenantId);
+        // Permite acesso se o documento tiver o mapa de membros denormalizado (Independência de Autorização)
+        // Ou se o usuário for membro via verificação no documento pai
+        allow read, write: if isSignedIn() && (
+          (resource != null && resource.data.tenantMembers[request.auth.uid] != null) ||
+          (request.resource != null && request.resource.data.tenantMembers[request.auth.uid] != null) ||
+          isMember(tenantId)
+        );
       }
     }
 
     // Contadores de pedidos por tenant
     match /tenant_counters/{tenantId} {
-      allow read, write: if isMember(tenantId);
+      allow read, write: if isSignedIn() && isMember(tenantId);
     }
   }
 }
