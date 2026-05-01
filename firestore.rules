@@ -7,17 +7,16 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // Verifica se o usuário é membro do tenant
-    function isTenantMember(tenantId) {
+    // Verifica se o usuário é membro do tenant (usando get direto para evitar circularidade em subcaminhos)
+    function isMember(tenantId) {
       return isSignedIn() && 
-        (get(/databases/$(database)/documents/tenants/$(tenantId)).data.members[request.auth.uid] != null);
+        get(/databases/$(database)/documents/tenants/$(tenantId)).data.members[request.auth.uid] != null;
     }
 
     // Regras para Perfis de Usuário
     match /userProfiles/{userId} {
       allow read, write: if isSignedIn() && request.auth.uid == userId;
       
-      // Permite que usuários gerenciem suas próprias associações a tenants
       match /memberships/{membershipId} {
         allow read, write: if isSignedIn() && request.auth.uid == userId;
       }
@@ -25,20 +24,21 @@ service cloud.firestore {
 
     // Regras para Tenancy (Organizações)
     match /tenants/{tenantId} {
-      // Permite criação se o usuário estiver logado (o primeiro a criar se torna dono)
+      // Permite criação se o usuário estiver logado
       allow create: if isSignedIn();
-      // Leitura e escrita apenas para membros
-      allow read, write: if isTenantMember(tenantId);
       
-      // Regra recursiva para todas as subcoleções (produtos, pedidos, etc.)
+      // Leitura e escrita apenas para membros (verificando o campo members no próprio doc)
+      allow read, write: if isSignedIn() && (resource == null || resource.data.members[request.auth.uid] != null);
+      
+      // Regra para subcoleções (produtos, pedidos, etc.)
       match /{allPaths=**} {
-        allow read, write: if isTenantMember(tenantId);
+        allow read, write: if isMember(tenantId);
       }
     }
 
     // Contadores de pedidos por tenant
     match /tenant_counters/{tenantId} {
-      allow read, write: if isTenantMember(tenantId);
+      allow read, write: if isMember(tenantId);
     }
   }
 }

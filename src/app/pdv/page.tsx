@@ -3,7 +3,7 @@
 
 import { AppShell } from '@/components/layout/AppShell';
 import { useAuth } from '@/hooks/use-auth-context';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { collection, query, where, doc, getDoc, orderBy, serverTimestamp, addDoc } from 'firebase/firestore';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { Button } from '@/components/ui/button';
@@ -93,10 +93,14 @@ export default function PDVPage() {
   const total = cart.reduce((acc, item) => acc + item.price * item.quantity, 0);
 
   const finalizeOrder = async () => {
-    if (cart.length === 0 || !tenantId || !user) return;
+    if (cart.length === 0 || !tenantId || !user) {
+      toast({ title: 'Aviso', description: 'O carrinho está vazio ou você não está logado.' });
+      return;
+    }
     setSubmitting(true);
 
     try {
+      // 1. Gerar número do pedido
       const counterRef = doc(db, 'tenant_counters', tenantId);
       const counterSnap = await getDoc(counterRef);
       let nextNumber = 1;
@@ -105,29 +109,32 @@ export default function PDVPage() {
         nextNumber = (counterSnap.data().orderNumber || 0) + 1;
       }
       
-      // Atualiza o contador de forma não bloqueante
+      // Atualiza o contador imediatamente (otimista)
       setDocumentNonBlocking(counterRef, { orderNumber: nextNumber }, { merge: true });
 
+      // 2. Preparar dados do pedido
       const orderData = {
         tenantId,
         userId: user.uid,
+        orderNumber: nextNumber,
+        total,
+        paymentMethod,
         items: cart.map(i => ({
           productId: i.id,
           name: i.name,
           price: i.price,
-          quantity: i.quantity
+          quantity: i.quantity,
+          subtotal: i.price * i.quantity
         })),
-        total,
-        paymentMethod,
-        orderNumber: nextNumber,
         createdAt: serverTimestamp(),
         status: 'completed'
       };
 
       const ordersColRef = collection(db, 'tenants', tenantId, 'orders');
       
-      // Fazemos o addDoc manualmente aqui para capturar o ID para os tickets
+      // 3. Salvar no Firestore
       addDoc(ordersColRef, orderData).then((orderRef) => {
+        // Gerar tickets para impressão
         const tickets: any[] = [];
         cart.forEach(item => {
           for (let i = 0; i < item.quantity; i++) {
@@ -142,14 +149,15 @@ export default function PDVPage() {
 
         setPrintableTickets(tickets);
         
+        // Simular fluxo de impressão e limpar
         setTimeout(() => {
           window.print();
           clearCart();
           setPrintableTickets([]);
-          toast({ title: 'Pedido Finalizado!', description: `Pedido #${nextNumber} enviado para impressão.` });
+          toast({ title: 'Pedido Finalizado!', description: `Pedido #${nextNumber} registrado.` });
           localStorage.setItem(`last_order_${tenantId}`, JSON.stringify(cart));
           setSubmitting(false);
-        }, 300);
+        }, 500);
       }).catch((err) => {
         const permissionError = new FirestorePermissionError({
           path: ordersColRef.path,
@@ -162,7 +170,7 @@ export default function PDVPage() {
 
     } catch (e) {
       console.error("Erro ao finalizar pedido:", e);
-      toast({ title: 'Erro', description: 'Erro ao processar pedido.', variant: 'destructive' });
+      toast({ title: 'Erro', description: 'Ocorreu um problema ao processar a venda.', variant: 'destructive' });
       setSubmitting(false);
     }
   };
@@ -303,12 +311,12 @@ export default function PDVPage() {
                   disabled={cart.length === 0 || submitting}
                   onClick={finalizeOrder}
                 >
-                  {submitting ? <Loader2 className="animate-spin" /> : <><Printer className="mr-2 h-6 w-6" /> Finalizar (F12)</>}
+                  {submitting ? <Loader2 className="animate-spin" /> : <><Printer className="mr-2 h-6 w-6" /> Finalizar Pedido</>}
                 </Button>
                 
                 {cart.length > 0 && (
                   <Button variant="ghost" className="w-full text-xs font-bold uppercase text-muted-foreground hover:bg-destructive/5 hover:text-destructive" onClick={clearCart}>
-                    Cancelar / Limpar
+                    Limpar Carrinho
                   </Button>
                 )}
               </div>
