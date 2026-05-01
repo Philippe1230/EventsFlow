@@ -2,10 +2,10 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { signInAnonymously, User } from 'firebase/auth';
-import { doc, getDoc, setDoc, collection, getDocs } from 'firebase/firestore';
+import { User, onAuthStateChanged, signOut as firebaseSignOut } from 'firebase/auth';
+import { doc, getDoc, collection, query, getDocs, limit } from 'firebase/firestore';
 import { useAuth as useFirebaseAuth, useFirestore, useUser } from '@/firebase';
-import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { useRouter, usePathname } from 'next/navigation';
 
 interface AuthContextType {
   user: User | null;
@@ -17,72 +17,70 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const DEFAULT_TENANT_ID = 'meu-arraial';
-const DEFAULT_ORG_NAME = 'Meu Arraial';
-
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const auth = useFirebaseAuth();
   const db = useFirestore();
   const { user, isUserLoading } = useUser();
+  const router = useRouter();
+  const pathname = usePathname();
+
   const [loading, setLoading] = useState(true);
-  const [tenantId] = useState<string | null>(DEFAULT_TENANT_ID);
-  const [organizationName] = useState<string | null>(DEFAULT_ORG_NAME);
+  const [tenantId, setTenantId] = useState<string | null>(null);
+  const [organizationName, setOrganizationName] = useState<string | null>(null);
 
   useEffect(() => {
-    async function initAuth() {
-      if (!isUserLoading && !user) {
-        try {
-          await signInAnonymously(auth);
-        } catch (error) {
-          console.error("Erro ao entrar anonimamente:", error);
-          setLoading(false);
-        }
-      } else if (user) {
-        // Garante que o tenant padrão existe e popula com produtos iniciais se estiver vazio
-        try {
-          const tenantRef = doc(db, 'tenants', DEFAULT_TENANT_ID);
-          const tenantSnap = await getDoc(tenantRef);
-          
-          if (!tenantSnap.exists()) {
-            await setDoc(tenantRef, { 
-              name: DEFAULT_ORG_NAME, 
-              createdAt: new Date(),
-              members: { [user.uid]: 'owner' }
-            });
-          }
+    async function loadUserContext() {
+      if (isUserLoading) return;
 
-          // Seed de produtos iniciais para facilitar o teste
-          const productsRef = collection(db, 'tenants', DEFAULT_TENANT_ID, 'products');
-          const productsSnap = await getDocs(productsRef);
-          if (productsSnap.empty) {
-            const initialProducts = [
-              { name: 'Pipoca', price: 5.0, category: 'Comida', active: true },
-              { name: 'Quentão', price: 8.0, category: 'Bebida', active: true },
-              { name: 'Milho Cozido', price: 6.0, category: 'Comida', active: true },
-              { name: 'Cachorro Quente', price: 10.0, category: 'Comida', active: true },
-              { name: 'Pé de Moleque', price: 4.0, category: 'Doces', active: true },
-              { name: 'Pescaria', price: 5.0, category: 'Brincadeira', active: true },
-            ];
-            for (const p of initialProducts) {
-              addDocumentNonBlocking(productsRef, { 
-                ...p, 
-                tenantId: DEFAULT_TENANT_ID, 
-                createdAt: new Date() 
-              });
-            }
-          }
-        } catch (e) {
-          console.error("Erro ao verificar tenant:", e);
+      if (!user) {
+        setTenantId(null);
+        setOrganizationName(null);
+        setLoading(false);
+        
+        // Redireciona para login se não estiver em rotas públicas
+        if (pathname !== '/login' && pathname !== '/register') {
+          router.push('/login');
         }
+        return;
+      }
+
+      try {
+        // Busca a primeira membership do usuário para determinar o tenant
+        const membershipsRef = collection(db, 'userProfiles', user.uid, 'memberships');
+        const membershipsSnap = await getDocs(query(membershipsRef, limit(1)));
+        
+        if (!membershipsSnap.empty) {
+          const membershipData = membershipsSnap.docs[0].data();
+          const tId = membershipData.tenantId;
+          setTenantId(tId);
+
+          // Busca detalhes do tenant
+          const tenantRef = doc(db, 'tenants', tId);
+          const tenantSnap = await getDoc(tenantRef);
+          if (tenantSnap.exists()) {
+            setOrganizationName(tenantSnap.data().name);
+          }
+        } else {
+          // Se o usuário não tem tenant, ele precisa criar um ou ser convidado
+          if (pathname !== '/register' && pathname !== '/login') {
+            router.push('/register');
+          }
+        }
+      } catch (error) {
+        console.error("Erro ao carregar contexto de autenticação:", error);
+      } finally {
         setLoading(false);
       }
     }
 
-    initAuth();
-  }, [user, isUserLoading, auth, db]);
+    loadUserContext();
+  }, [user, isUserLoading, db, pathname, router]);
 
   const signOut = async () => {
-    await auth.signOut();
+    await firebaseSignOut(auth);
+    setTenantId(null);
+    setOrganizationName(null);
+    router.push('/login');
   };
 
   const contextValue = {

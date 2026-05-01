@@ -7,22 +7,38 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // Permitir acesso para o tenant padrão e suas subcoleções
-    match /tenants/{tenantId} {
-      allow read, write: if isSignedIn();
+    // Verifica se o usuário é membro do tenant
+    function isTenantMember(tenantId) {
+      return isSignedIn() && 
+        (get(/databases/$(database)/documents/tenants/$(tenantId)).data.members[request.auth.uid] != null);
+    }
+
+    // Regras para Perfis de Usuário
+    match /userProfiles/{userId} {
+      allow read, write: if isSignedIn() && request.auth.uid == userId;
       
-      // Regra recursiva para todas as subcoleções dentro de um tenant (produtos, pedidos, etc.)
-      match /{allPaths=**} {
-        allow read, write: if isSignedIn();
+      // Permite que usuários gerenciem suas próprias associações a tenants
+      match /memberships/{membershipId} {
+        allow read, write: if isSignedIn() && request.auth.uid == userId;
       }
     }
 
-    match /tenant_counters/{tenantId} {
-      allow read, write: if isSignedIn();
+    // Regras para Tenancy (Organizações)
+    match /tenants/{tenantId} {
+      // Permite criação se o usuário estiver logado (o primeiro a criar se torna dono)
+      allow create: if isSignedIn();
+      // Leitura e escrita apenas para membros
+      allow read, write: if isTenantMember(tenantId);
+      
+      // Regra recursiva para todas as subcoleções (produtos, pedidos, etc.)
+      match /{allPaths=**} {
+        allow read, write: if isTenantMember(tenantId);
+      }
     }
 
-    match /userProfiles/{userId} {
-      allow read, write: if isSignedIn() && request.auth.uid == userId;
+    // Contadores de pedidos por tenant
+    match /tenant_counters/{tenantId} {
+      allow read, write: if isTenantMember(tenantId);
     }
   }
 }
