@@ -1,3 +1,4 @@
+
 "use client";
 
 import { AppShell } from '@/components/layout/AppShell';
@@ -50,13 +51,15 @@ export default function PDVPage() {
   const [printableTickets, setPrintableTickets] = useState<any[]>([]);
 
   const productsQuery = useMemoFirebase(() => {
-    if (!tenantId) return null;
+    // IMPORTANTE: Aguarda o authLoading ser false para garantir que o usuário está logado (anônimo)
+    // antes de tentar listar a coleção, evitando erro de permissão.
+    if (!tenantId || authLoading) return null;
     return query(
       collection(db, 'tenants', tenantId, 'products'),
       where('active', '==', true),
       orderBy('name')
     );
-  }, [tenantId, db]);
+  }, [tenantId, authLoading, db]);
 
   const { data: products, isLoading: productsLoading } = useCollection<Product>(productsQuery);
 
@@ -168,7 +171,7 @@ export default function PDVPage() {
           </div>
           
           <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
-            {productsLoading ? (
+            {productsLoading || authLoading ? (
               <div className="flex flex-col items-center justify-center h-full gap-4 text-muted-foreground">
                 <Loader2 className="h-10 w-10 animate-spin text-primary" />
                 <p className="font-bold uppercase text-xs">Carregando cardápio...</p>
