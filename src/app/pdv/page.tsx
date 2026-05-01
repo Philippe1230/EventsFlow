@@ -1,10 +1,9 @@
-
 "use client";
 
 import { AppShell } from '@/components/layout/AppShell';
 import { useAuth } from '@/hooks/use-auth-context';
-import { useState, useEffect, useMemo } from 'react';
-import { collection, query, where, getDocs, addDoc, doc, setDoc, getDoc, orderBy } from 'firebase/firestore';
+import { useState, useEffect } from 'react';
+import { collection, query, where, addDoc, doc, setDoc, getDoc, orderBy } from 'firebase/firestore';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -24,6 +23,22 @@ interface CartItem extends Product {
   quantity: number;
 }
 
+const JuninaFlagsIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    {...props}
+  >
+    <path d="M2 4c5 0 5 4 10 4s5-4 10-4" />
+    <path d="M4 4v7l3-2 3 2V4" />
+    <path d="M14 4v7l3-2 3 2V4" />
+  </svg>
+);
+
 export default function PDVPage() {
   const { tenantId, loading: authLoading } = useAuth();
   const db = useFirestore();
@@ -34,7 +49,6 @@ export default function PDVPage() {
   const [paymentMethod, setPaymentMethod] = useState<'dinheiro' | 'cartao' | 'pix'>('dinheiro');
   const [printableTickets, setPrintableTickets] = useState<any[]>([]);
 
-  // Usando hook de coleção para tempo real e melhor performance
   const productsQuery = useMemoFirebase(() => {
     if (!tenantId) return null;
     return query(
@@ -144,7 +158,6 @@ export default function PDVPage() {
   return (
     <AppShell>
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-[calc(100vh-140px)]">
-        {/* Área de Produtos */}
         <div className="lg:col-span-8 flex flex-col gap-4 overflow-hidden">
           <div className="flex justify-between items-center bg-card p-3 rounded-lg border border-primary/10 shadow-sm">
             <h2 className="text-lg font-black text-primary uppercase flex items-center gap-2">
@@ -188,7 +201,6 @@ export default function PDVPage() {
           </div>
         </div>
 
-        {/* Carrinho / Finalização */}
         <div className="lg:col-span-4 h-full overflow-hidden">
           <Card className="flex flex-col h-full shadow-xl border-2 border-primary/20 overflow-hidden rounded-2xl">
             <CardHeader className="bg-primary text-white py-4 shrink-0">
