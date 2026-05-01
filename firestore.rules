@@ -8,9 +8,9 @@ service cloud.firestore {
     }
 
     // Verifica se o usuário é membro do tenant (fallback via get)
-    function isMember(tenantId) {
+    function isMember(tId) {
       return isSignedIn() && 
-        get(/databases/$(database)/documents/tenants/$(tenantId)).data.members[request.auth.uid] != null;
+        get(/databases/$(database)/documents/tenants/$(tId)).data.members[request.auth.uid] != null;
     }
 
     // Regras para Perfis de Usuário e Memberships

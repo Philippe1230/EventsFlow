@@ -4,7 +4,7 @@
 import { AppShell } from '@/components/layout/AppShell';
 import { useAuth } from '@/hooks/use-auth-context';
 import { useState } from 'react';
-import { collection, query, where, doc, getDoc, orderBy, serverTimestamp, addDoc } from 'firebase/firestore';
+import { collection, query, doc, getDoc, serverTimestamp, addDoc } from 'firebase/firestore';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -53,16 +53,16 @@ export default function PDVPage() {
   const [paymentMethod, setPaymentMethod] = useState<'dinheiro' | 'cartao' | 'pix'>('dinheiro');
   const [printableTickets, setPrintableTickets] = useState<any[]>([]);
 
+  // Consulta simplificada para evitar requisitos de índices compostos no protótipo
   const productsQuery = useMemoFirebase(() => {
     if (!tenantId || authLoading) return null;
-    return query(
-      collection(db, 'tenants', tenantId, 'products'),
-      where('active', '==', true),
-      orderBy('name')
-    );
+    return query(collection(db, 'tenants', tenantId, 'products'));
   }, [tenantId, authLoading, db]);
 
-  const { data: products, isLoading: productsLoading } = useCollection<Product>(productsQuery);
+  const { data: rawProducts, isLoading: productsLoading } = useCollection<Product>(productsQuery);
+
+  // Filtro client-side para garantir funcionamento sem índices
+  const products = rawProducts?.filter(p => p.active !== false).sort((a, b) => a.name.localeCompare(b.name)) || [];
 
   const addToCart = (product: Product) => {
     setCart(prev => {
@@ -93,19 +93,26 @@ export default function PDVPage() {
   const total = cart.reduce((acc, item) => acc + item.price * item.quantity, 0);
 
   const finalizeOrder = async () => {
-    if (cart.length === 0 || !tenantId || !user || !tenantMembers) {
-      toast({ title: 'Aviso', description: 'O carrinho está vazio ou você não está logado.' });
+    if (cart.length === 0) {
+      toast({ title: 'Aviso', description: 'O carrinho está vazio.' });
       return;
     }
+
+    if (!tenantId || !user || !tenantMembers) {
+      toast({ title: 'Aviso', description: 'Carregando informações da sua organização. Tente novamente em instantes.', variant: 'destructive' });
+      return;
+    }
+
     setSubmitting(true);
 
     try {
+      // Busca e incrementa o contador de pedidos
       const counterRef = doc(db, 'tenant_counters', tenantId);
       const counterSnap = await getDoc(counterRef);
       let nextNumber = 1;
       
       if (counterSnap.exists()) {
-        nextNumber = (counterSnap.data().orderNumber || 0) + 1;
+        nextNumber = (counterSnap.data()?.orderNumber || 0) + 1;
       }
       
       setDocumentNonBlocking(counterRef, { orderNumber: nextNumber }, { merge: true });
@@ -116,7 +123,7 @@ export default function PDVPage() {
         orderNumber: nextNumber,
         total,
         paymentMethod,
-        tenantMembers, // Denormalização estratégica para regras de segurança
+        tenantMembers, // Denormalização crucial para as regras de segurança
         items: cart.map(i => ({
           productId: i.id,
           name: i.name,
@@ -149,7 +156,7 @@ export default function PDVPage() {
           window.print();
           clearCart();
           setPrintableTickets([]);
-          toast({ title: 'Pedido Finalizado!', description: `Pedido #${nextNumber} registrado.` });
+          toast({ title: 'Pedido Finalizado!', description: `Pedido #${nextNumber} registrado com sucesso.` });
           localStorage.setItem(`last_order_${tenantId}`, JSON.stringify(cart));
           setSubmitting(false);
         }, 500);
@@ -163,9 +170,9 @@ export default function PDVPage() {
         setSubmitting(false);
       });
 
-    } catch (e) {
+    } catch (e: any) {
       console.error("Erro ao finalizar pedido:", e);
-      toast({ title: 'Erro', description: 'Ocorreu um problema ao processar a venda.', variant: 'destructive' });
+      toast({ title: 'Erro', description: e.message || 'Ocorreu um problema ao processar a venda.', variant: 'destructive' });
       setSubmitting(false);
     }
   };
@@ -199,7 +206,7 @@ export default function PDVPage() {
                 <Loader2 className="h-10 w-10 animate-spin text-primary" />
                 <p className="font-bold uppercase text-xs">Carregando cardápio...</p>
               </div>
-            ) : !products || products.length === 0 ? (
+            ) : products.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full text-center bg-card rounded-xl border-2 border-dashed border-muted p-8">
                 <p className="text-muted-foreground font-bold uppercase">Nenhum produto ativo encontrado.</p>
                 <Button variant="link" asChild className="mt-2"><a href="/products">Gerenciar Produtos</a></Button>
