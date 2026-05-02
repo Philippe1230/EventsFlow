@@ -23,11 +23,11 @@ export default function DashboardsDetailedPage() {
   const { tenantId, user, role, tenantMembers, loading: authLoading } = useAuth();
   const db = useFirestore();
   const [date, setDate] = useState<Date>(new Date());
-  const [selectedCashier, setSelectedCashier] = useState<string>("");
+  const [selectedCashier, setSelectedCashier] = useState<string>("all");
 
   // Define o caixa inicial quando os dados carregarem
   useEffect(() => {
-    if (user?.uid && !selectedCashier) {
+    if (user?.uid && selectedCashier === "all") {
       setSelectedCashier(user.uid);
     }
   }, [user, selectedCashier]);
@@ -38,8 +38,7 @@ export default function DashboardsDetailedPage() {
     name: typeof info === 'object' ? info.name : `Caixa ${uid.substring(0, 4)}`,
   })).sort((a, b) => a.name.localeCompare(b.name));
 
-  // Consulta simplificada para evitar erros de índice composto (userId + createdAt)
-  // Buscamos todos do dia e filtramos no cliente
+  // Consulta simplificada para buscar todos do dia e filtrar no cliente
   const ordersQuery = useMemoFirebase(() => {
     if (!tenantId || authLoading) return null;
     return query(
@@ -62,8 +61,8 @@ export default function DashboardsDetailedPage() {
   useEffect(() => {
     if (!allOrders) return;
 
-    // Filtro por caixa no lado do cliente para evitar necessidade de índices compostos
-    const orders = selectedCashier 
+    // Filtro por caixa no lado do cliente
+    const orders = (selectedCashier && selectedCashier !== "all")
       ? allOrders.filter(o => o.userId === selectedCashier)
       : allOrders;
 
@@ -119,7 +118,7 @@ export default function DashboardsDetailedPage() {
                 <SelectValue placeholder="Escolha um caixa" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="" className="font-bold uppercase text-xs">Todos os Caixas</SelectItem>
+                <SelectItem value="all" className="font-bold uppercase text-xs">Todos os Caixas</SelectItem>
                 {cashierList.map((c) => (
                   <SelectItem key={c.id} value={c.id} className="font-bold uppercase text-xs">
                     {c.name} {c.id === user?.uid ? "(Você)" : ""}
