@@ -24,18 +24,37 @@ const JuninaFlagsIcon = (props: React.SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
+const LoadingJunina = () => (
+  <div className="flex flex-col h-screen items-center justify-center bg-[#fff9f5]">
+    <div className="flex gap-2 mb-8">
+      {[1, 2, 3, 4].map((i) => (
+        <div 
+          key={i} 
+          className="w-8 h-12 rounded-b-xl animate-bounce shadow-md" 
+          style={{ 
+            backgroundColor: ['#f97316', '#ef4444', '#eab308', '#22c55e'][i-1],
+            animationDelay: `${i * 0.15}s`
+          }} 
+        />
+      ))}
+    </div>
+    <div className="relative">
+      <div className="h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 flex animate-pulse">
+        <JuninaFlagsIcon className="h-10 w-10 text-primary" />
+      </div>
+    </div>
+    <p className="mt-6 text-xl font-black text-primary uppercase tracking-widest animate-pulse italic">
+      Sincronizando Arraial...
+    </p>
+    <p className="mt-2 text-[10px] font-black uppercase text-muted-foreground/40">Prepare o quentão e a pipoca!</p>
+  </div>
+);
+
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { user, loading, organizationName, signOut, role } = useAuth();
   const pathname = usePathname();
 
-  if (loading) return (
-    <div className="flex flex-col h-screen items-center justify-center bg-background">
-      <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 mb-4 animate-bounce">
-        <JuninaFlagsIcon className="h-8 w-8 text-primary" />
-      </div>
-      <p className="text-lg font-bold text-primary animate-pulse uppercase tracking-widest">Sincronizando Arraial...</p>
-    </div>
-  );
+  if (loading) return <LoadingJunina />;
 
   const isAdmin = role === 'owner';
 
@@ -97,19 +116,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </SidebarFooter>
       </Sidebar>
       <SidebarInset className="bg-background/50">
-        <header className="flex h-16 items-center gap-4 border-b bg-card px-4 no-print shadow-sm">
+        <header className="flex h-16 items-center gap-4 border-b bg-card px-4 no-print shadow-sm sticky top-0 z-40">
           <SidebarTrigger />
           <div className="flex-1">
-            <h1 className="text-xl font-black text-primary uppercase tracking-tighter">
+            <h1 className="text-xl font-black text-primary uppercase tracking-tighter truncate">
               {navItems.find(i => i.href === pathname)?.name || 'Arraial'}
             </h1>
           </div>
-          <div className="flex items-center gap-2 text-[10px] font-black text-muted-foreground bg-white/50 border border-primary/10 px-4 py-2 rounded-full shadow-sm">
+          <div className="hidden sm:flex items-center gap-2 text-[10px] font-black text-muted-foreground bg-white/50 border border-primary/10 px-4 py-2 rounded-full shadow-sm">
             <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-            CONECTADO AO VIVO
+            CONECTADO
           </div>
         </header>
-        <main className="flex-1 p-4 md:p-8 overflow-auto">
+        <main className="flex-1 p-4 md:p-8 overflow-auto pb-24 md:pb-8">
           {children}
         </main>
       </SidebarInset>

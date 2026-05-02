@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { ShoppingCart, Trash2, Printer, CreditCard, Banknote, QrCode, RefreshCcw, Loader2, Plus, Minus } from 'lucide-react';
 import { PrintTickets } from '@/components/pdv/PrintTickets';
+import { SuccessModal } from '@/components/pdv/SuccessModal';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
@@ -52,16 +53,15 @@ export default function PDVPage() {
   const [submitting, setSubmitting] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<'dinheiro' | 'cartao' | 'pix'>('dinheiro');
   const [printableTickets, setPrintableTickets] = useState<any[]>([]);
+  const [lastOrderNumber, setLastOrderNumber] = useState<number | null>(null);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
-  // Consulta simplificada para evitar requisitos de índices compostos no protótipo
   const productsQuery = useMemoFirebase(() => {
     if (!tenantId || authLoading) return null;
     return query(collection(db, 'tenants', tenantId, 'products'));
   }, [tenantId, authLoading, db]);
 
   const { data: rawProducts, isLoading: productsLoading } = useCollection<Product>(productsQuery);
-
-  // Filtro client-side para garantir funcionamento sem índices
   const products = rawProducts?.filter(p => p.active !== false).sort((a, b) => a.name.localeCompare(b.name)) || [];
 
   const addToCart = (product: Product) => {
@@ -93,20 +93,12 @@ export default function PDVPage() {
   const total = cart.reduce((acc, item) => acc + item.price * item.quantity, 0);
 
   const finalizeOrder = async () => {
-    if (cart.length === 0) {
-      toast({ title: 'Aviso', description: 'O carrinho está vazio.' });
-      return;
-    }
-
-    if (!tenantId || !user || !tenantMembers) {
-      toast({ title: 'Aviso', description: 'Carregando informações da sua organização. Tente novamente em instantes.', variant: 'destructive' });
-      return;
-    }
+    if (cart.length === 0) return;
+    if (!tenantId || !user || !tenantMembers) return;
 
     setSubmitting(true);
 
     try {
-      // Busca e incrementa o contador de pedidos
       const counterRef = doc(db, 'tenant_counters', tenantId);
       const counterSnap = await getDoc(counterRef);
       let nextNumber = 1;
@@ -123,7 +115,7 @@ export default function PDVPage() {
         orderNumber: nextNumber,
         total,
         paymentMethod,
-        tenantMembers, // Denormalização crucial para as regras de segurança
+        tenantMembers,
         items: cart.map(i => ({
           productId: i.id,
           name: i.name,
@@ -151,14 +143,15 @@ export default function PDVPage() {
         });
 
         setPrintableTickets(tickets);
+        setLastOrderNumber(nextNumber);
+        setShowSuccessModal(true);
         
         setTimeout(() => {
           window.print();
-          clearCart();
-          setPrintableTickets([]);
-          toast({ title: 'Pedido Finalizado!', description: `Pedido #${nextNumber} registrado com sucesso.` });
           localStorage.setItem(`last_order_${tenantId}`, JSON.stringify(cart));
+          clearCart();
           setSubmitting(false);
+          setPrintableTickets([]);
         }, 500);
       }).catch((err) => {
         const permissionError = new FirestorePermissionError({
@@ -171,8 +164,7 @@ export default function PDVPage() {
       });
 
     } catch (e: any) {
-      console.error("Erro ao finalizar pedido:", e);
-      toast({ title: 'Erro', description: e.message || 'Ocorreu um problema ao processar a venda.', variant: 'destructive' });
+      console.error(e);
       setSubmitting(false);
     }
   };
@@ -181,9 +173,7 @@ export default function PDVPage() {
     const last = localStorage.getItem(`last_order_${tenantId}`);
     if (last) {
       setCart(JSON.parse(last));
-      toast({ title: 'Carrinho Restaurado', description: 'Itens do último pedido adicionados.' });
-    } else {
-      toast({ title: 'Aviso', description: 'Nenhum pedido anterior encontrado.' });
+      toast({ title: 'Carrinho Restaurado' });
     }
   };
 
@@ -204,7 +194,7 @@ export default function PDVPage() {
             {productsLoading || authLoading ? (
               <div className="flex flex-col items-center justify-center h-full gap-4 text-muted-foreground">
                 <Loader2 className="h-10 w-10 animate-spin text-primary" />
-                <p className="font-bold uppercase text-xs">Carregando cardápio...</p>
+                <p className="font-bold uppercase text-xs animate-pulse tracking-widest">Carregando cardápio...</p>
               </div>
             ) : products.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full text-center bg-card rounded-xl border-2 border-dashed border-muted p-8">
@@ -252,7 +242,7 @@ export default function PDVPage() {
                 {cart.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-full opacity-40 grayscale">
                     <JuninaFlagsIcon className="h-16 w-16 text-primary mb-4" />
-                    <p className="text-center font-black uppercase text-sm">Aguardando itens...</p>
+                    <p className="text-center font-black uppercase text-sm tracking-widest">Aguardando itens...</p>
                   </div>
                 ) : (
                   cart.map(item => (
@@ -328,6 +318,11 @@ export default function PDVPage() {
       </div>
 
       <PrintTickets tickets={printableTickets} />
+      <SuccessModal 
+        isOpen={showSuccessModal} 
+        onClose={() => setShowSuccessModal(false)} 
+        orderNumber={lastOrderNumber || 0} 
+      />
       
       <style jsx global>{`
         .custom-scrollbar::-webkit-scrollbar {
