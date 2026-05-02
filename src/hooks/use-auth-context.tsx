@@ -3,7 +3,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, signOut as firebaseSignOut } from 'firebase/auth';
-import { doc, getDoc, collection, query, getDocs, limit, where } from 'firebase/firestore';
+import { doc, getDoc, collection, query, getDocs, limit } from 'firebase/firestore';
 import { useAuth as useFirebaseAuth, useFirestore, useUser } from '@/firebase';
 import { useRouter, usePathname } from 'next/navigation';
 
@@ -12,7 +12,7 @@ interface AuthContextType {
   loading: boolean;
   tenantId: string | null;
   organizationName: string | null;
-  tenantMembers: Record<string, string> | null;
+  tenantMembers: Record<string, any> | null;
   role: 'owner' | 'cashier' | null;
   signOut: () => Promise<void>;
 }
@@ -29,7 +29,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [tenantId, setTenantId] = useState<string | null>(null);
   const [organizationName, setOrganizationName] = useState<string | null>(null);
-  const [tenantMembers, setTenantMembers] = useState<Record<string, string> | null>(null);
+  const [tenantMembers, setTenantMembers] = useState<Record<string, any> | null>(null);
   const [role, setRole] = useState<'owner' | 'cashier' | null>(null);
 
   useEffect(() => {
@@ -50,43 +50,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       try {
-        // Primeiro tenta buscar membership direta no perfil do usuário
         const membershipsRef = collection(db, 'userProfiles', user.uid, 'memberships');
         let membershipsSnap = await getDocs(query(membershipsRef, limit(1)));
         
-        let tId = null;
-        let userRole: any = null;
-
         if (!membershipsSnap.empty) {
           const mData = membershipsSnap.docs[0].data();
-          tId = mData.tenantId;
-          userRole = mData.role;
-        } else {
-          // Se não achar, verifica se o email foi convidado para algum tenant
-          const tenantsRef = collection(db, 'tenants');
-          const invitedQuery = query(tenantsRef, where(`members_emails.${user.email?.replace(/\./g, '_')}`, '!=', null));
-          const invitedSnap = await getDocs(invitedQuery);
-
-          if (!invitedSnap.empty) {
-            const tenantDoc = invitedSnap.docs[0];
-            tId = tenantDoc.id;
-            userRole = 'cashier';
-            
-            // Cria a membership para o novo usuário
-            await getDocs(collection(db, 'userProfiles', user.uid, 'memberships')); // Dummy para garantir path
-          }
-        }
-
-        if (tId) {
+          const tId = mData.tenantId;
+          
           setTenantId(tId);
-          setRole(userRole);
 
           const tenantRef = doc(db, 'tenants', tId);
           const tenantSnap = await getDoc(tenantRef);
+          
           if (tenantSnap.exists()) {
             const data = tenantSnap.data();
             setOrganizationName(data.name);
             setTenantMembers(data.members || null);
+            
+            // Suporta roles em formato string ou objeto denormalizado
+            const memberInfo = data.members?.[user.uid];
+            const userRole = typeof memberInfo === 'object' ? memberInfo.role : memberInfo;
+            setRole(userRole || 'cashier');
           }
         } else {
           if (pathname !== '/register' && pathname !== '/login') {

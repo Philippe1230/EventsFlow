@@ -4,7 +4,7 @@
 import { AppShell } from '@/components/layout/AppShell';
 import { useAuth } from '@/hooks/use-auth-context';
 import { useState, useEffect } from 'react';
-import { doc, updateDoc, getDoc, collection, query, getDocs, setDoc, addDoc } from 'firebase/firestore';
+import { doc, updateDoc, getDoc, collection, setDoc, addDoc } from 'firebase/firestore';
 import { initializeApp, deleteApp } from 'firebase/app';
 import { getAuth as getFirebaseAuth, createUserWithEmailAndPassword } from 'firebase/auth';
 import { getFirestore as getFirebaseFirestore } from 'firebase/firestore';
@@ -21,7 +21,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 
 export default function TeamPage() {
-  const { tenantId, loading: authLoading, role, organizationName } = useAuth();
+  const { tenantId, loading: authLoading, role } = useAuth();
   const db = useFirestore();
   const { toast } = useToast();
   const router = useRouter();
@@ -51,25 +51,26 @@ export default function TeamPage() {
       const snap = await getDoc(tenantRef);
       if (snap.exists()) {
         const data = snap.data();
-        const memberList = [];
+        const memberList: any[] = [];
         
         if (data.members) {
-          // Buscamos os perfis para mostrar nomes amigáveis
-          // Nota: Em um sistema real, você buscaria apenas os UIDs específicos
-          const profilesSnap = await getDocs(collection(db, 'userProfiles'));
-          const profilesMap = profilesSnap.docs.reduce((acc: any, doc) => {
-            acc[doc.id] = doc.data();
-            return acc;
-          }, {});
-
-          Object.entries(data.members).forEach(([uid, role]) => {
-            const profile = profilesMap[uid];
-            memberList.push({ 
-              id: uid, 
-              name: profile?.displayName || 'Sem nome', 
-              email: profile?.email || 'Sem e-mail',
-              role, 
-            });
+          Object.entries(data.members).forEach(([uid, info]: [string, any]) => {
+            // Suporta o formato antigo (string) e o novo (objeto denormalizado)
+            if (typeof info === 'object') {
+              memberList.push({ 
+                id: uid, 
+                name: info.name || 'Sem nome', 
+                email: info.email || 'Sem e-mail',
+                role: info.role, 
+              });
+            } else {
+              memberList.push({ 
+                id: uid, 
+                name: uid === data.ownerId ? 'Admin Principal' : 'Membro', 
+                email: '---',
+                role: info, 
+              });
+            }
           });
         }
         setMembers(memberList);
@@ -88,17 +89,14 @@ export default function TeamPage() {
     let tempApp;
 
     try {
-      // 1. Criar uma instância temporária do Firebase para não deslogar o admin
       const appName = `temp-app-${Date.now()}`;
       tempApp = initializeApp(firebaseConfig, appName);
       const tempAuth = getFirebaseAuth(tempApp);
       const tempDb = getFirebaseFirestore(tempApp);
 
-      // 2. Criar o usuário no Auth
       const userCred = await createUserWithEmailAndPassword(tempAuth, email, password);
       const newUid = userCred.user.uid;
 
-      // 3. O NOVO usuário cria seu próprio perfil (usando tempDb)
       await setDoc(doc(tempDb, 'userProfiles', newUid), {
         id: newUid,
         email: email,
@@ -106,7 +104,6 @@ export default function TeamPage() {
         createdAt: new Date()
       });
 
-      // 4. O NOVO usuário cria sua membership (usando tempDb)
       await addDoc(collection(tempDb, 'userProfiles', newUid, 'memberships'), {
         userId: newUid,
         tenantId: tenantId,
@@ -114,10 +111,14 @@ export default function TeamPage() {
         joinedAt: new Date()
       });
 
-      // 5. O ADMIN atualiza o Tenant com o novo membro (usando a conexão principal 'db')
+      // Salva dados denormalizados no Tenant para visualização imediata do Admin
       const tenantRef = doc(db, 'tenants', tenantId);
       await updateDoc(tenantRef, {
-        [`members.${newUid}`]: 'cashier'
+        [`members.${newUid}`]: {
+          role: 'cashier',
+          name: name,
+          email: email
+        }
       });
 
       toast({ 
@@ -180,7 +181,7 @@ export default function TeamPage() {
                 <Label htmlFor="name" className="font-bold">Identificação (Nome)</Label>
                 <Input 
                   id="name" 
-                  placeholder="Ex: Caixa 1 ou Nome da Pessoa" 
+                  placeholder="Ex: Caixa 1" 
                   value={name} 
                   onChange={(e) => setName(e.target.value)} 
                   required

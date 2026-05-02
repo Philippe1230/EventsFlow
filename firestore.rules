@@ -7,7 +7,7 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // Verifica se o usuário é membro do tenant (fallback via get)
+    // Verifica se o usuário é membro do tenant
     function isMember(tId) {
       return isSignedIn() && 
         get(/databases/$(database)/documents/tenants/$(tId)).data.members[request.auth.uid] != null;
@@ -25,12 +25,11 @@ service cloud.firestore {
     // Regras para Tenancy (Organizações)
     match /tenants/{tenantId} {
       allow create: if isSignedIn();
-      allow read, write: if isSignedIn() && (resource == null || resource.data.members[request.auth.uid] != null);
+      // Donos podem ler e atualizar (incluindo adicionar membros)
+      allow read, update: if isSignedIn() && resource.data.members[request.auth.uid] != null;
       
       // Subcoleções (produtos, pedidos, etc.)
       match /{allPaths=**} {
-        // Permite acesso se o documento tiver o mapa de membros denormalizado (Independência de Autorização)
-        // Ou se o usuário for membro via verificação no documento pai
         allow read, write: if isSignedIn() && (
           (resource != null && resource.data.tenantMembers[request.auth.uid] != null) ||
           (request.resource != null && request.resource.data.tenantMembers[request.auth.uid] != null) ||
