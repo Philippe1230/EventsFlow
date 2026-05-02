@@ -67,10 +67,10 @@ export default function DashboardPage() {
 
     const bestSeller = Object.entries(productCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || '---';
     
-    const hourlyChart = Array.from({ length: 24 }, (_, i) => ({
-      hour: `${i}h`,
-      value: hourlyData[i] || 0
-    })).filter(d => d.value > 0 || (i >= 8 && i <= 22)); // Mostrar range comercial
+    const hourlyChart = Array.from({ length: 24 }, (_, index) => ({
+      hour: `${index}h`,
+      value: hourlyData[index] || 0
+    })).filter((d, i) => d.value > 0 || (i >= 8 && i <= 22)); // Mostrar range comercial ou horas com venda
 
     setStats({
       totalRevenue: revenue,
