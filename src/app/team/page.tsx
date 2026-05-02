@@ -5,7 +5,7 @@ import { AppShell } from '@/components/layout/AppShell';
 import { useAuth } from '@/hooks/use-auth-context';
 import { useState, useEffect } from 'react';
 import { doc, updateDoc, getDoc, collection, query, getDocs, setDoc, addDoc } from 'firebase/firestore';
-import { initializeApp, deleteApp, getApp, getApps } from 'firebase/app';
+import { initializeApp, deleteApp } from 'firebase/app';
 import { getAuth as getFirebaseAuth, createUserWithEmailAndPassword } from 'firebase/auth';
 import { getFirestore as getFirebaseFirestore } from 'firebase/firestore';
 import { useFirestore } from '@/firebase';
@@ -55,6 +55,7 @@ export default function TeamPage() {
         
         if (data.members) {
           // Buscamos os perfis para mostrar nomes amigáveis
+          // Nota: Em um sistema real, você buscaria apenas os UIDs específicos
           const profilesSnap = await getDocs(collection(db, 'userProfiles'));
           const profilesMap = profilesSnap.docs.reduce((acc: any, doc) => {
             acc[doc.id] = doc.data();
@@ -68,7 +69,6 @@ export default function TeamPage() {
               name: profile?.displayName || 'Sem nome', 
               email: profile?.email || 'Sem e-mail',
               role, 
-              status: 'Ativo' 
             });
           });
         }
@@ -98,23 +98,23 @@ export default function TeamPage() {
       const userCred = await createUserWithEmailAndPassword(tempAuth, email, password);
       const newUid = userCred.user.uid;
 
-      // 3. Criar Perfil do Usuário na instância principal (ou na temp, dá no mesmo)
-      await setDoc(doc(db, 'userProfiles', newUid), {
+      // 3. O NOVO usuário cria seu próprio perfil (usando tempDb)
+      await setDoc(doc(tempDb, 'userProfiles', newUid), {
         id: newUid,
         email: email,
         displayName: name,
         createdAt: new Date()
       });
 
-      // 4. Criar a Membership
-      await addDoc(collection(db, 'userProfiles', newUid, 'memberships'), {
+      // 4. O NOVO usuário cria sua membership (usando tempDb)
+      await addDoc(collection(tempDb, 'userProfiles', newUid, 'memberships'), {
         userId: newUid,
         tenantId: tenantId,
         role: 'cashier',
         joinedAt: new Date()
       });
 
-      // 5. Atualizar o Tenant com o novo membro
+      // 5. O ADMIN atualiza o Tenant com o novo membro (usando a conexão principal 'db')
       const tenantRef = doc(db, 'tenants', tenantId);
       await updateDoc(tenantRef, {
         [`members.${newUid}`]: 'cashier'
@@ -122,7 +122,7 @@ export default function TeamPage() {
 
       toast({ 
         title: 'Caixa Criado!', 
-        description: `O acesso para ${name} foi gerado. Ele já pode logar em outro dispositivo.` 
+        description: `O acesso para ${name} foi gerado com sucesso.` 
       });
       
       setName('');
@@ -133,7 +133,11 @@ export default function TeamPage() {
       console.error(error);
       toast({ title: 'Erro', description: error.message || 'Não foi possível criar o caixa.', variant: 'destructive' });
     } finally {
-      if (tempApp) await deleteApp(tempApp);
+      if (tempApp) {
+        try {
+          await deleteApp(tempApp);
+        } catch (e) {}
+      }
       setSubmitting(false);
     }
   };
@@ -146,10 +150,10 @@ export default function TeamPage() {
       await updateDoc(tenantRef, {
         [`members.${uid}`]: null
       });
-      fetchTeam();
+      setMembers(prev => prev.filter(m => m.id !== uid));
       toast({ title: 'Sucesso', description: 'Acesso removido do Arraial.' });
     } catch (e) {
-      toast({ title: 'Erro', description: 'Erro ao remover.' });
+      toast({ title: 'Erro', description: 'Erro ao remover acesso.' });
     }
   };
 
