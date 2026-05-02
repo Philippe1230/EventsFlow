@@ -4,7 +4,7 @@
 import React from 'react';
 import { SidebarProvider, Sidebar, SidebarContent, SidebarHeader, SidebarFooter, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import { useAuth } from '@/hooks/use-auth-context';
-import { LayoutDashboard, ShoppingCart, Package, ListOrdered, LogOut, Users } from 'lucide-react';
+import { LayoutDashboard, ShoppingCart, Package, ListOrdered, LogOut, Users, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
@@ -33,7 +33,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 mb-4 animate-bounce">
         <JuninaFlagsIcon className="h-8 w-8 text-primary" />
       </div>
-      <p className="text-lg font-bold text-primary animate-pulse">Preparando o Arraial...</p>
+      <p className="text-lg font-bold text-primary animate-pulse uppercase tracking-widest">Sincronizando Arraial...</p>
     </div>
   );
 
@@ -54,31 +54,42 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-white shadow-lg shadow-primary/20">
             <JuninaFlagsIcon className="h-5 w-5" />
           </div>
-          <span className="font-bold text-lg truncate text-primary">{organizationName || 'Arraial PDV'}</span>
+          <span className="font-black text-lg truncate text-primary uppercase">{organizationName || 'Arraial PDV'}</span>
         </SidebarHeader>
         <SidebarContent>
-          <SidebarMenu className="px-2">
+          <SidebarMenu className="px-2 pt-4">
             {navItems.map((item) => (
               <SidebarMenuItem key={item.href}>
-                <SidebarMenuButton asChild isActive={pathname === item.href} tooltip={item.name} className="hover:bg-primary/5 data-[active=true]:bg-primary data-[active=true]:text-white">
+                <SidebarMenuButton 
+                  asChild 
+                  isActive={pathname === item.href} 
+                  tooltip={item.name} 
+                  className="h-12 rounded-xl mb-1 hover:bg-primary/5 data-[active=true]:bg-primary data-[active=true]:text-white data-[active=true]:shadow-lg data-[active=true]:shadow-primary/30"
+                >
                   <Link href={item.href}>
                     <item.icon className={pathname === item.href ? "text-white" : "text-primary"} />
-                    <span className="font-medium">{item.name}</span>
+                    <span className="font-bold uppercase text-xs tracking-wide">{item.name}</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             ))}
           </SidebarMenu>
         </SidebarContent>
-        <SidebarFooter>
-          <SidebarMenu className="px-2">
+        <SidebarFooter className="p-4">
+          <SidebarMenu>
             <SidebarMenuItem>
-              <div className="px-3 py-2 text-[10px] font-black uppercase text-muted-foreground opacity-50">
-                Sessão: {role === 'owner' ? 'Administrador' : 'Caixa'}
+              <div className="px-3 py-2 mb-2 bg-muted/50 rounded-lg text-[9px] font-black uppercase text-muted-foreground border border-primary/5">
+                <span className="block opacity-50">Sessão Ativa</span>
+                <span className={isAdmin ? "text-primary" : "text-secondary"}>
+                  {isAdmin ? '🛡️ Administrador' : '🛒 Operador de Caixa'}
+                </span>
               </div>
-              <SidebarMenuButton onClick={signOut} className="text-muted-foreground hover:text-destructive hover:bg-destructive/5">
+              <SidebarMenuButton 
+                onClick={signOut} 
+                className="h-10 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/5 font-bold uppercase text-[10px]"
+              >
                 <LogOut />
-                <span>Sair</span>
+                <span>Encerrar Sessão</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
@@ -88,16 +99,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <header className="flex h-16 items-center gap-4 border-b bg-card px-4 no-print shadow-sm">
           <SidebarTrigger />
           <div className="flex-1">
-            <h1 className="text-xl font-black text-primary uppercase tracking-tight">
+            <h1 className="text-xl font-black text-primary uppercase tracking-tighter">
               {navItems.find(i => i.href === pathname)?.name || 'Arraial'}
             </h1>
           </div>
-          <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground bg-muted px-3 py-1.5 rounded-full">
+          <div className="flex items-center gap-2 text-[10px] font-black text-muted-foreground bg-white/50 border border-primary/10 px-4 py-2 rounded-full shadow-sm">
             <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-            {role === 'owner' ? 'GESTOR' : 'CAIXA'} ATIVO
+            CONECTADO AO VIVO
           </div>
         </header>
-        <main className="flex-1 p-4 md:p-6 overflow-auto">
+        <main className="flex-1 p-4 md:p-8 overflow-auto">
           {children}
         </main>
       </SidebarInset>

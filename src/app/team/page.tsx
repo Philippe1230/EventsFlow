@@ -4,15 +4,19 @@
 import { AppShell } from '@/components/layout/AppShell';
 import { useAuth } from '@/hooks/use-auth-context';
 import { useState, useEffect } from 'react';
-import { doc, updateDoc, getDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { doc, updateDoc, getDoc, collection, query, getDocs, setDoc, addDoc } from 'firebase/firestore';
+import { initializeApp, deleteApp, getApp, getApps } from 'firebase/app';
+import { getAuth as getFirebaseAuth, createUserWithEmailAndPassword } from 'firebase/auth';
+import { getFirestore as getFirebaseFirestore } from 'firebase/firestore';
 import { useFirestore } from '@/firebase';
+import { firebaseConfig } from '@/firebase/config';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { UserPlus, Trash2, Loader2, ShieldCheck, ShoppingCart } from 'lucide-react';
+import { UserPlus, Trash2, Loader2, ShieldCheck, ShoppingCart, Key } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 
@@ -22,7 +26,10 @@ export default function TeamPage() {
   const { toast } = useToast();
   const router = useRouter();
   
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  
   const [members, setMembers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -46,21 +53,25 @@ export default function TeamPage() {
         const data = snap.data();
         const memberList = [];
         
-        // Membros já cadastrados (pelo UID)
         if (data.members) {
+          // Buscamos os perfis para mostrar nomes amigáveis
+          const profilesSnap = await getDocs(collection(db, 'userProfiles'));
+          const profilesMap = profilesSnap.docs.reduce((acc: any, doc) => {
+            acc[doc.id] = doc.data();
+            return acc;
+          }, {});
+
           Object.entries(data.members).forEach(([uid, role]) => {
-            memberList.push({ id: uid, role, status: 'Ativo' });
+            const profile = profilesMap[uid];
+            memberList.push({ 
+              id: uid, 
+              name: profile?.displayName || 'Sem nome', 
+              email: profile?.email || 'Sem e-mail',
+              role, 
+              status: 'Ativo' 
+            });
           });
         }
-        
-        // Convites pendentes (pelo e-mail)
-        if (data.members_emails) {
-          Object.entries(data.members_emails).forEach(([emailKey, role]) => {
-            const emailAddr = emailKey.replace(/_/g, '.');
-            memberList.push({ id: emailKey, email: emailAddr, role, status: 'Pendente' });
-          });
-        }
-        
         setMembers(memberList);
       }
     } catch (e) {
@@ -69,45 +80,74 @@ export default function TeamPage() {
     setLoading(false);
   }
 
-  const handleAddMember = async (e: React.FormEvent) => {
+  const handleCreateCashier = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !tenantId) return;
+    if (!email || !password || !name || !tenantId) return;
 
     setSubmitting(true);
+    let tempApp;
+
     try {
-      const emailKey = email.toLowerCase().replace(/\./g, '_');
-      const tenantRef = doc(db, 'tenants', tenantId);
-      
-      await updateDoc(tenantRef, {
-        [`members_emails.${emailKey}`]: 'cashier'
+      // 1. Criar uma instância temporária do Firebase para não deslogar o admin
+      const appName = `temp-app-${Date.now()}`;
+      tempApp = initializeApp(firebaseConfig, appName);
+      const tempAuth = getFirebaseAuth(tempApp);
+      const tempDb = getFirebaseFirestore(tempApp);
+
+      // 2. Criar o usuário no Auth
+      const userCred = await createUserWithEmailAndPassword(tempAuth, email, password);
+      const newUid = userCred.user.uid;
+
+      // 3. Criar Perfil do Usuário na instância principal (ou na temp, dá no mesmo)
+      await setDoc(doc(db, 'userProfiles', newUid), {
+        id: newUid,
+        email: email,
+        displayName: name,
+        createdAt: new Date()
       });
 
-      toast({ title: 'Convite Enviado!', description: `A pessoa com e-mail ${email} agora pode se cadastrar e acessar este Arraial.` });
+      // 4. Criar a Membership
+      await addDoc(collection(db, 'userProfiles', newUid, 'memberships'), {
+        userId: newUid,
+        tenantId: tenantId,
+        role: 'cashier',
+        joinedAt: new Date()
+      });
+
+      // 5. Atualizar o Tenant com o novo membro
+      const tenantRef = doc(db, 'tenants', tenantId);
+      await updateDoc(tenantRef, {
+        [`members.${newUid}`]: 'cashier'
+      });
+
+      toast({ 
+        title: 'Caixa Criado!', 
+        description: `O acesso para ${name} foi gerado. Ele já pode logar em outro dispositivo.` 
+      });
+      
+      setName('');
       setEmail('');
+      setPassword('');
       fetchTeam();
-    } catch (e) {
-      toast({ title: 'Erro', description: 'Não foi possível adicionar o membro.', variant: 'destructive' });
+    } catch (error: any) {
+      console.error(error);
+      toast({ title: 'Erro', description: error.message || 'Não foi possível criar o caixa.', variant: 'destructive' });
     } finally {
+      if (tempApp) await deleteApp(tempApp);
       setSubmitting(false);
     }
   };
 
-  const removeMember = async (id: string, isEmail: boolean) => {
+  const removeMember = async (uid: string) => {
     if (!confirm('Deseja remover este acesso?') || !tenantId) return;
 
     try {
       const tenantRef = doc(db, 'tenants', tenantId);
-      if (isEmail) {
-        await updateDoc(tenantRef, {
-          [`members_emails.${id}`]: null // Firestore delete field syntax
-        });
-      } else {
-        await updateDoc(tenantRef, {
-          [`members.${id}`]: null
-        });
-      }
+      await updateDoc(tenantRef, {
+        [`members.${uid}`]: null
+      });
       fetchTeam();
-      toast({ title: 'Sucesso', description: 'Acesso removido.' });
+      toast({ title: 'Sucesso', description: 'Acesso removido do Arraial.' });
     } catch (e) {
       toast({ title: 'Erro', description: 'Erro ao remover.' });
     }
@@ -120,37 +160,59 @@ export default function TeamPage() {
       <div className="flex flex-col gap-8">
         <div>
           <h2 className="text-3xl font-black text-primary uppercase">Gestão da Equipe</h2>
-          <p className="text-muted-foreground font-medium">Crie acessos para seus caixas trabalharem simultaneamente.</p>
+          <p className="text-muted-foreground font-medium">Crie acessos diretos para seus caixas trabalharem agora mesmo.</p>
         </div>
 
-        <Card className="border-primary/10 shadow-lg">
-          <CardHeader>
+        <Card className="border-primary/10 shadow-lg overflow-hidden">
+          <CardHeader className="bg-primary/5">
             <CardTitle className="text-lg font-black uppercase text-primary flex items-center gap-2">
-              <UserPlus className="h-5 w-5" /> Adicionar Novo Caixa
+              <UserPlus className="h-5 w-5" /> Gerar Novo Acesso de Caixa
             </CardTitle>
+            <CardDescription className="font-bold">Defina as credenciais que o caixa usará para entrar.</CardDescription>
           </CardHeader>
-          <CardContent>
-            <form onSubmit={handleAddMember} className="flex flex-col md:flex-row gap-4">
-              <div className="flex-1 space-y-2">
-                <Label htmlFor="email" className="font-bold">E-mail do Caixa</Label>
+          <CardContent className="pt-6">
+            <form onSubmit={handleCreateCashier} className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+              <div className="space-y-2">
+                <Label htmlFor="name" className="font-bold">Identificação (Nome)</Label>
+                <Input 
+                  id="name" 
+                  placeholder="Ex: Caixa 1 ou Nome da Pessoa" 
+                  value={name} 
+                  onChange={(e) => setName(e.target.value)} 
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="email" className="font-bold">E-mail de Login</Label>
                 <Input 
                   id="email" 
                   type="email" 
-                  placeholder="caixa@email.com" 
+                  placeholder="caixa1@arraial.com" 
                   value={email} 
                   onChange={(e) => setEmail(e.target.value)} 
                   required
                 />
               </div>
-              <Button type="submit" className="md:mt-8 font-black uppercase" disabled={submitting}>
-                {submitting ? <Loader2 className="animate-spin mr-2 h-4 w-4" /> : "Autorizar Caixa"}
-              </Button>
+              <div className="space-y-2">
+                <Label htmlFor="password" className="font-bold">Senha Inicial</Label>
+                <div className="relative">
+                  <Input 
+                    id="password" 
+                    type="text" 
+                    placeholder="senha123" 
+                    value={password} 
+                    onChange={(e) => setPassword(e.target.value)} 
+                    required
+                  />
+                  <Key className="absolute right-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                </div>
+              </div>
+              <div className="md:col-span-3 flex justify-end">
+                <Button type="submit" className="font-black uppercase px-8 h-12 rounded-xl shadow-lg" disabled={submitting}>
+                  {submitting ? <Loader2 className="animate-spin mr-2 h-4 w-4" /> : "Gerar Acesso Imediato"}
+                </Button>
+              </div>
             </form>
-            <div className="mt-4 p-4 bg-muted/50 rounded-xl border border-dashed text-sm">
-              <p className="font-bold text-muted-foreground leading-relaxed">
-                Como funciona: Ao autorizar um e-mail, essa pessoa poderá criar uma conta (ou usar uma existente) para entrar no seu Arraial como **Caixa**. Eles só terão acesso à tela de vendas.
-              </p>
-            </div>
           </CardContent>
         </Card>
 
@@ -158,9 +220,9 @@ export default function TeamPage() {
           <Table>
             <TableHeader className="bg-muted/50">
               <TableRow>
-                <TableHead className="font-black uppercase text-[10px]">Identificação / E-mail</TableHead>
+                <TableHead className="font-black uppercase text-[10px]">Identificação</TableHead>
+                <TableHead className="font-black uppercase text-[10px]">E-mail de Login</TableHead>
                 <TableHead className="font-black uppercase text-[10px]">Papel</TableHead>
-                <TableHead className="font-black uppercase text-[10px]">Status</TableHead>
                 <TableHead className="text-right font-black uppercase text-[10px]">Ações</TableHead>
               </TableRow>
             </TableHeader>
@@ -180,23 +242,23 @@ export default function TeamPage() {
               ) : (
                 members.map((m) => (
                   <TableRow key={m.id}>
-                    <TableCell className="font-bold">
-                      {m.email || `Usuário ID: ...${m.id.slice(-6)}`}
+                    <TableCell className="font-black text-primary uppercase">
+                      {m.name}
+                    </TableCell>
+                    <TableCell className="font-medium text-muted-foreground">
+                      {m.email}
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
                         {m.role === 'owner' ? <ShieldCheck className="h-4 w-4 text-primary" /> : <ShoppingCart className="h-4 w-4 text-muted-foreground" />}
-                        <span className="font-bold text-xs uppercase">{m.role === 'owner' ? 'Admin' : 'Caixa'}</span>
+                        <Badge variant={m.role === 'owner' ? 'default' : 'secondary'} className="font-black text-[10px] uppercase">
+                          {m.role === 'owner' ? 'Admin / Dono' : 'Operador de Caixa'}
+                        </Badge>
                       </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={m.status === 'Ativo' ? 'default' : 'secondary'} className="font-black text-[10px]">
-                        {m.status}
-                      </Badge>
                     </TableCell>
                     <TableCell className="text-right">
                       {m.role !== 'owner' && (
-                        <Button variant="ghost" size="icon" onClick={() => removeMember(m.id, !!m.email)} className="text-destructive hover:bg-destructive/5">
+                        <Button variant="ghost" size="icon" onClick={() => removeMember(m.id)} className="text-destructive hover:bg-destructive/5">
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       )}
