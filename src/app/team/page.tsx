@@ -4,7 +4,7 @@
 import { AppShell } from '@/components/layout/AppShell';
 import { useAuth } from '@/hooks/use-auth-context';
 import { useState, useEffect } from 'react';
-import { doc, updateDoc, onSnapshot, collection, setDoc, addDoc } from 'firebase/firestore';
+import { doc, updateDoc, onSnapshot, collection, setDoc, addDoc, deleteField } from 'firebase/firestore';
 import { initializeApp, deleteApp } from 'firebase/app';
 import { getAuth as getFirebaseAuth, createUserWithEmailAndPassword } from 'firebase/auth';
 import { getFirestore as getFirebaseFirestore } from 'firebase/firestore';
@@ -44,7 +44,6 @@ export default function TeamPage() {
     if (!tenantId || authLoading) return;
 
     setLoading(true);
-    // Usando onSnapshot para atualização em tempo real da equipe
     const unsubscribe = onSnapshot(doc(db, 'tenants', tenantId), (snap) => {
       if (snap.exists()) {
         const data = snap.data();
@@ -57,15 +56,7 @@ export default function TeamPage() {
                 id: uid, 
                 name: info.name || 'Sem nome', 
                 email: info.email || 'Sem e-mail',
-                role: info.role, 
-              });
-            } else if (info) {
-              // Fallback para legados
-              memberList.push({ 
-                id: uid, 
-                name: 'Membro', 
-                email: '---',
-                role: info, 
+                role: info.role || 'cashier', 
               });
             }
           });
@@ -97,7 +88,6 @@ export default function TeamPage() {
       const userCred = await createUserWithEmailAndPassword(tempAuth, email, password);
       const newUid = userCred.user.uid;
 
-      // 1. Cria perfil na instância temporária (o usuário recém-criado é o dono do próprio perfil)
       await setDoc(doc(tempDb, 'userProfiles', newUid), {
         id: newUid,
         email: email,
@@ -105,7 +95,6 @@ export default function TeamPage() {
         createdAt: new Date()
       });
 
-      // 2. Cria vínculo de membership na instância temporária
       await addDoc(collection(tempDb, 'userProfiles', newUid, 'memberships'), {
         userId: newUid,
         tenantId: tenantId,
@@ -113,7 +102,6 @@ export default function TeamPage() {
         joinedAt: new Date()
       });
 
-      // 3. Atualiza o Tenant no banco principal (Admin tem permissão para isso)
       const tenantRef = doc(db, 'tenants', tenantId);
       await updateDoc(tenantRef, {
         [`members.${newUid}`]: {
@@ -145,16 +133,17 @@ export default function TeamPage() {
   };
 
   const removeMember = async (uid: string) => {
-    if (!confirm('Deseja remover este acesso?') || !tenantId) return;
+    if (!confirm('Deseja excluir este acesso permanentemente?') || !tenantId) return;
 
     try {
       const tenantRef = doc(db, 'tenants', tenantId);
       await updateDoc(tenantRef, {
-        [`members.${uid}`]: null
+        [`members.${uid}`]: deleteField()
       });
       toast({ title: 'Sucesso', description: 'Acesso removido do Arraial.' });
     } catch (e) {
-      toast({ title: 'Erro', description: 'Erro ao remover acesso.' });
+      console.error(e);
+      toast({ title: 'Erro', description: 'Erro ao remover acesso.', variant: 'destructive' });
     }
   };
 
@@ -165,7 +154,7 @@ export default function TeamPage() {
       <div className="flex flex-col gap-8">
         <div>
           <h2 className="text-3xl font-black text-primary uppercase">Gestão da Equipe</h2>
-          <p className="text-muted-foreground font-medium">Crie acessos diretos para seus caixas trabalharem agora mesmo.</p>
+          <p className="text-muted-foreground font-medium">Crie e gerencie os acessos dos seus caixas.</p>
         </div>
 
         <Card className="border-primary/10 shadow-lg overflow-hidden">
