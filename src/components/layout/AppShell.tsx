@@ -4,7 +4,7 @@
 import React from 'react';
 import { SidebarProvider, Sidebar, SidebarContent, SidebarHeader, SidebarFooter, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import { useAuth } from '@/hooks/use-auth-context';
-import { LayoutDashboard, ShoppingCart, Package, ListOrdered, LogOut, Users, Loader2 } from 'lucide-react';
+import { LayoutDashboard, ShoppingCart, Package, ListOrdered, LogOut, Users, BarChart3 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
@@ -41,6 +41,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   const navItems = [
     { name: 'Início', href: '/', icon: LayoutDashboard, visible: isAdmin },
+    { name: 'Dashboards', href: '/dashboards', icon: BarChart3, visible: isAdmin },
     { name: 'Fazer Pedidos', href: '/pdv', icon: ShoppingCart, visible: true },
     { name: 'Produtos', href: '/products', icon: Package, visible: isAdmin },
     { name: 'Histórico', href: '/orders', icon: ListOrdered, visible: isAdmin },
