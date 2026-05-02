@@ -1,4 +1,3 @@
-
 "use client";
 
 import { AppShell } from '@/components/layout/AppShell';
@@ -24,6 +23,7 @@ export default function DashboardPage() {
   const db = useFirestore();
   const router = useRouter();
   const [date, setDate] = useState<Date>(new Date());
+  const [calendarOpen, setCalendarOpen] = useState(false);
 
   useEffect(() => {
     if (!authLoading && role === 'cashier') {
@@ -61,11 +61,9 @@ export default function DashboardPage() {
     orders.forEach(order => {
       revenue += order.total;
       
-      // Totais por Caixa
       const uId = order.userId;
       cashierTotals[uId] = (cashierTotals[uId] || 0) + order.total;
       
-      // Totais por Produto
       order.items.forEach((item: any) => {
         if (!productCounts[item.name]) {
           productCounts[item.name] = { quantity: 0, total: 0 };
@@ -77,7 +75,6 @@ export default function DashboardPage() {
 
     const bestSeller = Object.entries(productCounts).sort((a, b) => b[1].quantity - a[1].quantity)[0]?.[0] || '---';
     
-    // Formatar dados para os gráficos
     const cashierChartData = Object.entries(cashierTotals).map(([uid, total]) => {
       const memberInfo = tenantMembers?.[uid];
       const name = typeof memberInfo === 'object' ? memberInfo.name : `ID: ${uid.substring(0, 5)}`;
@@ -109,7 +106,7 @@ export default function DashboardPage() {
           <p className="text-muted-foreground font-medium italic">Análise detalhada de faturamento e desempenho.</p>
         </div>
         
-        <Popover>
+        <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
           <PopoverTrigger asChild>
             <Button
               variant={"outline"}
@@ -126,7 +123,12 @@ export default function DashboardPage() {
             <Calendar
               mode="single"
               selected={date}
-              onSelect={(d) => d && setDate(d)}
+              onSelect={(d) => {
+                if (d) {
+                  setDate(d);
+                  setCalendarOpen(false);
+                }
+              }}
               initialFocus
               locale={ptBR}
             />
@@ -141,7 +143,6 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
-        {/* Vendas por Caixa */}
         <Card className="shadow-md border-primary/5">
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-xs font-black uppercase text-primary tracking-tighter flex items-center gap-2">
@@ -171,7 +172,6 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        {/* Faturamento por Produto */}
         <Card className="shadow-md border-primary/5">
           <CardHeader>
             <CardTitle className="text-xs font-black uppercase text-secondary tracking-tighter flex items-center gap-2">
@@ -210,7 +210,6 @@ export default function DashboardPage() {
         </Card>
       </div>
 
-      {/* Tabela de Produtos Detalhada */}
       <Card className="mt-8 shadow-md border-primary/5">
         <CardHeader>
           <CardTitle className="text-xs font-black uppercase text-muted-foreground">Listagem de Produtos Vendidos</CardTitle>

@@ -1,4 +1,3 @@
-
 "use client";
 
 import { AppShell } from '@/components/layout/AppShell';
@@ -24,21 +23,19 @@ export default function DashboardsDetailedPage() {
   const db = useFirestore();
   const [date, setDate] = useState<Date>(new Date());
   const [selectedCashier, setSelectedCashier] = useState<string>("all");
+  const [calendarOpen, setCalendarOpen] = useState(false);
 
-  // Define o caixa inicial quando os dados carregarem
   useEffect(() => {
     if (user?.uid && selectedCashier === "all") {
       setSelectedCashier(user.uid);
     }
   }, [user, selectedCashier]);
 
-  // Lista de caixas para o seletor
   const cashierList = Object.entries(tenantMembers || {}).map(([uid, info]: [string, any]) => ({
     id: uid,
     name: typeof info === 'object' ? info.name : `Caixa ${uid.substring(0, 4)}`,
   })).sort((a, b) => a.name.localeCompare(b.name));
 
-  // Consulta simplificada para buscar todos do dia e filtrar no cliente
   const ordersQuery = useMemoFirebase(() => {
     if (!tenantId || authLoading) return null;
     return query(
@@ -61,7 +58,6 @@ export default function DashboardsDetailedPage() {
   useEffect(() => {
     if (!allOrders) return;
 
-    // Filtro por caixa no lado do cliente
     const orders = (selectedCashier && selectedCashier !== "all")
       ? allOrders.filter(o => o.userId === selectedCashier)
       : allOrders;
@@ -130,7 +126,7 @@ export default function DashboardsDetailedPage() {
 
           <div className="flex-1 space-y-2">
             <span className="text-[10px] font-black uppercase text-muted-foreground ml-1">Escolha a Data</span>
-            <Popover>
+            <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
               <PopoverTrigger asChild>
                 <Button
                   variant={"outline"}
@@ -147,7 +143,12 @@ export default function DashboardsDetailedPage() {
                 <Calendar
                   mode="single"
                   selected={date}
-                  onSelect={(d) => d && setDate(d)}
+                  onSelect={(d) => {
+                    if (d) {
+                      setDate(d);
+                      setCalendarOpen(false);
+                    }
+                  }}
                   initialFocus
                   locale={ptBR}
                 />
