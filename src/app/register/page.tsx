@@ -51,12 +51,16 @@ export default function RegisterPage() {
         createdAt: new Date()
       });
 
-      // 3. Criar o Tenant (Organização)
+      // 3. Criar o Tenant (Organização) com dados denormalizados do proprietário
       const tenantRef = await addDoc(collection(db, 'tenants'), {
         name: orgName,
         createdAt: new Date(),
         members: {
-          [user.uid]: 'owner'
+          [user.uid]: {
+            role: 'owner',
+            name: name,
+            email: email
+          }
         }
       });
 

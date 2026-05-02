@@ -4,7 +4,7 @@
 import { AppShell } from '@/components/layout/AppShell';
 import { useAuth } from '@/hooks/use-auth-context';
 import { useState, useEffect } from 'react';
-import { doc, updateDoc, getDoc, collection, setDoc, addDoc } from 'firebase/firestore';
+import { doc, updateDoc, onSnapshot, collection, setDoc, addDoc } from 'firebase/firestore';
 import { initializeApp, deleteApp } from 'firebase/app';
 import { getAuth as getFirebaseAuth, createUserWithEmailAndPassword } from 'firebase/auth';
 import { getFirestore as getFirebaseFirestore } from 'firebase/firestore';
@@ -41,32 +41,29 @@ export default function TeamPage() {
   }, [authLoading, role, router]);
 
   useEffect(() => {
-    if (tenantId && !authLoading) fetchTeam();
-  }, [tenantId, authLoading, db]);
+    if (!tenantId || authLoading) return;
 
-  async function fetchTeam() {
     setLoading(true);
-    try {
-      const tenantRef = doc(db, 'tenants', tenantId!);
-      const snap = await getDoc(tenantRef);
+    // Usando onSnapshot para atualização em tempo real da equipe
+    const unsubscribe = onSnapshot(doc(db, 'tenants', tenantId), (snap) => {
       if (snap.exists()) {
         const data = snap.data();
         const memberList: any[] = [];
         
         if (data.members) {
           Object.entries(data.members).forEach(([uid, info]: [string, any]) => {
-            // Suporta o formato antigo (string) e o novo (objeto denormalizado)
-            if (typeof info === 'object') {
+            if (info && typeof info === 'object') {
               memberList.push({ 
                 id: uid, 
                 name: info.name || 'Sem nome', 
                 email: info.email || 'Sem e-mail',
                 role: info.role, 
               });
-            } else {
+            } else if (info) {
+              // Fallback para legados
               memberList.push({ 
                 id: uid, 
-                name: uid === data.ownerId ? 'Admin Principal' : 'Membro', 
+                name: 'Membro', 
                 email: '---',
                 role: info, 
               });
@@ -75,11 +72,14 @@ export default function TeamPage() {
         }
         setMembers(memberList);
       }
-    } catch (e) {
-      console.error("Erro ao buscar equipe:", e);
-    }
-    setLoading(false);
-  }
+      setLoading(false);
+    }, (error) => {
+      console.error("Erro ao ouvir equipe:", error);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [tenantId, authLoading, db]);
 
   const handleCreateCashier = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -97,6 +97,7 @@ export default function TeamPage() {
       const userCred = await createUserWithEmailAndPassword(tempAuth, email, password);
       const newUid = userCred.user.uid;
 
+      // 1. Cria perfil na instância temporária (o usuário recém-criado é o dono do próprio perfil)
       await setDoc(doc(tempDb, 'userProfiles', newUid), {
         id: newUid,
         email: email,
@@ -104,6 +105,7 @@ export default function TeamPage() {
         createdAt: new Date()
       });
 
+      // 2. Cria vínculo de membership na instância temporária
       await addDoc(collection(tempDb, 'userProfiles', newUid, 'memberships'), {
         userId: newUid,
         tenantId: tenantId,
@@ -111,7 +113,7 @@ export default function TeamPage() {
         joinedAt: new Date()
       });
 
-      // Salva dados denormalizados no Tenant para visualização imediata do Admin
+      // 3. Atualiza o Tenant no banco principal (Admin tem permissão para isso)
       const tenantRef = doc(db, 'tenants', tenantId);
       await updateDoc(tenantRef, {
         [`members.${newUid}`]: {
@@ -129,7 +131,6 @@ export default function TeamPage() {
       setName('');
       setEmail('');
       setPassword('');
-      fetchTeam();
     } catch (error: any) {
       console.error(error);
       toast({ title: 'Erro', description: error.message || 'Não foi possível criar o caixa.', variant: 'destructive' });
@@ -151,7 +152,6 @@ export default function TeamPage() {
       await updateDoc(tenantRef, {
         [`members.${uid}`]: null
       });
-      setMembers(prev => prev.filter(m => m.id !== uid));
       toast({ title: 'Sucesso', description: 'Acesso removido do Arraial.' });
     } catch (e) {
       toast({ title: 'Erro', description: 'Erro ao remover acesso.' });
