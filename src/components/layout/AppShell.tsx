@@ -4,7 +4,7 @@
 import React from 'react';
 import { SidebarProvider, Sidebar, SidebarContent, SidebarHeader, SidebarFooter, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import { useAuth } from '@/hooks/use-auth-context';
-import { LayoutDashboard, ShoppingCart, Package, ListOrdered, LogOut, Ticket } from 'lucide-react';
+import { LayoutDashboard, ShoppingCart, Package, ListOrdered, LogOut, Users } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
@@ -25,7 +25,7 @@ const JuninaFlagsIcon = (props: React.SVGProps<SVGSVGElement>) => (
 );
 
 export function AppShell({ children }: { children: React.ReactNode }) {
-  const { user, loading, organizationName, signOut } = useAuth();
+  const { user, loading, organizationName, signOut, role } = useAuth();
   const pathname = usePathname();
 
   if (loading) return (
@@ -37,12 +37,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     </div>
   );
 
+  const isAdmin = role === 'owner';
+
   const navItems = [
-    { name: 'Início', href: '/', icon: LayoutDashboard },
-    { name: 'Fazer Pedidos', href: '/pdv', icon: ShoppingCart },
-    { name: 'Produtos', href: '/products', icon: Package },
-    { name: 'Histórico', href: '/orders', icon: ListOrdered },
-  ];
+    { name: 'Início', href: '/', icon: LayoutDashboard, visible: isAdmin },
+    { name: 'Fazer Pedidos', href: '/pdv', icon: ShoppingCart, visible: true },
+    { name: 'Produtos', href: '/products', icon: Package, visible: isAdmin },
+    { name: 'Histórico', href: '/orders', icon: ListOrdered, visible: isAdmin },
+    { name: 'Equipe', href: '/team', icon: Users, visible: isAdmin },
+  ].filter(item => item.visible);
 
   return (
     <SidebarProvider>
@@ -70,9 +73,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <SidebarFooter>
           <SidebarMenu className="px-2">
             <SidebarMenuItem>
+              <div className="px-3 py-2 text-[10px] font-black uppercase text-muted-foreground opacity-50">
+                Sessão: {role === 'owner' ? 'Administrador' : 'Caixa'}
+              </div>
               <SidebarMenuButton onClick={signOut} className="text-muted-foreground hover:text-destructive hover:bg-destructive/5">
                 <LogOut />
-                <span>Limpar Sessão</span>
+                <span>Sair</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
@@ -88,7 +94,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
           <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground bg-muted px-3 py-1.5 rounded-full">
             <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-            CAIXA ABERTO
+            {role === 'owner' ? 'GESTOR' : 'CAIXA'} ATIVO
           </div>
         </header>
         <main className="flex-1 p-4 md:p-6 overflow-auto">
