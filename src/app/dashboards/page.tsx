@@ -23,7 +23,14 @@ export default function DashboardsDetailedPage() {
   const { tenantId, user, role, tenantMembers, loading: authLoading } = useAuth();
   const db = useFirestore();
   const [date, setDate] = useState<Date>(new Date());
-  const [selectedCashier, setSelectedCashier] = useState<string>(user?.uid || "");
+  const [selectedCashier, setSelectedCashier] = useState<string>("");
+
+  // Define o caixa inicial quando os dados carregarem
+  useEffect(() => {
+    if (user?.uid && !selectedCashier) {
+      setSelectedCashier(user.uid);
+    }
+  }, [user, selectedCashier]);
 
   // Lista de caixas para o seletor
   const cashierList = Object.entries(tenantMembers || {}).map(([uid, info]: [string, any]) => ({
@@ -31,18 +38,19 @@ export default function DashboardsDetailedPage() {
     name: typeof info === 'object' ? info.name : `Caixa ${uid.substring(0, 4)}`,
   })).sort((a, b) => a.name.localeCompare(b.name));
 
+  // Consulta simplificada para evitar erros de índice composto (userId + createdAt)
+  // Buscamos todos do dia e filtramos no cliente
   const ordersQuery = useMemoFirebase(() => {
-    if (!tenantId || authLoading || !selectedCashier) return null;
+    if (!tenantId || authLoading) return null;
     return query(
       collection(db, 'tenants', tenantId, 'orders'),
-      where('userId', '==', selectedCashier),
       where('createdAt', '>=', startOfDay(date)),
       where('createdAt', '<=', endOfDay(date)),
       orderBy('createdAt', 'desc')
     );
-  }, [tenantId, authLoading, db, date, selectedCashier]);
+  }, [tenantId, authLoading, db, date]);
 
-  const { data: orders, isLoading: ordersLoading } = useCollection(ordersQuery);
+  const { data: allOrders, isLoading: ordersLoading } = useCollection(ordersQuery);
 
   const [stats, setStats] = useState({
     totalRevenue: 0,
@@ -52,7 +60,12 @@ export default function DashboardsDetailedPage() {
   });
 
   useEffect(() => {
-    if (!orders) return;
+    if (!allOrders) return;
+
+    // Filtro por caixa no lado do cliente para evitar necessidade de índices compostos
+    const orders = selectedCashier 
+      ? allOrders.filter(o => o.userId === selectedCashier)
+      : allOrders;
 
     let revenue = 0;
     const productCounts: Record<string, { quantity: number, total: number }> = {};
@@ -60,13 +73,15 @@ export default function DashboardsDetailedPage() {
     orders.forEach(order => {
       revenue += order.total;
       
-      order.items.forEach((item: any) => {
-        if (!productCounts[item.name]) {
-          productCounts[item.name] = { quantity: 0, total: 0 };
-        }
-        productCounts[item.name].quantity += item.quantity;
-        productCounts[item.name].total += (item.price * item.quantity);
-      });
+      if (order.items && Array.isArray(order.items)) {
+        order.items.forEach((item: any) => {
+          if (!productCounts[item.name]) {
+            productCounts[item.name] = { quantity: 0, total: 0 };
+          }
+          productCounts[item.name].quantity += (item.quantity || 0);
+          productCounts[item.name].total += (item.price * item.quantity || 0);
+        });
+      }
     });
 
     const sortedProducts = Object.entries(productCounts).sort((a, b) => b[1].quantity - a[1].quantity);
@@ -84,7 +99,7 @@ export default function DashboardsDetailedPage() {
       bestSeller,
       productSales: productChartData
     });
-  }, [orders]);
+  }, [allOrders, selectedCashier]);
 
   if (role === 'cashier') return null;
 
@@ -104,6 +119,7 @@ export default function DashboardsDetailedPage() {
                 <SelectValue placeholder="Escolha um caixa" />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="" className="font-bold uppercase text-xs">Todos os Caixas</SelectItem>
                 {cashierList.map((c) => (
                   <SelectItem key={c.id} value={c.id} className="font-bold uppercase text-xs">
                     {c.name} {c.id === user?.uid ? "(Você)" : ""}
@@ -149,7 +165,6 @@ export default function DashboardsDetailedPage() {
       </div>
 
       <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
-        {/* Gráfico de Pizza */}
         <Card className="shadow-md border-primary/5">
           <CardHeader>
             <CardTitle className="text-xs font-black uppercase text-primary tracking-tighter flex items-center gap-2">
@@ -187,7 +202,6 @@ export default function DashboardsDetailedPage() {
           </CardContent>
         </Card>
 
-        {/* Tabela Detalhada */}
         <Card className="shadow-md border-primary/5">
           <CardHeader>
             <CardTitle className="text-xs font-black uppercase text-muted-foreground flex items-center gap-2">
