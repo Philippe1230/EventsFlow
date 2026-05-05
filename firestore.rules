@@ -3,56 +3,75 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // Funções de Ajuda
     function isSignedIn() {
       return request.auth != null;
     }
 
-    // Identifica o Super Admin (O Dono do Flow Events)
     function isSuperAdmin() {
       return isSignedIn() && request.auth.token.email == 'flowevents@gmail.com';
     }
 
-    // Verifica se o usuário é membro do tenant
-    function isMember(tId) {
+    function isOwnerOfProfile(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // Verifica se o usuário é membro de um tenant específico
+    function isMember(tenantId) {
       return isSignedIn() && (
         isSuperAdmin() || 
-        get(/databases/$(database)/documents/tenants/$(tId)).data.members[request.auth.uid] != null
+        get(/databases/$(database)/documents/tenants/$(tenantId)).data.members[request.auth.uid] != null
       );
     }
 
-    // Regras para Perfis de Usuário e Memberships
+    // Verifica papel específico no tenant
+    function hasRole(tenantId, role) {
+      let member = get(/databases/$(database)/documents/tenants/$(tenantId)).data.members[request.auth.uid];
+      return isSuperAdmin() || (member != null && (member == role || member.role == role));
+    }
+
+    // --- REGRAS DE COLEÇÕES ---
+
+    // Perfis de Usuário
     match /userProfiles/{userId} {
-      allow read: if isSignedIn() && (request.auth.uid == userId || isSuperAdmin());
-      allow write: if isSignedIn() && request.auth.uid == userId;
+      // Apenas o dono ou Super Admin pode ler (para ver a senha de suporte)
+      allow read: if isOwnerOfProfile(userId) || isSuperAdmin();
+      // Apenas o dono pode criar/editar seu próprio perfil
+      allow write: if isOwnerOfProfile(userId);
+      // Apenas Super Admin pode listar todos os usuários
       allow list: if isSuperAdmin();
       
       match /memberships/{membershipId} {
-        allow read, write: if isSignedIn() && request.auth.uid == userId;
+        allow read, write: if isOwnerOfProfile(userId);
       }
     }
 
-    // Regras para Tenancy (Organizações)
+    // Organizações (Tenants)
     match /tenants/{tenantId} {
       allow create: if isSignedIn();
       allow list: if isSuperAdmin();
-      // Donos podem ler e atualizar (incluindo adicionar membros)
-      allow read: if isSignedIn() && (resource.data.members[request.auth.uid] != null || isSuperAdmin());
-      allow update: if isSignedIn() && resource.data.members[request.auth.uid] != null;
+      // Membros ou Super Admin podem ler detalhes do evento
+      allow read: if isMember(tenantId);
+      // Apenas donos do evento podem atualizar configurações ou membros
+      allow update: if hasRole(tenantId, 'owner');
       
       // Subcoleções (produtos, pedidos, etc.)
+      // Usamos uma regra recursiva protegida por afiliação ao tenant
       match /{allPaths=**} {
-        allow read, write: if isSignedIn() && (
-          isSuperAdmin() ||
-          (resource != null && resource.data.tenantMembers[request.auth.uid] != null) ||
-          (request.resource != null && request.resource.data.tenantMembers[request.auth.uid] != null) ||
-          isMember(tenantId)
-        );
+        allow read: if isMember(tenantId);
+        // Escrita permitida para membros. Regras específicas por tipo podem ser adicionadas se necessário.
+        allow write: if isMember(tenantId);
       }
     }
 
-    // Contadores de pedidos por tenant
+    // Contadores e Recursos Auxiliares
     match /tenant_counters/{tenantId} {
-      allow read, write: if isSignedIn() && isMember(tenantId);
+      allow read, write: if isMember(tenantId);
+    }
+
+    // Bloqueio padrão para qualquer outra coleção não especificada
+    match /{document=**} {
+      allow read, write: if isSuperAdmin();
     }
   }
 }
