@@ -64,11 +64,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   ].filter(item => item.visible), [isAdmin, isSuperAdmin]);
 
   const activeIndex = useMemo(() => {
-    const idx = navItems.findIndex(item => {
+    return navItems.findIndex(item => {
       if (item.href === '/') return pathname === '/';
       return pathname.startsWith(item.href);
     });
-    return idx;
   }, [pathname, navItems]);
 
   if (isInitialLoading) return <LoadingJunina />;
@@ -89,28 +88,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </SidebarHeader>
         <SidebarContent>
           <SidebarMenu className="px-3 pt-2 relative">
-            <div 
-              className="absolute left-3 right-3 h-12 bg-primary rounded-2xl transition-all duration-300 shadow-md shadow-primary/20 z-0 group-data-[collapsible=icon]:hidden"
-              style={{ 
-                top: '8px',
-                transform: `translateY(${activeIndex * 52}px)`,
-                opacity: activeIndex === -1 ? 0 : 1,
-                pointerEvents: 'none'
-              }}
-            />
-
             {navItems.map((item, idx) => {
               const active = idx === activeIndex;
               return (
-                <SidebarMenuItem key={item.href} className="relative z-10">
+                <SidebarMenuItem key={item.href}>
                   <SidebarMenuButton 
                     asChild 
                     isActive={active} 
                     tooltip={item.name} 
                     className={cn(
-                      "h-12 rounded-2xl transition-colors duration-200",
+                      "h-12 rounded-2xl transition-all duration-200 mb-1",
                       active 
-                        ? "text-white bg-transparent" 
+                        ? "text-white bg-primary shadow-lg shadow-primary/30" 
                         : "text-primary/70 hover:bg-primary/5 hover:text-primary"
                     )}
                   >

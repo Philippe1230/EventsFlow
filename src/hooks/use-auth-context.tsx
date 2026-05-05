@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useMemo } from 'react';
 import { User, signOut as firebaseSignOut } from 'firebase/auth';
 import { doc, getDoc, collection, query, getDocs, limit } from 'firebase/firestore';
 import { useAuth as useFirebaseAuth, useFirestore, useUser } from '@/firebase';
@@ -33,12 +33,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [tenantMembers, setTenantMembers] = useState<Record<string, any> | null>(null);
   const [role, setRole] = useState<'owner' | 'cashier' | 'super-admin' | null>(null);
 
-  const isSuperAdmin = user?.email === 'flowevents@gmail.com';
+  const isSuperAdmin = useMemo(() => user?.email === 'flowevents@gmail.com', [user?.email]);
 
+  // Carrega o contexto apenas quando o usuário muda (login/logout)
   useEffect(() => {
     async function loadUserContext() {
+      // Se ainda está carregando o auth básico, não faz nada
       if (isUserLoading) return;
 
+      // Se não tem usuário, limpa tudo e manda pro login (se não estiver em rotas públicas)
       if (!user) {
         setTenantId(null);
         setOrganizationName(null);
@@ -52,15 +55,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      // Check for Super Admin status first
-      if (isSuperAdmin) {
-        setRole('super-admin');
-        setOrganizationName('Sistema Central');
+      // Se já temos os dados carregados para este usuário, não busca de novo ao navegar
+      if (tenantId || role) {
         setLoading(false);
         return;
       }
 
       try {
+        if (isSuperAdmin) {
+          setRole('super-admin');
+          setOrganizationName('Sistema Central');
+          setLoading(false);
+          return;
+        }
+
         const membershipsRef = collection(db, 'userProfiles', user.uid, 'memberships');
         let membershipsSnap = await getDocs(query(membershipsRef, limit(1)));
         
@@ -83,6 +91,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setRole(userRole || 'cashier');
           }
         } else {
+          // Se não tem membership e não é super-admin, manda registrar evento
           if (pathname !== '/register' && pathname !== '/login') {
             router.push('/register');
           }
@@ -95,7 +104,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     loadUserContext();
-  }, [user, isUserLoading, db, pathname, router, isSuperAdmin]);
+  }, [user, isUserLoading, db, isSuperAdmin, router]); // Removido pathname para evitar recarga em navegação
 
   const signOut = async () => {
     await firebaseSignOut(auth);
@@ -106,7 +115,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     router.push('/login');
   };
 
-  const contextValue = {
+  const contextValue = useMemo(() => ({
     user,
     loading: isUserLoading || loading,
     tenantId,
@@ -115,7 +124,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     role,
     isSuperAdmin,
     signOut
-  };
+  }), [user, isUserLoading, loading, tenantId, organizationName, tenantMembers, role, isSuperAdmin]);
 
   return (
     <AuthContext.Provider value={contextValue}>
