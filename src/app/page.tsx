@@ -15,11 +15,20 @@ import {
   Flame
 } from 'lucide-react';
 import Link from 'next/link';
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function GuidePage() {
-  const { organizationName, role } = useAuth();
+  const { organizationName, role, loading } = useAuth();
+  const router = useRouter();
 
-  if (role === 'cashier') return null;
+  useEffect(() => {
+    if (!loading && role === 'cashier') {
+      router.replace('/pdv');
+    }
+  }, [role, loading, router]);
+
+  if (loading || role === 'cashier') return null;
 
   const steps = [
     {

@@ -1,3 +1,4 @@
+
 "use client";
 
 import { AppShell } from '@/components/layout/AppShell';
@@ -15,21 +16,29 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { useRouter } from 'next/navigation';
 
 const COLORS = ['#f97316', '#ef4444', '#eab308', '#22c55e', '#06b6d4', '#8b5cf6'];
 
 export default function DashboardsDetailedPage() {
   const { tenantId, user, role, tenantMembers, loading: authLoading } = useAuth();
   const db = useFirestore();
+  const router = useRouter();
   const [date, setDate] = useState<Date>(new Date());
   const [selectedCashier, setSelectedCashier] = useState<string>("all");
   const [calendarOpen, setCalendarOpen] = useState(false);
 
   useEffect(() => {
-    if (user?.uid && selectedCashier === "all") {
-      setSelectedCashier(user.uid);
+    if (!authLoading && role === 'cashier') {
+      router.replace('/pdv');
     }
-  }, [user, selectedCashier]);
+  }, [role, authLoading, router]);
+
+  useEffect(() => {
+    if (user?.uid && selectedCashier === "all") {
+      // Por padrão, mostra todos, mas deixa o usuário atual selecionável
+    }
+  }, [user]);
 
   const cashierList = Object.entries(tenantMembers || {}).map(([uid, info]: [string, any]) => ({
     id: uid,
@@ -96,7 +105,7 @@ export default function DashboardsDetailedPage() {
     });
   }, [allOrders, selectedCashier]);
 
-  if (role === 'cashier') return null;
+  if (authLoading || role === 'cashier') return null;
 
   return (
     <AppShell>

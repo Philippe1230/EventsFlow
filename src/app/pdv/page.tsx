@@ -169,29 +169,16 @@ export default function PDVPage() {
 
   return (
     <AppShell>
-      <div className="flex flex-col lg:grid lg:grid-cols-12 gap-6 min-h-[calc(100vh-140px)]">
+      <div className="flex flex-col lg:grid lg:grid-cols-12 gap-6 pb-24 lg:pb-0">
         {/* Lado Esquerdo: Produtos */}
         <div className="lg:col-span-7 xl:col-span-8 flex flex-col gap-4">
           <div className="flex justify-between items-center bg-card p-4 rounded-2xl border border-primary/10 shadow-sm sticky top-0 z-10 lg:static">
             <h2 className="text-lg font-black text-primary uppercase flex items-center gap-2">
-              <Plus className="h-5 w-5" /> Selecionar Produtos
+              <Plus className="h-5 w-5" /> Cardápio
             </h2>
             <div className="flex gap-2">
               <Button variant="outline" size="sm" onClick={repeatLastOrder} className="font-bold text-[10px] uppercase h-10 border-primary/20 hover:bg-primary/5 rounded-xl lg:flex hidden">
                 <RefreshCcw className="mr-1 h-3 w-3" /> Repetir Último
-              </Button>
-              <Button 
-                variant="default" 
-                size="icon" 
-                onClick={scrollToCart} 
-                className="lg:hidden h-10 w-10 rounded-xl relative"
-              >
-                <ShoppingCart className="h-5 w-5" />
-                {cart.length > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-white text-primary text-[8px] font-black h-5 w-5 rounded-full border-2 border-primary flex items-center justify-center">
-                    {cart.reduce((a, b) => a + b.quantity, 0)}
-                  </span>
-                )}
               </Button>
             </div>
           </div>
@@ -204,16 +191,15 @@ export default function PDVPage() {
                     <div key={i} className="w-8 h-12 bg-primary/20 rounded-b-xl animate-bounce" style={{ animationDelay: `${i * 0.1}s` }} />
                   ))}
                 </div>
-                <p className="font-black uppercase text-[10px] animate-pulse tracking-[0.3em] text-primary">Sincronizando Cardápio</p>
+                <p className="font-black uppercase text-[10px] animate-pulse tracking-[0.3em] text-primary">Carregando...</p>
               </div>
             ) : products.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 text-center bg-card rounded-[2rem] border-2 border-dashed border-primary/10 p-8">
                 <JuninaFlagsIcon className="h-16 w-16 text-primary/20 mb-6" />
-                <p className="text-muted-foreground font-black uppercase text-sm tracking-widest">Cardápio Vazio</p>
-                <Button variant="link" asChild className="mt-4 font-black uppercase text-xs text-primary"><a href="/products">Cadastrar Produtos</a></Button>
+                <p className="text-muted-foreground font-black uppercase text-sm tracking-widest">Nenhum produto ativo</p>
               </div>
             ) : (
-              <div className="pdv-grid pb-10 lg:pb-0">
+              <div className="pdv-grid">
                 {products.map(p => (
                   <button
                     key={p.id}
@@ -245,20 +231,15 @@ export default function PDVPage() {
                 <div className="flex items-center gap-3">
                   <ShoppingCart className="h-6 w-6" /> Carrinho
                 </div>
-                {cart.length > 0 && (
-                  <span className="bg-white text-primary px-3 py-1 rounded-full text-[10px] font-black shadow-lg">
-                    {cart.reduce((a, b) => a + b.quantity, 0)} ITENS
-                  </span>
-                )}
               </CardTitle>
             </CardHeader>
             
             <CardContent className="flex-1 flex flex-col p-0 overflow-hidden bg-muted/10">
-              <div className="flex-1 overflow-y-auto p-4 lg:p-6 space-y-4 max-h-[400px] lg:max-h-none">
+              <div className="flex-1 overflow-y-auto p-4 lg:p-6 space-y-4 max-h-[500px] lg:max-h-none">
                 {cart.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-20 opacity-10">
                     <JuninaFlagsIcon className="h-24 w-24 text-primary mb-6" />
-                    <p className="text-center font-black uppercase text-xs tracking-widest">Esperando Pedidos</p>
+                    <p className="text-center font-black uppercase text-xs tracking-widest">Carrinho Vazio</p>
                   </div>
                 ) : (
                   cart.map(item => (
@@ -288,43 +269,43 @@ export default function PDVPage() {
 
               <div className="bg-card border-t border-primary/5 p-6 space-y-6 shadow-[0_-10px_30px_rgba(0,0,0,0.03)] mt-auto">
                 <div className="flex justify-between items-end px-2">
-                  <span className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Total Geral</span>
+                  <span className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Total</span>
                   <span className="text-4xl font-black text-primary tracking-tighter">R$ {total.toFixed(2)}</span>
                 </div>
 
-                <div className="grid grid-cols-3 gap-2 sm:gap-3">
+                <div className="grid grid-cols-3 gap-2">
                   <PaymentButton 
                     active={paymentMethod === 'dinheiro'} 
                     onClick={() => setPaymentMethod('dinheiro')}
-                    icon={<Banknote className="h-5 w-5 sm:h-6 sm:w-6" />}
+                    icon={<Banknote className="h-6 w-6" />}
                     label="Dinheiro"
                   />
                   <PaymentButton 
                     active={paymentMethod === 'pix'} 
                     onClick={() => setPaymentMethod('pix')}
-                    icon={<QrCode className="h-5 w-5 sm:h-6 sm:w-6" />}
+                    icon={<QrCode className="h-6 w-6" />}
                     label="Pix"
                   />
                   <PaymentButton 
                     active={paymentMethod === 'cartao'} 
                     onClick={() => setPaymentMethod('cartao')}
-                    icon={<CreditCard className="h-5 w-5 sm:h-6 sm:w-6" />}
+                    icon={<CreditCard className="h-6 w-6" />}
                     label="Cartão"
                   />
                 </div>
 
                 <Button 
-                  className="w-full h-20 text-xl sm:text-2xl font-black uppercase shadow-2xl shadow-primary/30 rounded-[1.5rem] hover:scale-[1.02] active:scale-95 transition-all" 
+                  className="w-full h-20 text-2xl font-black uppercase shadow-2xl shadow-primary/30 rounded-[1.5rem] hover:scale-[1.02] active:scale-95 transition-all" 
                   size="lg"
                   disabled={cart.length === 0 || submitting}
                   onClick={finalizeOrder}
                 >
-                  {submitting ? <Loader2 className="animate-spin h-8 w-8" /> : <><Printer className="mr-3 h-7 w-7 sm:h-8 sm:w-8" /> Finalizar</>}
+                  {submitting ? <Loader2 className="animate-spin h-8 w-8" /> : <><Printer className="mr-3 h-8 w-8" /> Finalizar</>}
                 </Button>
                 
                 {cart.length > 0 && (
                   <button className="w-full text-[10px] font-black uppercase text-muted-foreground/40 hover:text-destructive transition-colors tracking-widest" onClick={clearCart}>
-                    Limpar Tudo
+                    Limpar Carrinho
                   </button>
                 )}
               </div>
@@ -332,6 +313,23 @@ export default function PDVPage() {
           </Card>
         </div>
       </div>
+
+      {/* Botão flutuante para mobile quando o carrinho tem itens */}
+      {cart.length > 0 && (
+        <div className="fixed bottom-6 right-6 lg:hidden z-50">
+          <Button 
+            onClick={scrollToCart} 
+            className="h-16 w-16 rounded-full shadow-2xl animate-bounce flex items-center justify-center p-0"
+          >
+            <div className="relative">
+              <ShoppingCart className="h-8 w-8" />
+              <span className="absolute -top-3 -right-3 bg-white text-primary text-[10px] font-black h-7 w-7 rounded-full border-4 border-primary flex items-center justify-center shadow-lg">
+                {cart.reduce((a, b) => a + b.quantity, 0)}
+              </span>
+            </div>
+          </Button>
+        </div>
+      )}
 
       <PrintTickets tickets={printableTickets} />
       <SuccessModal 
