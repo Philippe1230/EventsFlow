@@ -28,7 +28,7 @@ export default function LoginPage() {
 
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      toast({ title: "Bem-vindo de volta!", description: "Entrando no seu Evento..." });
+      toast({ title: "Bem-vindo de volta!", description: "Entrando no Flow Events..." });
       router.push('/');
     } catch (error: any) {
       let message = "Erro ao entrar. Verifique seus dados.";
@@ -50,8 +50,8 @@ export default function LoginPage() {
               <OrderTicketIcon className="h-10 w-10" />
             </div>
           </div>
-          <CardTitle className="text-3xl font-black uppercase text-primary tracking-tighter">Evento PDV</CardTitle>
-          <CardDescription className="font-bold uppercase text-[10px] tracking-widest text-muted-foreground mt-2">Acesse sua organização</CardDescription>
+          <CardTitle className="text-3xl font-black uppercase text-primary tracking-tighter">Flow Events</CardTitle>
+          <CardDescription className="font-bold uppercase text-[10px] tracking-widest text-muted-foreground mt-2">Acesse seu evento</CardDescription>
         </CardHeader>
         <form onSubmit={handleLogin}>
           <CardContent className="space-y-6 px-8">
@@ -81,7 +81,7 @@ export default function LoginPage() {
           </CardContent>
           <CardFooter className="flex flex-col gap-6 p-8">
             <Button type="submit" className="w-full h-14 font-black uppercase text-lg rounded-2xl shadow-xl shadow-primary/20" disabled={loading}>
-              {loading ? <Loader2 className="animate-spin mr-2 h-5 w-5" /> : "Entrar no Evento"}
+              {loading ? <Loader2 className="animate-spin mr-2 h-5 w-5" /> : "Entrar no Flow Events"}
             </Button>
             <p className="text-sm text-center text-muted-foreground font-medium">
               Ainda não tem uma conta?{" "}

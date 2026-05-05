@@ -70,7 +70,7 @@ export default function RegisterPage() {
         await addDoc(collection(db, 'tenants', tenantRef.id, 'products'), p);
       }
 
-      toast({ title: "Evento criado!", description: "Sua conta e organização foram configuradas." });
+      toast({ title: "Evento criado!", description: "Sua conta e organização Flow Events foram configuradas." });
       router.push('/');
     } catch (error: any) {
       console.error(error);
@@ -90,7 +90,7 @@ export default function RegisterPage() {
             </div>
           </div>
           <CardTitle className="text-3xl font-black uppercase text-primary tracking-tighter">Novo Evento</CardTitle>
-          <CardDescription className="font-bold uppercase text-[10px] tracking-widest text-muted-foreground mt-2">Crie sua organização</CardDescription>
+          <CardDescription className="font-bold uppercase text-[10px] tracking-widest text-muted-foreground mt-2">Crie sua conta no Flow Events</CardDescription>
         </CardHeader>
         <form onSubmit={handleRegister}>
           <CardContent className="space-y-4 px-8">
@@ -143,7 +143,7 @@ export default function RegisterPage() {
           </CardContent>
           <CardFooter className="flex flex-col gap-4 p-8">
             <Button type="submit" className="w-full h-14 font-black uppercase text-lg rounded-2xl shadow-xl shadow-primary/20" disabled={loading}>
-              {loading ? <Loader2 className="animate-spin mr-2 h-4 w-4" /> : "Criar meu Evento"}
+              {loading ? <Loader2 className="animate-spin mr-2 h-4 w-4" /> : "Criar meu Flow Events"}
             </Button>
             <p className="text-sm text-center text-muted-foreground font-medium">
               Já tem uma conta?{" "}

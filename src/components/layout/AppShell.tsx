@@ -79,9 +79,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary text-white shadow-lg shrink-0">
             <OrderTicketIcon className="h-7 w-7" />
           </div>
-          <div className="flex flex-col group-data-[collapsible=icon]:hidden">
-            <span className="font-black text-lg leading-none text-primary uppercase tracking-tighter">
-              {organizationName || 'Evento'}
+          <div className="flex flex-col group-data-[collapsible=icon]:hidden overflow-hidden">
+            <span className="font-black text-lg leading-none text-primary uppercase tracking-tighter truncate">
+              {organizationName || 'Flow Events'}
             </span>
             <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Fichas & Vendas</span>
           </div>
@@ -146,7 +146,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 className="h-11 rounded-xl text-muted-foreground hover:text-destructive hover:bg-destructive/5 font-black uppercase text-[10px]"
               >
                 <LogOut className="h-4 w-4" />
-                <span className="group-data-[collapsible=icon]:hidden">Sair do Evento</span>
+                <span className="group-data-[collapsible=icon]:hidden">Sair do Flow Events</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>

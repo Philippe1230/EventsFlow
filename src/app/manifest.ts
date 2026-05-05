@@ -3,8 +3,8 @@ import { MetadataRoute } from 'next'
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'Evento PDV - Gestão de Vendas',
-    short_name: 'Evento PDV',
+    name: 'Flow Events - Gestão de Vendas',
+    short_name: 'Flow Events',
     description: 'Gestão de vendas ultra rápida para eventos com suporte PWA',
     start_url: '/',
     display: 'standalone',

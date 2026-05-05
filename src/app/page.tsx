@@ -54,7 +54,7 @@ export default function GuidePage() {
     },
     {
       title: "4. Acompanhe os Resultados",
-      description: "Nos 'Dashboards', veja quanto cada caixa arrecadou e qual produto está bombando no seu Evento.",
+      description: "Nos 'Dashboards', veja quanto cada caixa arrecadou e qual produto está bombando no seu evento.",
       icon: <BarChart3 className="h-6 w-6" />,
       link: "/dashboards",
       color: "bg-green-500"
@@ -66,10 +66,10 @@ export default function GuidePage() {
       <div className="max-w-4xl mx-auto space-y-8">
         <div className="text-center space-y-2">
           <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full font-black text-xs uppercase tracking-widest mb-2">
-            <Ticket className="h-4 w-4" /> Bem-vindo ao seu Evento
+            <Ticket className="h-4 w-4" /> Bem-vindo ao Flow Events
           </div>
           <h2 className="text-4xl font-black text-primary uppercase tracking-tighter">
-            {organizationName || "Seu Evento"}
+            {organizationName || "Flow Events"}
           </h2>
           <p className="text-muted-foreground font-medium italic">
             Siga os passos abaixo para organizar sua operação e começar a faturar.

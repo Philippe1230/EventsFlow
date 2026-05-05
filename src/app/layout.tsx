@@ -6,12 +6,12 @@ import { AuthProvider } from '@/hooks/use-auth-context';
 import { Toaster } from '@/components/ui/toaster';
 
 export const metadata: Metadata = {
-  title: 'Evento PDV - Vendas e Fichas',
+  title: 'Flow Events - Vendas e Fichas',
   description: 'Controle de vendas ultra rápido para eventos e festivais',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
-    title: 'Evento PDV',
+    title: 'Flow Events',
   },
   formatDetection: {
     telephone: false,
