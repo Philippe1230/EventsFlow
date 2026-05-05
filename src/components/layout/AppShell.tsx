@@ -59,7 +59,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     { name: 'Dashboards', href: '/dashboards', icon: BarChart3, visible: isAdmin && !isSuperAdmin },
     { name: 'Fazer Pedidos', href: '/pdv', icon: ShoppingCart, visible: !isSuperAdmin },
     { name: 'Produtos', href: '/products', icon: Package, visible: isAdmin && !isSuperAdmin },
-    { name: 'Histórico', href: '/orders', icon: ListOrdered, visible: isAdmin && !isSuperAdmin },
+    { name: 'Histórico', href: '/orders', icon: ListOrdered, visible: !isSuperAdmin },
     { name: 'Equipe', href: '/team', icon: Users, visible: isAdmin && !isSuperAdmin },
   ].filter(item => item.visible), [isAdmin, isSuperAdmin]);
 
@@ -75,7 +75,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <SidebarProvider>
-      <Sidebar collapsible="icon" className="border-r border-primary/10 shadow-xl bg-card">
+      <Sidebar collapsible="icon" className="border-r border-primary/10 shadow-xl bg-sidebar">
         <SidebarHeader className="p-6 flex flex-row items-center gap-3">
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary text-white shadow-lg shrink-0">
             <OrderTicketIcon className="h-7 w-7" />

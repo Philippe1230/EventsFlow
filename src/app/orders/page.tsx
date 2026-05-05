@@ -3,13 +3,14 @@
 
 import { AppShell } from '@/components/layout/AppShell';
 import { useAuth } from '@/hooks/use-auth-context';
-import { useState, useEffect } from 'react';
-import { collection, query, getDocs, orderBy, Timestamp } from 'firebase/firestore';
+import { useState, useEffect, useCallback } from 'react';
+import { collection, query, getDocs, orderBy, Timestamp, limit } from 'firebase/firestore';
 import { useFirestore } from '@/firebase';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Download, Loader2, Printer } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Download, Loader2, Printer, Filter } from 'lucide-react';
 import { format } from 'date-fns';
 import { PrintTickets } from '@/components/pdv/PrintTickets';
 
@@ -28,22 +29,28 @@ export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [printableTickets, setPrintableTickets] = useState<any[]>([]);
+  const [ordersLimit, setOrdersLimit] = useState<string>("20");
 
-  useEffect(() => {
-    if (tenantId && !authLoading) fetchOrders();
-  }, [tenantId, authLoading, db]);
-
-  async function fetchOrders() {
+  const fetchOrders = useCallback(async () => {
+    if (!tenantId) return;
     setLoading(true);
     try {
-      const q = query(collection(db, 'tenants', tenantId!, 'orders'), orderBy('createdAt', 'desc'));
+      const q = query(
+        collection(db, 'tenants', tenantId, 'orders'), 
+        orderBy('createdAt', 'desc'),
+        limit(parseInt(ordersLimit))
+      );
       const snap = await getDocs(q);
       setOrders(snap.docs.map(d => ({ id: d.id, ...d.data() } as Order)));
     } catch (e) {
       console.error("Erro ao buscar pedidos:", e);
     }
     setLoading(false);
-  }
+  }, [db, tenantId, ordersLimit]);
+
+  useEffect(() => {
+    if (tenantId && !authLoading) fetchOrders();
+  }, [tenantId, authLoading, fetchOrders]);
 
   const exportCSV = () => {
     if (orders.length === 0) return;
@@ -94,16 +101,35 @@ export default function OrdersPage() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10 max-w-7xl mx-auto px-1">
         <div className="space-y-1">
           <h2 className="text-3xl md:text-4xl font-black text-primary uppercase tracking-tighter italic leading-none">Histórico de Vendas</h2>
-          <p className="text-sm md:text-base text-muted-foreground font-medium italic">Gerencie e acompanhe todos os tickets gerados.</p>
+          <p className="text-sm md:text-base text-muted-foreground font-medium italic">Reimprima fichas ou exporte relatórios.</p>
         </div>
-        <Button 
-          onClick={exportCSV} 
-          variant="outline" 
-          className="w-full md:w-auto font-black uppercase rounded-2xl h-14 px-8 shadow-xl shadow-primary/5 border-primary/10 transition-all hover:scale-[1.02] active:scale-95 bg-card" 
-          disabled={orders.length === 0}
-        >
-          <Download className="mr-3 h-5 w-5 text-primary" /> Exportar Planilha
-        </Button>
+        
+        <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+          <div className="flex items-center gap-2 bg-card border border-primary/10 rounded-2xl px-4 h-14 shadow-sm">
+            <Filter className="h-4 w-4 text-primary" />
+            <span className="text-[10px] font-black uppercase text-muted-foreground tracking-widest whitespace-nowrap">Ver últimos:</span>
+            <Select value={ordersLimit} onValueChange={setOrdersLimit}>
+              <SelectTrigger className="border-none bg-transparent shadow-none font-black text-primary w-[80px] focus:ring-0">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="rounded-2xl border-none shadow-2xl">
+                <SelectItem value="5" className="font-bold uppercase text-xs">5</SelectItem>
+                <SelectItem value="20" className="font-bold uppercase text-xs">20</SelectItem>
+                <SelectItem value="30" className="font-bold uppercase text-xs">30</SelectItem>
+                <SelectItem value="100" className="font-bold uppercase text-xs">100</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <Button 
+            onClick={exportCSV} 
+            variant="outline" 
+            className="flex-1 sm:flex-none font-black uppercase rounded-2xl h-14 px-8 shadow-xl shadow-primary/5 border-primary/10 transition-all hover:scale-[1.02] active:scale-95 bg-card" 
+            disabled={orders.length === 0}
+          >
+            <Download className="mr-3 h-5 w-5 text-primary" /> Exportar CSV
+          </Button>
+        </div>
       </div>
 
       <div className="rounded-[2rem] md:rounded-[2.5rem] border border-primary/5 bg-card shadow-2xl overflow-hidden max-w-7xl mx-auto">
