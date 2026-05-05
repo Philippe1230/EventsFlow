@@ -1,4 +1,3 @@
-
 "use client";
 
 import { AppShell } from '@/components/layout/AppShell';
@@ -83,7 +82,6 @@ export default function OrdersPage() {
 
     setPrintableTickets(tickets);
     
-    // Pequeno delay para garantir que o DOM de impressão foi populado
     setTimeout(() => {
       window.print();
       setPrintableTickets([]);
@@ -92,84 +90,106 @@ export default function OrdersPage() {
 
   return (
     <AppShell>
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10 max-w-7xl mx-auto">
         <div>
-          <h2 className="text-3xl font-black text-primary uppercase">Histórico de Pedidos</h2>
-          <p className="text-muted-foreground font-medium italic">Gerencie e acompanhe todas as vendas do evento.</p>
+          <h2 className="text-3xl font-black text-primary uppercase tracking-tighter italic">Histórico de Vendas</h2>
+          <p className="text-muted-foreground font-medium italic">Gerencie e acompanhe todos os tickets gerados.</p>
         </div>
-        <Button onClick={exportCSV} variant="outline" className="font-bold rounded-xl h-12 px-6 border-primary/20" disabled={orders.length === 0}>
-          <Download className="mr-2 h-4 w-4 text-primary" /> Exportar CSV
+        <Button 
+          onClick={exportCSV} 
+          variant="outline" 
+          className="w-full md:w-auto font-black uppercase rounded-2xl h-14 px-8 shadow-xl shadow-primary/5 border-primary/10 transition-all hover:scale-[1.02] active:scale-95" 
+          disabled={orders.length === 0}
+        >
+          <Download className="mr-3 h-5 w-5 text-primary" /> Exportar Planilha
         </Button>
       </div>
 
-      <div className="rounded-[2rem] border border-primary/5 bg-card shadow-xl overflow-hidden">
-        <Table>
-          <TableHeader className="bg-muted/50">
-            <TableRow className="hover:bg-transparent border-primary/5">
-              <TableHead className="font-black uppercase text-[10px] py-6">Número</TableHead>
-              <TableHead className="font-black uppercase text-[10px]">Data/Hora</TableHead>
-              <TableHead className="font-black uppercase text-[10px]">Itens</TableHead>
-              <TableHead className="font-black uppercase text-[10px]">Pagamento</TableHead>
-              <TableHead className="text-right font-black uppercase text-[10px]">Total</TableHead>
-              <TableHead className="text-right font-black uppercase text-[10px]">Ações</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {loading ? (
-              <TableRow>
-                <TableCell colSpan={6} className="text-center py-20">
-                  <div className="flex flex-col items-center gap-4">
-                    <Loader2 className="h-10 w-10 animate-spin text-primary" />
-                    <span className="font-black uppercase text-[10px] tracking-widest text-primary/40">Carregando Histórico...</span>
-                  </div>
-                </TableCell>
+      <div className="rounded-[2.5rem] border border-primary/5 bg-card shadow-2xl overflow-hidden max-w-7xl mx-auto">
+        <div className="overflow-x-auto scrollbar-hide">
+          <Table className="min-w-[800px]">
+            <TableHeader className="bg-muted/30">
+              <TableRow className="hover:bg-transparent border-primary/5">
+                <TableHead className="font-black uppercase text-[10px] py-6 pl-8 tracking-widest">Ticket</TableHead>
+                <TableHead className="font-black uppercase text-[10px] tracking-widest">Data & Hora</TableHead>
+                <TableHead className="font-black uppercase text-[10px] tracking-widest">Produtos Vendidos</TableHead>
+                <TableHead className="font-black uppercase text-[10px] tracking-widest">Pagamento</TableHead>
+                <TableHead className="text-right font-black uppercase text-[10px] tracking-widest">Faturado</TableHead>
+                <TableHead className="text-right font-black uppercase text-[10px] tracking-widest pr-8">Ações</TableHead>
               </TableRow>
-            ) : orders.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={6} className="text-center py-20 text-muted-foreground">
-                  <div className="flex flex-col items-center gap-2">
-                    <span className="font-black uppercase text-sm">Nenhum pedido encontrado</span>
-                    <span className="text-xs italic font-medium">As vendas realizadas aparecerão aqui.</span>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ) : (
-              orders.map((o) => (
-                <TableRow key={o.id} className="border-primary/5 hover:bg-primary/5 transition-colors group">
-                  <TableCell className="font-black text-primary">#{o.orderNumber}</TableCell>
-                  <TableCell className="font-bold text-muted-foreground text-xs">
-                    {format(o.createdAt instanceof Timestamp ? o.createdAt.toDate() : new Date(o.createdAt), 'dd/MM/yyyy HH:mm')}
-                  </TableCell>
-                  <TableCell className="max-w-[250px]">
-                    <div className="flex flex-wrap gap-1">
-                      {o.items.map((item, idx) => (
-                        <Badge key={idx} variant="secondary" className="text-[9px] font-black uppercase bg-primary/5 text-primary border-none py-1">
-                          {item.quantity}x {item.name}
-                        </Badge>
-                      ))}
+            </TableHeader>
+            <TableBody>
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center py-24">
+                    <div className="flex flex-col items-center gap-4">
+                      <Loader2 className="h-12 w-12 animate-spin text-primary opacity-20" />
+                      <span className="font-black uppercase text-[10px] tracking-[0.3em] text-primary/40">Sincronizando Histórico...</span>
                     </div>
                   </TableCell>
-                  <TableCell className="uppercase text-[10px] font-black tracking-widest text-muted-foreground">{o.paymentMethod}</TableCell>
-                  <TableCell className="text-right font-black text-lg text-primary tracking-tighter">R$ {o.total.toFixed(2)}</TableCell>
-                  <TableCell className="text-right">
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      onClick={() => handleReprint(o)}
-                      className="h-10 w-10 rounded-xl text-primary/40 hover:text-primary hover:bg-primary/10"
-                      title="Reimprimir Fichas"
-                    >
-                      <Printer className="h-5 w-5" />
-                    </Button>
+                </TableRow>
+              ) : orders.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center py-24 text-muted-foreground">
+                    <div className="flex flex-col items-center gap-4">
+                      <div className="bg-primary/5 p-6 rounded-[2rem]">
+                        <Printer className="h-12 w-12 text-primary/20" />
+                      </div>
+                      <div className="space-y-1">
+                        <span className="font-black uppercase text-sm block">Vazio por enquanto</span>
+                        <span className="text-[10px] uppercase font-bold tracking-widest opacity-40">As vendas aparecerão aqui em tempo real</span>
+                      </div>
+                    </div>
                   </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+              ) : (
+                orders.map((o) => (
+                  <TableRow key={o.id} className="border-primary/5 hover:bg-primary/5 transition-all duration-300 group">
+                    <TableCell className="py-6 pl-8">
+                      <div className="flex flex-col">
+                        <span className="font-black text-primary text-base">#{o.orderNumber}</span>
+                        <span className="text-[9px] font-bold text-muted-foreground uppercase">Ref: {o.id.substring(0, 5)}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="font-bold text-muted-foreground text-xs whitespace-nowrap">
+                      {format(o.createdAt instanceof Timestamp ? o.createdAt.toDate() : new Date(o.createdAt), 'dd/MM/yyyy HH:mm')}
+                    </TableCell>
+                    <TableCell className="max-w-[300px]">
+                      <div className="flex flex-wrap gap-2">
+                        {o.items.map((item, idx) => (
+                          <Badge key={idx} variant="secondary" className="text-[9px] font-black uppercase bg-primary/5 text-primary border-none py-1.5 px-3 rounded-xl shadow-sm">
+                            {item.quantity}x {item.name}
+                          </Badge>
+                        ))}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="uppercase text-[9px] font-black tracking-widest border-primary/10 text-muted-foreground bg-muted/20 px-3 py-1.5">
+                        {o.paymentMethod}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right font-black text-xl text-primary tracking-tighter">
+                      R$ {o.total.toFixed(2)}
+                    </TableCell>
+                    <TableCell className="text-right pr-8">
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        onClick={() => handleReprint(o)}
+                        className="h-12 w-12 rounded-2xl text-primary/40 hover:text-primary hover:bg-primary/10 transition-all hover:scale-110 shadow-sm"
+                        title="Reimprimir Fichas"
+                      >
+                        <Printer className="h-6 w-6" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
       </div>
 
-      {/* Componente Invisível para Impressão */}
       <PrintTickets tickets={printableTickets} />
     </AppShell>
   );
