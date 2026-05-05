@@ -4,10 +4,11 @@
 import React, { useMemo } from 'react';
 import { SidebarProvider, Sidebar, SidebarContent, SidebarHeader, SidebarFooter, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import { useAuth } from '@/hooks/use-auth-context';
-import { LayoutDashboard, ShoppingCart, Package, ListOrdered, LogOut, Users, BarChart3, ShieldCheck, User, Settings2 } from 'lucide-react';
+import { LayoutDashboard, ShoppingCart, Package, ListOrdered, LogOut, Users, BarChart3, ShieldCheck, User, Settings2, WifiOff, Wifi } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
 
 export const OrderTicketIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
@@ -47,7 +48,7 @@ const LoadingJunina = () => (
 );
 
 export function AppShell({ children }: { children: React.ReactNode }) {
-  const { user, loading, organizationName, signOut, role, isSuperAdmin } = useAuth();
+  const { user, loading, organizationName, signOut, role, isSuperAdmin, isOnline } = useAuth();
   const pathname = usePathname();
 
   const isInitialLoading = loading && !user;
@@ -140,11 +141,25 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </SidebarFooter>
       </Sidebar>
       <SidebarInset className="bg-background">
-        <header className="flex h-16 items-center gap-4 border-b bg-card/50 backdrop-blur-sm px-4 md:px-6 no-print shadow-sm sticky top-0 z-40">
-          <SidebarTrigger className="text-primary" />
-          <h1 className="text-base md:text-lg font-black text-primary uppercase tracking-tighter truncate">
-            {navItems[activeIndex]?.name || 'Menu'}
-          </h1>
+        <header className="flex h-16 items-center justify-between border-b bg-card/50 backdrop-blur-sm px-4 md:px-6 no-print shadow-sm sticky top-0 z-40">
+          <div className="flex items-center gap-4">
+            <SidebarTrigger className="text-primary" />
+            <h1 className="text-base md:text-lg font-black text-primary uppercase tracking-tighter truncate">
+              {navItems[activeIndex]?.name || 'Menu'}
+            </h1>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            {!isOnline ? (
+              <Badge variant="destructive" className="font-black uppercase text-[9px] tracking-widest flex items-center gap-1.5 px-3 py-1 animate-pulse">
+                <WifiOff className="h-3 w-3" /> Modo Offline
+              </Badge>
+            ) : (
+              <Badge variant="outline" className="font-black uppercase text-[9px] tracking-widest flex items-center gap-1.5 px-3 py-1 border-primary/20 text-primary/40">
+                <Wifi className="h-3 w-3" /> Online
+              </Badge>
+            )}
+          </div>
         </header>
         <main className="flex-1 p-4 md:p-10">
           {children}

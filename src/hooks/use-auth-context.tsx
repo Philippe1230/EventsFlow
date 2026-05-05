@@ -2,7 +2,7 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState, useMemo } from 'react';
-import { User, signOut as firebaseSignOut } from 'firebase/auth';
+import { User, signOut as firebaseSignOut, onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc, collection, query, getDocs, limit } from 'firebase/firestore';
 import { useAuth as useFirebaseAuth, useFirestore, useUser } from '@/firebase';
 import { useRouter, usePathname } from 'next/navigation';
@@ -10,6 +10,7 @@ import { useRouter, usePathname } from 'next/navigation';
 interface AuthContextType {
   user: User | null;
   loading: boolean;
+  isOnline: boolean;
   tenantId: string | null;
   organizationName: string | null;
   tenantMembers: Record<string, any> | null;
@@ -23,26 +24,39 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const auth = useFirebaseAuth();
   const db = useFirestore();
-  const { user, isUserLoading } = useUser();
+  const { user: firebaseUser, isUserLoading } = useUser();
   const router = useRouter();
   const pathname = usePathname();
 
   const [loading, setLoading] = useState(true);
+  const [isOnline, setIsOnline] = useState(true);
   const [tenantId, setTenantId] = useState<string | null>(null);
   const [organizationName, setOrganizationName] = useState<string | null>(null);
   const [tenantMembers, setTenantMembers] = useState<Record<string, any> | null>(null);
   const [role, setRole] = useState<'owner' | 'cashier' | 'super-admin' | null>(null);
 
-  const isSuperAdmin = useMemo(() => user?.email === 'flowevents@gmail.com', [user?.email]);
+  // Monitorar status da internet
+  useEffect(() => {
+    setIsOnline(navigator.onLine);
+    const goOnline = () => setIsOnline(true);
+    const goOffline = () => setIsOnline(false);
 
-  // Carrega o contexto apenas quando o usuário muda (login/logout)
+    window.addEventListener('online', goOnline);
+    window.addEventListener('offline', goOffline);
+
+    return () => {
+      window.removeEventListener('online', goOnline);
+      window.removeEventListener('offline', goOffline);
+    };
+  }, []);
+
+  const isSuperAdmin = useMemo(() => firebaseUser?.email === 'flowevents@gmail.com', [firebaseUser?.email]);
+
   useEffect(() => {
     async function loadUserContext() {
-      // Se ainda está carregando o auth básico, não faz nada
       if (isUserLoading) return;
 
-      // Se não tem usuário, limpa tudo e manda pro login (se não estiver em rotas públicas)
-      if (!user) {
+      if (!firebaseUser) {
         setTenantId(null);
         setOrganizationName(null);
         setTenantMembers(null);
@@ -55,10 +69,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      // Se já temos os dados carregados para este usuário, não busca de novo ao navegar
-      if (tenantId || role) {
-        setLoading(false);
-        return;
+      // Tenta carregar do cache local primeiro para velocidade e suporte offline
+      const cachedTenantId = localStorage.getItem(`tenantId_${firebaseUser.uid}`);
+      const cachedRole = localStorage.getItem(`role_${firebaseUser.uid}`) as any;
+      const cachedOrgName = localStorage.getItem(`orgName_${firebaseUser.uid}`);
+
+      if (cachedTenantId && cachedRole) {
+        setTenantId(cachedTenantId);
+        setRole(cachedRole);
+        setOrganizationName(cachedOrgName);
+        // Mesmo com cache, tentamos atualizar se estivermos online
       }
 
       try {
@@ -69,7 +89,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           return;
         }
 
-        const membershipsRef = collection(db, 'userProfiles', user.uid, 'memberships');
+        // Se offline e temos cache, não bloqueamos o carregamento
+        if (!navigator.onLine && cachedTenantId) {
+          setLoading(false);
+          return;
+        }
+
+        const membershipsRef = collection(db, 'userProfiles', firebaseUser.uid, 'memberships');
         let membershipsSnap = await getDocs(query(membershipsRef, limit(1)));
         
         if (!membershipsSnap.empty) {
@@ -77,6 +103,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const tId = mData.tenantId;
           
           setTenantId(tId);
+          localStorage.setItem(`tenantId_${firebaseUser.uid}`, tId);
 
           const tenantRef = doc(db, 'tenants', tId);
           const tenantSnap = await getDoc(tenantRef);
@@ -86,27 +113,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setOrganizationName(data.name);
             setTenantMembers(data.members || null);
             
-            const memberInfo = data.members?.[user.uid];
+            const memberInfo = data.members?.[firebaseUser.uid];
             const userRole = typeof memberInfo === 'object' ? memberInfo.role : memberInfo;
-            setRole(userRole || 'cashier');
+            const finalRole = userRole || 'cashier';
+            
+            setRole(finalRole);
+            localStorage.setItem(`role_${firebaseUser.uid}`, finalRole);
+            localStorage.setItem(`orgName_${firebaseUser.uid}`, data.name);
           }
-        } else {
-          // Se não tem membership e não é super-admin, manda registrar evento
+        } else if (navigator.onLine) {
           if (pathname !== '/register' && pathname !== '/login') {
             router.push('/register');
           }
         }
       } catch (error) {
-        console.error("Erro ao carregar contexto de autenticação:", error);
+        console.warn("Aviso: Carregando em modo limitado (Offline ou Erro):", error);
       } finally {
         setLoading(false);
       }
     }
 
     loadUserContext();
-  }, [user, isUserLoading, db, isSuperAdmin, router]); // Removido pathname para evitar recarga em navegação
+  }, [firebaseUser, isUserLoading, db, isSuperAdmin, router, pathname]);
 
   const signOut = async () => {
+    if (firebaseUser) {
+      localStorage.removeItem(`tenantId_${firebaseUser.uid}`);
+      localStorage.removeItem(`role_${firebaseUser.uid}`);
+      localStorage.removeItem(`orgName_${firebaseUser.uid}`);
+    }
     await firebaseSignOut(auth);
     setTenantId(null);
     setOrganizationName(null);
@@ -116,15 +151,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const contextValue = useMemo(() => ({
-    user,
+    user: firebaseUser,
     loading: isUserLoading || loading,
+    isOnline,
     tenantId,
     organizationName,
     tenantMembers,
     role,
     isSuperAdmin,
     signOut
-  }), [user, isUserLoading, loading, tenantId, organizationName, tenantMembers, role, isSuperAdmin]);
+  }), [firebaseUser, isUserLoading, loading, isOnline, tenantId, organizationName, tenantMembers, role, isSuperAdmin]);
 
   return (
     <AuthContext.Provider value={contextValue}>
