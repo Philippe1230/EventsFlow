@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -62,8 +61,8 @@ export default function LoginPage() {
       console.error("Erro no login:", error.code);
       let message = "E-mail ou senha incorretos.";
       
-      if (error.code === 'auth/user-not-found') {
-        message = "Usuário não encontrado.";
+      if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
+        message = "Usuário ou senha inválidos.";
       } else if (error.code === 'auth/wrong-password') {
         message = "Senha incorreta.";
       } else if (error.code === 'auth/network-request-failed') {

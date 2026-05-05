@@ -2,7 +2,7 @@
 
 import { firebaseConfig } from '@/firebase/config';
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
-import { getAuth, Auth } from 'firebase/auth';
+import { getAuth, Auth, setPersistence, browserLocalPersistence } from 'firebase/auth';
 import { getFirestore, Firestore, enableIndexedDbPersistence } from 'firebase/firestore';
 
 // Singleton instances to prevent multiple initializations
@@ -24,12 +24,16 @@ export function initializeFirebase() {
   }
 
   // Initialize services only if they don't exist
-  if (!auth) auth = getAuth(firebaseApp);
+  if (!auth) {
+    auth = getAuth(firebaseApp);
+    // Garante que a sessão do usuário seja salva permanentemente no navegador
+    setPersistence(auth, browserLocalPersistence).catch(console.error);
+  }
   
   if (!firestore) {
     firestore = getFirestore(firebaseApp);
     
-    // Habilita persistência offline apenas no lado do cliente (browser)
+    // Habilita persistência offline robusta
     if (typeof window !== 'undefined') {
       enableIndexedDbPersistence(firestore).catch((err) => {
         if (err.code === 'failed-precondition') {

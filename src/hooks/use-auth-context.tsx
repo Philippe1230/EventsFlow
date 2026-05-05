@@ -1,8 +1,7 @@
-
 "use client";
 
 import React, { createContext, useContext, useEffect, useState, useMemo } from 'react';
-import { User, signOut as firebaseSignOut, onAuthStateChanged } from 'firebase/auth';
+import { User, signOut as firebaseSignOut } from 'firebase/auth';
 import { doc, getDoc, collection, query, getDocs, limit } from 'firebase/firestore';
 import { useAuth as useFirebaseAuth, useFirestore, useUser } from '@/firebase';
 import { useRouter, usePathname } from 'next/navigation';
@@ -69,18 +68,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      // Tenta carregar do cache local primeiro para velocidade e suporte offline
+      // 1. Tenta carregar do cache local IMEDIATAMENTE para ser ultra rápido
       const cachedTenantId = localStorage.getItem(`tenantId_${firebaseUser.uid}`);
       const cachedRole = localStorage.getItem(`role_${firebaseUser.uid}`) as any;
       const cachedOrgName = localStorage.getItem(`orgName_${firebaseUser.uid}`);
+      const cachedMembers = localStorage.getItem(`members_${firebaseUser.uid}`);
 
       if (cachedTenantId && cachedRole) {
         setTenantId(cachedTenantId);
         setRole(cachedRole);
         setOrganizationName(cachedOrgName);
-        // Mesmo com cache, tentamos atualizar se estivermos online
+        if (cachedMembers) setTenantMembers(JSON.parse(cachedMembers));
+        
+        // Se estiver offline, já para por aqui e libera a tela
+        if (!navigator.onLine) {
+          setLoading(false);
+          return;
+        }
       }
 
+      // 2. Tenta atualizar os dados se estiver online ou se não houver cache
       try {
         if (isSuperAdmin) {
           setRole('super-admin');
@@ -89,14 +96,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           return;
         }
 
-        // Se offline e temos cache, não bloqueamos o carregamento
-        if (!navigator.onLine && cachedTenantId) {
-          setLoading(false);
-          return;
-        }
-
         const membershipsRef = collection(db, 'userProfiles', firebaseUser.uid, 'memberships');
-        let membershipsSnap = await getDocs(query(membershipsRef, limit(1)));
+        const membershipsSnap = await getDocs(query(membershipsRef, limit(1)));
         
         if (!membershipsSnap.empty) {
           const mData = membershipsSnap.docs[0].data();
@@ -118,16 +119,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             const finalRole = userRole || 'cashier';
             
             setRole(finalRole);
+            
+            // Atualiza o cache para o próximo uso offline
             localStorage.setItem(`role_${firebaseUser.uid}`, finalRole);
             localStorage.setItem(`orgName_${firebaseUser.uid}`, data.name);
+            localStorage.setItem(`members_${firebaseUser.uid}`, JSON.stringify(data.members || {}));
           }
-        } else if (navigator.onLine) {
+        } else if (navigator.onLine && !cachedTenantId) {
+          // Se não tem nem cache nem membership online, vai para o registro
           if (pathname !== '/register' && pathname !== '/login') {
             router.push('/register');
           }
         }
       } catch (error) {
-        console.warn("Aviso: Carregando em modo limitado (Offline ou Erro):", error);
+        console.warn("Aviso: Rodando com dados de cache devido a erro ou falta de rede.");
       } finally {
         setLoading(false);
       }
@@ -141,6 +146,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       localStorage.removeItem(`tenantId_${firebaseUser.uid}`);
       localStorage.removeItem(`role_${firebaseUser.uid}`);
       localStorage.removeItem(`orgName_${firebaseUser.uid}`);
+      localStorage.removeItem(`members_${firebaseUser.uid}`);
     }
     await firebaseSignOut(auth);
     setTenantId(null);
