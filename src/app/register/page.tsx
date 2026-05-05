@@ -34,6 +34,7 @@ export default function RegisterPage() {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
+      // Criar Perfil de Usuário
       await setDoc(doc(db, 'userProfiles', user.uid), {
         id: user.uid,
         email: user.email,
@@ -41,6 +42,17 @@ export default function RegisterPage() {
         createdAt: new Date()
       });
 
+      // Lógica Especial para o Super Admin
+      if (email.toLowerCase() === 'flowevents@gmail.com') {
+        toast({ 
+          title: "Fundador Registrado!", 
+          description: "Acesso mestre concedido. Bem-vindo ao Controle Global." 
+        });
+        router.push('/super-admin');
+        return;
+      }
+
+      // Lógica Normal para outros usuários (Criação de Evento)
       const tenantRef = await addDoc(collection(db, 'tenants'), {
         name: orgName,
         createdAt: new Date(),
@@ -60,9 +72,10 @@ export default function RegisterPage() {
         joinedAt: new Date()
       });
 
+      // Produtos iniciais de exemplo
       const initialProducts = [
-        { name: 'Produto Exemplo A', price: 10.0, category: 'Geral', active: true, tenantId: tenantRef.id, createdAt: new Date() },
-        { name: 'Produto Exemplo B', price: 5.0, category: 'Geral', active: true, tenantId: tenantRef.id, createdAt: new Date() },
+        { name: 'Água Mineral', price: 5.0, category: 'Bebidas', active: true, tenantId: tenantRef.id, createdAt: new Date() },
+        { name: 'Cerveja Lata', price: 12.0, category: 'Bebidas', active: true, tenantId: tenantRef.id, createdAt: new Date() },
       ];
 
       for (const p of initialProducts) {
@@ -73,7 +86,11 @@ export default function RegisterPage() {
       router.push('/');
     } catch (error: any) {
       console.error(error);
-      toast({ title: "Erro no registro", description: error.message, variant: "destructive" });
+      let message = "Erro ao criar conta.";
+      if (error.code === 'auth/email-already-in-use') {
+        message = "Este e-mail já está em uso.";
+      }
+      toast({ title: "Erro no registro", description: message, variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -105,17 +122,6 @@ export default function RegisterPage() {
               />
             </div>
             <div className="space-y-1">
-              <Label htmlFor="orgName" className="font-black uppercase text-[10px] ml-1 text-muted-foreground">Nome do Evento</Label>
-              <Input 
-                id="orgName" 
-                placeholder="Ex: Festival de Verão" 
-                value={orgName} 
-                onChange={(e) => setOrgName(e.target.value)} 
-                required 
-                className="h-12 rounded-xl border-primary/10 bg-muted/20 font-bold px-5"
-              />
-            </div>
-            <div className="space-y-1">
               <Label htmlFor="email" className="font-black uppercase text-[10px] ml-1 text-muted-foreground">E-mail</Label>
               <Input 
                 id="email" 
@@ -127,6 +133,19 @@ export default function RegisterPage() {
                 className="h-12 rounded-xl border-primary/10 bg-muted/20 font-bold px-5"
               />
             </div>
+            {email.toLowerCase() !== 'flowevents@gmail.com' && (
+              <div className="space-y-1">
+                <Label htmlFor="orgName" className="font-black uppercase text-[10px] ml-1 text-muted-foreground">Nome do Evento</Label>
+                <Input 
+                  id="orgName" 
+                  placeholder="Ex: Festival de Verão" 
+                  value={orgName} 
+                  onChange={(e) => setOrgName(e.target.value)} 
+                  required 
+                  className="h-12 rounded-xl border-primary/10 bg-muted/20 font-bold px-5"
+                />
+              </div>
+            )}
             <div className="space-y-1">
               <Label htmlFor="password" className="font-black uppercase text-[10px] ml-1 text-muted-foreground">Senha</Label>
               <Input 

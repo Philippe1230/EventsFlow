@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2 } from 'lucide-react';
+import { Loader2, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 import { OrderTicketIcon } from '@/components/layout/AppShell';
 
@@ -28,13 +28,28 @@ export default function LoginPage() {
     try {
       await signInWithEmailAndPassword(auth, email, password);
       toast({ title: "Bem-vindo de volta!", description: "Entrando no Flow Events..." });
-      router.push('/');
-    } catch (error: any) {
-      let message = "Erro ao entrar. Verifique seus dados.";
-      if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
-        message = "E-mail ou senha incorretos.";
+      
+      // Se for o Master, força redirecionamento para o Painel Global
+      if (email.toLowerCase() === 'flowevents@gmail.com') {
+        router.push('/super-admin');
+      } else {
+        router.push('/');
       }
-      toast({ title: "Erro no login", description: message, variant: "destructive" });
+    } catch (error: any) {
+      console.error("Erro no login:", error.code);
+      let message = "E-mail ou senha incorretos.";
+      
+      if (error.code === 'auth/user-not-found') {
+        message = "Usuário não encontrado. Se for seu primeiro acesso, use a tela de Registro.";
+      } else if (error.code === 'auth/wrong-password') {
+        message = "Senha incorreta. Verifique suas credenciais.";
+      }
+      
+      toast({ 
+        title: "Erro no acesso", 
+        description: message, 
+        variant: "destructive" 
+      });
     } finally {
       setLoading(false);
     }
@@ -77,6 +92,15 @@ export default function LoginPage() {
                 className="h-14 rounded-2xl border-primary/10 focus:border-primary bg-muted/30 font-bold px-6"
               />
             </div>
+
+            {email.toLowerCase() === 'flowevents@gmail.com' && (
+              <div className="flex items-start gap-2 p-3 bg-primary/5 border border-primary/10 rounded-xl">
+                <AlertCircle className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                <p className="text-[10px] font-bold text-primary uppercase leading-tight tracking-tight">
+                  Atenção Fundador: Caso não tenha criado sua conta ainda, vá em "Crie seu Evento".
+                </p>
+              </div>
+            )}
           </CardContent>
           <CardFooter className="flex flex-col gap-6 p-6 sm:p-10">
             <Button type="submit" className="w-full h-16 font-black uppercase text-lg rounded-2xl shadow-2xl shadow-primary/30 transition-all hover:scale-[1.02] active:scale-95" disabled={loading}>
