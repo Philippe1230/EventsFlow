@@ -5,7 +5,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: 'Flow Events - Gestão de Vendas',
     short_name: 'Flow Events',
-    description: 'Gestão de vendas ultra rápida para eventos com suporte PWA',
+    description: 'Sistema de vendas ultra rápida para eventos e festivais com suporte a impressão térmica PWA.',
     start_url: '/',
     display: 'standalone',
     background_color: '#fff9f5',

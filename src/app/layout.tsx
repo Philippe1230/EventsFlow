@@ -6,8 +6,23 @@ import { AuthProvider } from '@/hooks/use-auth-context';
 import { Toaster } from '@/components/ui/toaster';
 
 export const metadata: Metadata = {
-  title: 'Flow Events - Vendas e Fichas',
-  description: 'Controle de vendas ultra rápido para eventos e festivais',
+  title: 'Flow Events - Gestão de Vendas Ultra Rápida',
+  description: 'Controle de vendas, fichas e dashboards em tempo real para eventos, bares e festivais. O PDV mais rápido do mercado.',
+  keywords: ['gestão de eventos', 'pdv para eventos', 'fichas de consumo', 'automação bar', 'venda de tickets'],
+  authors: [{ name: 'Flow Events' }],
+  openGraph: {
+    title: 'Flow Events - Sistema de Vendas e Fichas',
+    description: 'Transforme a operação do seu evento com vendas em segundos e impressão térmica profissional.',
+    url: 'https://flowevents.com.br',
+    siteName: 'Flow Events',
+    locale: 'pt_BR',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Flow Events',
+    description: 'O controle total do seu evento na palma da mão.',
+  },
   icons: {
     icon: [
       {
@@ -53,7 +68,6 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-        <link rel="manifest" href="/manifest.webmanifest" />
       </head>
       <body className="font-body antialiased bg-background text-foreground overflow-x-hidden selection:bg-primary/20 selection:text-primary">
         <FirebaseClientProvider>
