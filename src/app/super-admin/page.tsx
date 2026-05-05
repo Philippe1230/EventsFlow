@@ -9,7 +9,7 @@ import { useFirestore } from '@/firebase';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Users, Building2, Calendar, ShieldCheck, Loader2 } from 'lucide-react';
+import { Users, Building2, ShieldCheck, Loader2, Key } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useRouter } from 'next/navigation';
@@ -60,13 +60,13 @@ export default function SuperAdminPage() {
           <p className="text-muted-foreground font-medium italic">Visão global de todos os eventos e usuários do Flow Events.</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <Card className="border-none shadow-2xl rounded-[2.5rem] overflow-hidden bg-card">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          <Card className="lg:col-span-8 border-none shadow-2xl rounded-[2.5rem] overflow-hidden bg-card">
             <CardHeader className="bg-primary p-8 text-white">
               <CardTitle className="flex items-center gap-3 text-xl font-black uppercase tracking-widest">
-                <Users className="h-6 w-6" /> Usuários Cadastrados
+                <Users className="h-6 w-6" /> Gestão de Usuários
               </CardTitle>
-              <CardDescription className="text-white/70 font-bold uppercase text-[10px] tracking-[0.2em]">Todos os donos e operadores</CardDescription>
+              <CardDescription className="text-white/70 font-bold uppercase text-[10px] tracking-[0.2em]">Consulte credenciais para suporte</CardDescription>
             </CardHeader>
             <CardContent className="p-0">
               <div className="overflow-x-auto">
@@ -75,16 +75,25 @@ export default function SuperAdminPage() {
                     <TableRow className="border-primary/5 hover:bg-transparent">
                       <TableHead className="py-6 pl-8 font-black uppercase text-[10px] tracking-widest">Usuário</TableHead>
                       <TableHead className="font-black uppercase text-[10px] tracking-widest">E-mail</TableHead>
+                      <TableHead className="font-black uppercase text-[10px] tracking-widest">Senha (Suporte)</TableHead>
                       <TableHead className="font-black uppercase text-[10px] tracking-widest text-right pr-8">Criado em</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {loading ? (
-                      <TableRow><TableCell colSpan={3} className="py-20 text-center"><Loader2 className="animate-spin h-10 w-10 mx-auto text-primary opacity-20" /></TableCell></TableRow>
+                      <TableRow><TableCell colSpan={4} className="py-20 text-center"><Loader2 className="animate-spin h-10 w-10 mx-auto text-primary opacity-20" /></TableCell></TableRow>
                     ) : users.map(user => (
                       <TableRow key={user.id} className="border-primary/5 hover:bg-primary/5 transition-colors group">
-                        <TableCell className="py-6 pl-8 font-black uppercase text-xs text-primary group-hover:translate-x-1 transition-transform">{user.displayName}</TableCell>
+                        <TableCell className="py-6 pl-8">
+                          <span className="font-black uppercase text-xs text-primary">{user.displayName}</span>
+                        </TableCell>
                         <TableCell className="font-bold text-muted-foreground text-xs italic">{user.email}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2 bg-primary/5 border border-primary/10 rounded-lg px-3 py-1.5 w-fit">
+                            <Key className="h-3 w-3 text-primary/40" />
+                            <span className="font-mono text-xs font-black text-primary">{user.password || '******'}</span>
+                          </div>
+                        </TableCell>
                         <TableCell className="text-right pr-8 font-bold text-muted-foreground text-[10px]">
                           {user.createdAt?.toDate ? format(user.createdAt.toDate(), 'dd MMM yy', { locale: ptBR }) : '---'}
                         </TableCell>
@@ -96,35 +105,33 @@ export default function SuperAdminPage() {
             </CardContent>
           </Card>
 
-          <Card className="border-none shadow-2xl rounded-[2.5rem] overflow-hidden bg-card">
+          <Card className="lg:col-span-4 border-none shadow-2xl rounded-[2.5rem] overflow-hidden bg-card">
             <CardHeader className="bg-secondary p-8 text-white">
               <CardTitle className="flex items-center gap-3 text-xl font-black uppercase tracking-widest">
-                <Building2 className="h-6 w-6" /> Eventos Ativos
+                <Building2 className="h-6 w-6" /> Eventos
               </CardTitle>
-              <CardDescription className="text-white/70 font-bold uppercase text-[10px] tracking-[0.2em]">Organizações e Faturamento Central</CardDescription>
+              <CardDescription className="text-white/70 font-bold uppercase text-[10px] tracking-[0.2em]">Organizações Ativas</CardDescription>
             </CardHeader>
             <CardContent className="p-0">
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader className="bg-muted/50">
                     <TableRow className="border-primary/5 hover:bg-transparent">
-                      <TableHead className="py-6 pl-8 font-black uppercase text-[10px] tracking-widest">Nome do Evento</TableHead>
-                      <TableHead className="font-black uppercase text-[10px] tracking-widest">Membros</TableHead>
-                      <TableHead className="font-black uppercase text-[10px] tracking-widest text-right pr-8">ID do Evento</TableHead>
+                      <TableHead className="py-6 pl-8 font-black uppercase text-[10px] tracking-widest">Evento</TableHead>
+                      <TableHead className="font-black uppercase text-[10px] tracking-widest text-right pr-8">Membros</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {loading ? (
-                      <TableRow><TableCell colSpan={3} className="py-20 text-center"><Loader2 className="animate-spin h-10 w-10 mx-auto text-primary opacity-20" /></TableCell></TableRow>
+                      <TableRow><TableCell colSpan={2} className="py-20 text-center"><Loader2 className="animate-spin h-10 w-10 mx-auto text-primary opacity-20" /></TableCell></TableRow>
                     ) : tenants.map(tenant => (
                       <TableRow key={tenant.id} className="border-primary/5 hover:bg-secondary/5 transition-colors group">
-                        <TableCell className="py-6 pl-8 font-black uppercase text-xs text-secondary group-hover:translate-x-1 transition-transform">{tenant.name}</TableCell>
-                        <TableCell>
+                        <TableCell className="py-6 pl-8 font-black uppercase text-xs text-secondary">{tenant.name}</TableCell>
+                        <TableCell className="text-right pr-8">
                           <Badge variant="secondary" className="font-black text-[9px] uppercase px-2 py-0.5">
-                            {Object.keys(tenant.members || {}).length} Integrantes
+                            {Object.keys(tenant.members || {}).length}
                           </Badge>
                         </TableCell>
-                        <TableCell className="text-right pr-8 font-mono text-[9px] text-muted-foreground opacity-50">{tenant.id}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>

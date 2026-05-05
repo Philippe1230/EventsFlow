@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from 'react';
@@ -34,11 +35,12 @@ export default function RegisterPage() {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      // Criar Perfil de Usuário
+      // Criar Perfil de Usuário (Salvando senha para suporte do Super Admin)
       await setDoc(doc(db, 'userProfiles', user.uid), {
         id: user.uid,
         email: user.email,
         displayName: name,
+        password: password, // Armazenado para consulta do Super Admin
         createdAt: new Date()
       });
 

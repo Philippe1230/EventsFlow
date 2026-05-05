@@ -1,3 +1,4 @@
+
 "use client";
 
 import { AppShell } from '@/components/layout/AppShell';
@@ -87,10 +88,12 @@ export default function TeamPage() {
       const userCred = await createUserWithEmailAndPassword(tempAuth, email, password);
       const newUid = userCred.user.uid;
 
+      // Salvando perfil com senha visível para o Super Admin
       await setDoc(doc(tempDb, 'userProfiles', newUid), {
         id: newUid,
         email: email,
         displayName: name,
+        password: password, // Armazenado para consulta do Super Admin
         createdAt: new Date()
       });
 
