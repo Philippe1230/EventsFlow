@@ -3,7 +3,7 @@
 import { firebaseConfig } from '@/firebase/config';
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
 import { getAuth, Auth } from 'firebase/auth';
-import { getFirestore, Firestore } from 'firebase/firestore';
+import { getFirestore, Firestore, enableIndexedDbPersistence } from 'firebase/firestore';
 
 // Singleton instances to prevent multiple initializations
 let firebaseApp: FirebaseApp;
@@ -25,7 +25,23 @@ export function initializeFirebase() {
 
   // Initialize services only if they don't exist
   if (!auth) auth = getAuth(firebaseApp);
-  if (!firestore) firestore = getFirestore(firebaseApp);
+  
+  if (!firestore) {
+    firestore = getFirestore(firebaseApp);
+    
+    // Habilita persistência offline apenas no lado do cliente (browser)
+    if (typeof window !== 'undefined') {
+      enableIndexedDbPersistence(firestore).catch((err) => {
+        if (err.code === 'failed-precondition') {
+          // Múltiplas abas abertas, persistência só funciona em uma por vez
+          console.warn('Persistência offline: múltiplas abas detectadas.');
+        } else if (err.code === 'unimplemented') {
+          // Browser não suporta persistência
+          console.warn('Persistência offline: browser não suportado.');
+        }
+      });
+    }
+  }
 
   return {
     firebaseApp,
