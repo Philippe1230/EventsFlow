@@ -4,7 +4,7 @@
 import { AppShell } from '@/components/layout/AppShell';
 import { useAuth } from '@/hooks/use-auth-context';
 import { useState, useEffect, useCallback } from 'react';
-import { collection, query, getDocs, orderBy, Timestamp, limit } from 'firebase/firestore';
+import { collection, query, getDocs, orderBy, Timestamp, limit, where } from 'firebase/firestore';
 import { useFirestore } from '@/firebase';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
@@ -21,10 +21,11 @@ interface Order {
   paymentMethod: string;
   createdAt: Timestamp | Date;
   items: any[];
+  userId: string;
 }
 
 export default function OrdersPage() {
-  const { tenantId, loading: authLoading } = useAuth();
+  const { tenantId, user, role, loading: authLoading } = useAuth();
   const db = useFirestore();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
@@ -32,21 +33,35 @@ export default function OrdersPage() {
   const [ordersLimit, setOrdersLimit] = useState<string>("20");
 
   const fetchOrders = useCallback(async () => {
-    if (!tenantId) return;
+    if (!tenantId || !user) return;
     setLoading(true);
     try {
-      const q = query(
-        collection(db, 'tenants', tenantId, 'orders'), 
-        orderBy('createdAt', 'desc'),
-        limit(parseInt(ordersLimit))
-      );
+      const ordersCol = collection(db, 'tenants', tenantId, 'orders');
+      let q;
+      
+      // Lógica de Isolamento: Caixas veem apenas seus pedidos, Donos veem tudo.
+      if (role === 'cashier') {
+        q = query(
+          ordersCol, 
+          where('userId', '==', user.uid),
+          orderBy('createdAt', 'desc'),
+          limit(parseInt(ordersLimit))
+        );
+      } else {
+        q = query(
+          ordersCol, 
+          orderBy('createdAt', 'desc'),
+          limit(parseInt(ordersLimit))
+        );
+      }
+      
       const snap = await getDocs(q);
       setOrders(snap.docs.map(d => ({ id: d.id, ...d.data() } as Order)));
     } catch (e) {
       console.error("Erro ao buscar pedidos:", e);
     }
     setLoading(false);
-  }, [db, tenantId, ordersLimit]);
+  }, [db, tenantId, user, role, ordersLimit]);
 
   useEffect(() => {
     if (tenantId && !authLoading) fetchOrders();
@@ -100,8 +115,12 @@ export default function OrdersPage() {
     <AppShell>
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10 max-w-7xl mx-auto px-1">
         <div className="space-y-1">
-          <h2 className="text-3xl md:text-4xl font-black text-primary uppercase tracking-tighter italic leading-none">Histórico de Vendas</h2>
-          <p className="text-sm md:text-base text-muted-foreground font-medium italic">Reimprima fichas ou exporte relatórios.</p>
+          <h2 className="text-3xl md:text-4xl font-black text-primary uppercase tracking-tighter italic leading-none">
+            {role === 'cashier' ? 'Minhas Vendas' : 'Histórico Global'}
+          </h2>
+          <p className="text-sm md:text-base text-muted-foreground font-medium italic">
+            {role === 'cashier' ? 'Gerencie seus pedidos realizados.' : 'Acompanhe todas as vendas do evento.'}
+          </p>
         </div>
         
         <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
@@ -164,7 +183,7 @@ export default function OrdersPage() {
                       </div>
                       <div className="space-y-1">
                         <span className="font-black uppercase text-sm block">Vazio por enquanto</span>
-                        <span className="text-[10px] uppercase font-bold tracking-widest opacity-40">As vendas aparecerão aqui em tempo real</span>
+                        <span className="text-[10px] uppercase font-bold tracking-widest opacity-40">Nenhuma venda encontrada</span>
                       </div>
                     </div>
                   </TableCell>

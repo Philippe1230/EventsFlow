@@ -34,11 +34,8 @@ service cloud.firestore {
 
     // Perfis de Usuário
     match /userProfiles/{userId} {
-      // Apenas o dono ou Super Admin pode ler (para ver a senha de suporte)
       allow read: if isOwnerOfProfile(userId) || isSuperAdmin();
-      // Apenas o dono pode criar/editar seu próprio perfil
       allow write: if isOwnerOfProfile(userId);
-      // Apenas Super Admin pode listar todos os usuários
       allow list: if isSuperAdmin();
       
       match /memberships/{membershipId} {
@@ -50,26 +47,38 @@ service cloud.firestore {
     match /tenants/{tenantId} {
       allow create: if isSignedIn();
       allow list: if isSuperAdmin();
-      // Membros ou Super Admin podem ler detalhes do evento
       allow read: if isMember(tenantId);
-      // Apenas donos do evento podem atualizar configurações ou membros
       allow update: if hasRole(tenantId, 'owner');
       
-      // Subcoleções (produtos, pedidos, etc.)
-      // Usamos uma regra recursiva protegida por afiliação ao tenant
+      // Regras específicas de Pedidos para isolamento de Caixas
+      match /orders/{orderId} {
+        allow create: if isMember(tenantId);
+        // Apenas Donos, Super Admin ou o próprio autor do pedido pode ler
+        allow read: if isSuperAdmin() || hasRole(tenantId, 'owner') || (isSignedIn() && resource.data.userId == request.auth.uid);
+        
+        match /orderItems/{itemId} {
+          allow read: if isSuperAdmin() || hasRole(tenantId, 'owner') || (isSignedIn() && get(/databases/$(database)/documents/tenants/$(tenantId)/orders/$(orderId)).data.userId == request.auth.uid);
+        }
+      }
+
+      // Regras para outros recursos do tenant
+      match /products/{productId} {
+        allow read: if isMember(tenantId);
+        allow write: if hasRole(tenantId, 'owner');
+      }
+
       match /{allPaths=**} {
         allow read: if isMember(tenantId);
-        // Escrita permitida para membros. Regras específicas por tipo podem ser adicionadas se necessário.
         allow write: if isMember(tenantId);
       }
     }
 
-    // Contadores e Recursos Auxiliares
+    // Contadores
     match /tenant_counters/{tenantId} {
       allow read, write: if isMember(tenantId);
     }
 
-    // Bloqueio padrão para qualquer outra coleção não especificada
+    // Bloqueio padrão
     match /{document=**} {
       allow read, write: if isSuperAdmin();
     }
