@@ -1,10 +1,10 @@
 
 "use client";
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { SidebarProvider, Sidebar, SidebarContent, SidebarHeader, SidebarFooter, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import { useAuth } from '@/hooks/use-auth-context';
-import { LayoutDashboard, ShoppingCart, Package, ListOrdered, LogOut, Users, BarChart3 } from 'lucide-react';
+import { LayoutDashboard, ShoppingCart, Package, ListOrdered, LogOut, Users, BarChart3, ShieldCheck, User } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
@@ -26,7 +26,7 @@ const JuninaFlagsIcon = (props: React.SVGProps<SVGSVGElement>) => (
 );
 
 const LoadingJunina = () => (
-  <div className="flex flex-col h-screen items-center justify-center bg-[#fff9f5]">
+  <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#fff9f5]">
     <div className="flex gap-2 mb-8">
       {[1, 2, 3, 4, 5].map((i) => (
         <div 
@@ -47,7 +47,6 @@ const LoadingJunina = () => (
     <p className="mt-8 text-2xl font-black text-primary uppercase tracking-[0.2em] animate-pulse italic">
       Sincronizando Arraial...
     </p>
-    <p className="mt-2 text-[10px] font-black uppercase text-muted-foreground/50 tracking-widest">Aguarde um tiquinho, sô!</p>
   </div>
 );
 
@@ -55,52 +54,56 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { user, loading, organizationName, signOut, role } = useAuth();
   const pathname = usePathname();
 
-  if (loading) return <LoadingJunina />;
-
+  // Otimização: Só mostra o loading se não houver usuário ou se estiver carregando inicialmente
+  const isInitialLoading = loading && !user;
+  
   const isAdmin = role === 'owner';
 
-  const navItems = [
+  const navItems = useMemo(() => [
     { name: 'Início', href: '/', icon: LayoutDashboard, visible: isAdmin },
     { name: 'Dashboards', href: '/dashboards', icon: BarChart3, visible: isAdmin },
     { name: 'Fazer Pedidos', href: '/pdv', icon: ShoppingCart, visible: true },
     { name: 'Produtos', href: '/products', icon: Package, visible: isAdmin },
     { name: 'Histórico', href: '/orders', icon: ListOrdered, visible: isAdmin },
     { name: 'Equipe', href: '/team', icon: Users, visible: isAdmin },
-  ].filter(item => item.visible);
+  ].filter(item => item.visible), [isAdmin]);
 
-  // Função robusta para verificar se o caminho está ativo e evitar problemas com barras no final
-  const isPathActive = (href: string) => {
-    if (href === '/') return pathname === '/';
-    return pathname === href || pathname.startsWith(href + '/');
-  };
+  const activeIndex = useMemo(() => {
+    const idx = navItems.findIndex(item => {
+      if (item.href === '/') return pathname === '/';
+      return pathname.startsWith(item.href);
+    });
+    return idx;
+  }, [pathname, navItems]);
 
-  const activeIndex = navItems.findIndex(item => isPathActive(item.href));
+  if (isInitialLoading) return <LoadingJunina />;
 
   return (
     <SidebarProvider>
-      <Sidebar collapsible="icon" className="border-r border-primary/10 shadow-2xl">
+      <Sidebar collapsible="icon" className="border-r border-primary/10 shadow-xl bg-card">
         <SidebarHeader className="p-6 flex flex-row items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-white shadow-xl shadow-primary/30 transform hover:rotate-6 transition-transform">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-white shadow-lg shrink-0">
             <JuninaFlagsIcon className="h-6 w-6" />
           </div>
-          <span className="font-black text-xl truncate text-primary uppercase tracking-tighter">{organizationName || 'Arraial PDV'}</span>
+          <span className="font-black text-xl truncate text-primary uppercase tracking-tighter group-data-[collapsible=icon]:hidden">
+            {organizationName || 'Arraial'}
+          </span>
         </SidebarHeader>
         <SidebarContent>
-          <SidebarMenu className="px-3 pt-4 relative">
-            {/* Marcador deslizante animado - h-12 (48px) + gap-1 (4px) = 52px de passo exato */}
-            {activeIndex !== -1 && (
-              <div 
-                className="absolute left-2 right-2 h-12 bg-primary rounded-2xl transition-all duration-500 shadow-lg shadow-primary/30 z-0"
-                style={{ 
-                  top: '16px', // Alinhado com o pt-4 do container
-                  transform: `translateY(${activeIndex * 52}px)`, 
-                  transitionTimingFunction: 'cubic-bezier(0.34, 1.56, 0.64, 1)'
-                }}
-              />
-            )}
+          <SidebarMenu className="px-3 pt-2 relative">
+            {/* Marcador deslizante otimizado com CSS transition */}
+            <div 
+              className="absolute left-3 right-3 h-12 bg-primary rounded-2xl transition-all duration-300 shadow-md shadow-primary/20 z-0 group-data-[collapsible=icon]:hidden"
+              style={{ 
+                top: '8px',
+                transform: `translateY(${activeIndex * 52}px)`,
+                opacity: activeIndex === -1 ? 0 : 1,
+                pointerEvents: 'none'
+              }}
+            />
 
-            {navItems.map((item) => {
-              const active = isPathActive(item.href);
+            {navItems.map((item, idx) => {
+              const active = idx === activeIndex;
               return (
                 <SidebarMenuItem key={item.href} className="relative z-10">
                   <SidebarMenuButton 
@@ -108,19 +111,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     isActive={active} 
                     tooltip={item.name} 
                     className={cn(
-                      "h-12 rounded-2xl transition-all duration-300 border-2 border-transparent",
+                      "h-12 rounded-2xl transition-colors duration-200",
                       active 
-                        ? "text-white bg-transparent border-white/10" 
+                        ? "text-white bg-transparent" 
                         : "text-primary/70 hover:bg-primary/5 hover:text-primary"
                     )}
                   >
                     <Link href={item.href} className="flex items-center gap-3">
                       <item.icon className={cn(
-                        "transition-transform duration-300",
-                        active ? "text-white scale-110" : "text-primary"
+                        "h-5 w-5 shrink-0",
+                        active ? "text-white" : "text-primary"
                       )} />
                       <span className={cn(
-                        "font-black uppercase text-[10px] tracking-widest",
+                        "font-black uppercase text-[10px] tracking-widest truncate",
                         active ? "text-white" : "text-primary/80"
                       )}>{item.name}</span>
                     </Link>
@@ -130,43 +133,37 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             })}
           </SidebarMenu>
         </SidebarContent>
-        <SidebarFooter className="p-6">
+        <SidebarFooter className="p-4">
           <SidebarMenu>
             <SidebarMenuItem>
-              <div className="px-4 py-3 mb-4 bg-muted/50 rounded-2xl text-[9px] font-black uppercase text-muted-foreground border border-primary/5 shadow-inner">
-                <span className="block opacity-40 mb-1">Acesso Liberado</span>
+              <div className="px-4 py-2 mb-3 bg-muted/40 rounded-xl text-[9px] font-black uppercase text-muted-foreground border border-primary/5 group-data-[collapsible=icon]:hidden">
                 <span className={cn(
-                  "flex items-center gap-1.5",
+                  "flex items-center gap-2",
                   isAdmin ? "text-primary" : "text-secondary"
                 )}>
-                  {isAdmin ? '🛡️ Admin do Arraial' : '🛒 Caixa do Arraial'}
+                  {isAdmin ? <ShieldCheck className="h-3 w-3" /> : <User className="h-3 w-3" />}
+                  {isAdmin ? 'Administrador' : 'Caixa'}
                 </span>
               </div>
               <SidebarMenuButton 
                 onClick={signOut} 
-                className="h-12 rounded-xl text-muted-foreground hover:text-destructive hover:bg-destructive/5 font-black uppercase text-[10px] border border-transparent hover:border-destructive/10"
+                className="h-11 rounded-xl text-muted-foreground hover:text-destructive hover:bg-destructive/5 font-black uppercase text-[10px]"
               >
                 <LogOut className="h-4 w-4" />
-                <span>Fechar Porteira</span>
+                <span className="group-data-[collapsible=icon]:hidden">Sair do Arraial</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
         </SidebarFooter>
       </Sidebar>
-      <SidebarInset className="bg-background/40">
-        <header className="flex h-16 items-center gap-4 border-b bg-card/80 backdrop-blur-md px-6 no-print shadow-sm sticky top-0 z-40">
-          <SidebarTrigger className="hover:bg-primary/5 text-primary" />
-          <div className="flex-1">
-            <h1 className="text-xl font-black text-primary uppercase tracking-tighter truncate">
-              {navItems.find(i => isPathActive(i.href))?.name || 'Arraial'}
-            </h1>
-          </div>
-          <div className="hidden sm:flex items-center gap-3 text-[9px] font-black text-muted-foreground bg-white/80 border border-primary/10 px-5 py-2.5 rounded-full shadow-sm">
-            <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.5)]" />
-            SISTEMA ATIVO
-          </div>
+      <SidebarInset className="bg-background">
+        <header className="flex h-16 items-center gap-4 border-b bg-card/50 backdrop-blur-sm px-6 no-print shadow-sm sticky top-0 z-40">
+          <SidebarTrigger className="text-primary" />
+          <h1 className="text-lg font-black text-primary uppercase tracking-tighter">
+            {navItems[activeIndex]?.name || 'Menu'}
+          </h1>
         </header>
-        <main className="flex-1 p-4 md:p-10 overflow-auto pb-24 md:pb-10">
+        <main className="flex-1 p-6 md:p-10">
           {children}
         </main>
       </SidebarInset>
