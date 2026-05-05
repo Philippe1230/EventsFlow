@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from 'react';
@@ -62,15 +61,15 @@ export default function RegisterPage() {
       });
 
       const initialProducts = [
-        { name: 'Produto Exemplo A', price: 10.0, category: 'Comida', active: true, tenantId: tenantRef.id, createdAt: new Date() },
-        { name: 'Produto Exemplo B', price: 5.0, category: 'Bebida', active: true, tenantId: tenantRef.id, createdAt: new Date() },
+        { name: 'Produto Exemplo A', price: 10.0, category: 'Geral', active: true, tenantId: tenantRef.id, createdAt: new Date() },
+        { name: 'Produto Exemplo B', price: 5.0, category: 'Geral', active: true, tenantId: tenantRef.id, createdAt: new Date() },
       ];
 
       for (const p of initialProducts) {
         await addDoc(collection(db, 'tenants', tenantRef.id, 'products'), p);
       }
 
-      toast({ title: "Evento criado!", description: "Sua conta e organização Flow Events foram configuradas." });
+      toast({ title: "Evento criado!", description: "Sua conta Flow Events foi configurada." });
       router.push('/');
     } catch (error: any) {
       console.error(error);
@@ -82,42 +81,42 @@ export default function RegisterPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center p-4 bg-background">
-      <Card className="w-full max-w-md shadow-2xl border-primary/10 rounded-[2rem] overflow-hidden">
-        <CardHeader className="text-center pt-8">
+      <Card className="w-full max-w-md shadow-2xl border-primary/10 rounded-[2.5rem] overflow-hidden my-8">
+        <CardHeader className="text-center pt-10 pb-6">
           <div className="flex justify-center mb-6">
             <div className="bg-primary p-4 rounded-2xl text-white shadow-xl -rotate-3">
               <OrderTicketIcon className="h-8 w-8" />
             </div>
           </div>
           <CardTitle className="text-3xl font-black uppercase text-primary tracking-tighter">Novo Evento</CardTitle>
-          <CardDescription className="font-bold uppercase text-[10px] tracking-widest text-muted-foreground mt-2">Crie sua conta no Flow Events</CardDescription>
+          <CardDescription className="font-bold uppercase text-[10px] tracking-widest text-muted-foreground mt-2">Cadastre-se no Flow Events</CardDescription>
         </CardHeader>
         <form onSubmit={handleRegister}>
-          <CardContent className="space-y-4 px-8">
-            <div className="space-y-2">
-              <Label htmlFor="name" className="font-bold uppercase text-[10px] ml-1">Seu Nome</Label>
+          <CardContent className="space-y-4 px-6 sm:px-10">
+            <div className="space-y-1">
+              <Label htmlFor="name" className="font-black uppercase text-[10px] ml-1 text-muted-foreground">Seu Nome</Label>
               <Input 
                 id="name" 
                 placeholder="Ex: João Silva" 
                 value={name} 
                 onChange={(e) => setName(e.target.value)} 
                 required 
-                className="h-11 rounded-xl"
+                className="h-12 rounded-xl border-primary/10 bg-muted/20 font-bold px-5"
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="orgName" className="font-bold uppercase text-[10px] ml-1">Nome do Evento</Label>
+            <div className="space-y-1">
+              <Label htmlFor="orgName" className="font-black uppercase text-[10px] ml-1 text-muted-foreground">Nome do Evento</Label>
               <Input 
                 id="orgName" 
                 placeholder="Ex: Festival de Verão" 
                 value={orgName} 
                 onChange={(e) => setOrgName(e.target.value)} 
                 required 
-                className="h-11 rounded-xl"
+                className="h-12 rounded-xl border-primary/10 bg-muted/20 font-bold px-5"
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="email" className="font-bold uppercase text-[10px] ml-1">E-mail</Label>
+            <div className="space-y-1">
+              <Label htmlFor="email" className="font-black uppercase text-[10px] ml-1 text-muted-foreground">E-mail</Label>
               <Input 
                 id="email" 
                 type="email" 
@@ -125,11 +124,11 @@ export default function RegisterPage() {
                 value={email} 
                 onChange={(e) => setEmail(e.target.value)} 
                 required 
-                className="h-11 rounded-xl"
+                className="h-12 rounded-xl border-primary/10 bg-muted/20 font-bold px-5"
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="password" className="font-bold uppercase text-[10px] ml-1">Senha</Label>
+            <div className="space-y-1">
+              <Label htmlFor="password" className="font-black uppercase text-[10px] ml-1 text-muted-foreground">Senha</Label>
               <Input 
                 id="password" 
                 type="password" 
@@ -137,17 +136,17 @@ export default function RegisterPage() {
                 onChange={(e) => setPassword(e.target.value)} 
                 required 
                 minLength={6}
-                className="h-11 rounded-xl"
+                className="h-12 rounded-xl border-primary/10 bg-muted/20 font-bold px-5"
               />
             </div>
           </CardContent>
-          <CardFooter className="flex flex-col gap-4 p-8">
-            <Button type="submit" className="w-full h-14 font-black uppercase text-lg rounded-2xl shadow-xl shadow-primary/20" disabled={loading}>
-              {loading ? <Loader2 className="animate-spin mr-2 h-4 w-4" /> : "Criar meu Flow Events"}
+          <CardFooter className="flex flex-col gap-4 p-6 sm:p-10">
+            <Button type="submit" className="w-full h-16 font-black uppercase text-lg rounded-2xl shadow-xl shadow-primary/20" disabled={loading}>
+              {loading ? <Loader2 className="animate-spin mr-2 h-5 w-5" /> : "Criar meu Flow Events"}
             </Button>
             <p className="text-sm text-center text-muted-foreground font-medium">
               Já tem uma conta?{" "}
-              <Link href="/login" className="text-primary font-black hover:underline uppercase text-xs">
+              <Link href="/login" className="text-primary font-black hover:underline uppercase text-xs tracking-tighter">
                 Fazer login
               </Link>
             </p>

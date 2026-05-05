@@ -102,20 +102,20 @@ export default function DashboardsDetailedPage() {
 
   return (
     <AppShell>
-      <div className="flex flex-col gap-6 mb-8">
+      <div className="flex flex-col gap-8 mb-10 max-w-7xl mx-auto">
         <div>
-          <h2 className="text-3xl font-black text-primary uppercase">Dashboard de Caixa</h2>
-          <p className="text-muted-foreground font-medium italic">Análise de desempenho individual por operador.</p>
+          <h2 className="text-4xl font-black text-primary uppercase tracking-tighter">Dashboards</h2>
+          <p className="text-muted-foreground font-medium italic">Análise de desempenho do Flow Events.</p>
         </div>
 
-        <div className="flex flex-col md:flex-row gap-4">
+        <div className="flex flex-col lg:flex-row gap-6 bg-card p-6 rounded-[2rem] border border-primary/5 shadow-xl shadow-primary/5">
           <div className="flex-1 space-y-2">
-            <span className="text-[10px] font-black uppercase text-muted-foreground ml-1">Selecione o Operador</span>
+            <span className="text-[10px] font-black uppercase text-primary tracking-widest ml-1">Filtro de Operador</span>
             <Select value={selectedCashier} onValueChange={setSelectedCashier}>
-              <SelectTrigger className="h-12 rounded-xl border-primary/20 font-bold bg-card shadow-sm hover:border-primary/50 transition-all">
-                <SelectValue placeholder="Escolha um caixa" />
+              <SelectTrigger className="h-14 rounded-2xl border-primary/10 font-bold bg-muted/20 shadow-none hover:border-primary/40 transition-all px-6">
+                <SelectValue placeholder="Todos os caixas" />
               </SelectTrigger>
-              <SelectContent className="rounded-xl shadow-2xl">
+              <SelectContent className="rounded-2xl border-none shadow-2xl">
                 <SelectItem value="all" className="font-bold uppercase text-xs">Todos os Caixas</SelectItem>
                 {cashierList.map((c) => (
                   <SelectItem key={c.id} value={c.id} className="font-bold uppercase text-xs">
@@ -127,21 +127,21 @@ export default function DashboardsDetailedPage() {
           </div>
 
           <div className="flex-1 space-y-2">
-            <span className="text-[10px] font-black uppercase text-muted-foreground ml-1">Escolha a Data</span>
+            <span className="text-[10px] font-black uppercase text-primary tracking-widest ml-1">Filtro de Data</span>
             <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
               <PopoverTrigger asChild>
                 <Button
                   variant={"outline"}
                   className={cn(
-                    "w-full justify-start text-left font-bold h-12 rounded-xl border-primary/20 bg-card shadow-sm hover:border-primary/50 hover:bg-card transition-all",
+                    "w-full justify-start text-left font-bold h-14 rounded-2xl border-primary/10 bg-muted/20 shadow-none hover:border-primary/40 transition-all px-6",
                     !date && "text-muted-foreground"
                   )}
                 >
-                  <CalendarIcon className="mr-2 h-4 w-4 text-primary" />
+                  <CalendarIcon className="mr-3 h-5 w-5 text-primary" />
                   {date ? format(date, "PPP", { locale: ptBR }) : <span>Escolha um dia</span>}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0 border-none shadow-2xl rounded-[2rem] overflow-hidden" align="end">
+              <PopoverContent className="w-auto p-0 border-none shadow-3xl rounded-[2.5rem] overflow-hidden" align="end">
                 <Calendar
                   mode="single"
                   selected={date}
@@ -163,24 +163,24 @@ export default function DashboardsDetailedPage() {
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mb-8">
-        <StatCard title="Total do Caixa" value={`R$ ${stats.totalRevenue.toFixed(2)}`} icon={<DollarSign className="h-4 w-4" />} loading={ordersLoading} />
-        <StatCard title="Pedidos Realizados" value={stats.totalOrders.toString()} icon={<ShoppingBag className="h-4 w-4" />} loading={ordersLoading} />
-        <StatCard title="Produto mais vendido" value={stats.bestSeller} icon={<TrendingUp className="h-4 w-4" />} loading={ordersLoading} />
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mb-10 max-w-7xl mx-auto">
+        <StatCard title="Faturamento Total" value={`R$ ${stats.totalRevenue.toFixed(2)}`} icon={<DollarSign className="h-6 w-6" />} loading={ordersLoading} />
+        <StatCard title="Total de Pedidos" value={stats.totalOrders.toString()} icon={<ShoppingBag className="h-6 w-6" />} loading={ordersLoading} />
+        <StatCard title="Top Venda" value={stats.bestSeller} icon={<TrendingUp className="h-6 w-6" />} loading={ordersLoading} />
       </div>
 
-      <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
-        <Card className="shadow-md border-primary/5 hover:shadow-xl hover:shadow-primary/5 transition-all rounded-[2rem] overflow-hidden">
-          <CardHeader>
-            <CardTitle className="text-xs font-black uppercase text-primary tracking-tighter flex items-center gap-2">
-              <TrendingUp className="h-4 w-4" /> Distribuição de Lucro
+      <div className="grid gap-8 md:grid-cols-1 lg:grid-cols-12 max-w-7xl mx-auto">
+        <Card className="lg:col-span-7 shadow-xl border-none rounded-[2.5rem] overflow-hidden bg-card hover:shadow-primary/10 transition-shadow">
+          <CardHeader className="p-8 pb-2">
+            <CardTitle className="text-[11px] font-black uppercase text-primary tracking-widest flex items-center gap-2">
+              <TrendingUp className="h-4 w-4" /> Distribuição de Vendas
             </CardTitle>
           </CardHeader>
-          <CardContent className="h-[350px]">
+          <CardContent className="h-[400px] p-8">
             {ordersLoading ? (
-              <div className="flex items-center justify-center h-full"><Loader2 className="animate-spin text-primary" /></div>
+              <div className="flex items-center justify-center h-full"><Loader2 className="animate-spin text-primary h-12 w-12 opacity-20" /></div>
             ) : stats.productSales.length === 0 ? (
-              <div className="flex items-center justify-center h-full text-muted-foreground text-sm font-bold uppercase italic">Sem vendas para este caixa</div>
+              <div className="flex items-center justify-center h-full text-muted-foreground text-xs font-black uppercase tracking-widest opacity-20">Sem dados para o período</div>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
@@ -188,17 +188,18 @@ export default function DashboardsDetailedPage() {
                     data={stats.productSales}
                     cx="50%"
                     cy="50%"
-                    innerRadius={60}
-                    outerRadius={100}
-                    paddingAngle={5}
+                    innerRadius={80}
+                    outerRadius={130}
+                    paddingAngle={8}
                     dataKey="value"
                   >
                     {stats.productSales.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} className="hover:opacity-80 transition-opacity" />
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} className="hover:opacity-80 transition-all cursor-pointer" />
                     ))}
                   </Pie>
                   <Tooltip 
-                    contentStyle={{ backgroundColor: 'hsl(var(--card))', borderRadius: '12px', border: '1px solid hsl(var(--border))', fontSize: '11px', fontWeight: 'bold', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                    contentStyle={{ backgroundColor: 'hsl(var(--card))', borderRadius: '24px', border: 'none', fontSize: '12px', fontWeight: 'bold', boxShadow: '0 25px 50px -12px rgb(0 0 0 / 0.25)' }}
+                    itemStyle={{ padding: '4px 0' }}
                     formatter={(value: number, name: string, props: any) => [`R$ ${value.toFixed(2)} (${props.payload.quantity}un)`, name]}
                   />
                 </PieChart>
@@ -207,33 +208,33 @@ export default function DashboardsDetailedPage() {
           </CardContent>
         </Card>
 
-        <Card className="shadow-md border-primary/5 hover:shadow-xl hover:shadow-primary/5 transition-all rounded-[2rem] overflow-hidden">
-          <CardHeader>
-            <CardTitle className="text-xs font-black uppercase text-muted-foreground flex items-center gap-2">
-               <UserIcon className="h-4 w-4" /> Detalhamento por Item
+        <Card className="lg:col-span-5 shadow-xl border-none rounded-[2.5rem] overflow-hidden bg-card hover:shadow-primary/10 transition-shadow">
+          <CardHeader className="p-8 pb-2">
+            <CardTitle className="text-[11px] font-black uppercase text-muted-foreground tracking-widest flex items-center gap-2">
+               <UserIcon className="h-4 w-4" /> Ranking de Produtos
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-0">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">
                 <thead>
-                  <tr className="border-b border-primary/10">
-                    <th className="pb-4 font-black uppercase text-[10px] tracking-widest text-muted-foreground">Produto</th>
-                    <th className="pb-4 font-black uppercase text-[10px] tracking-widest text-muted-foreground text-center">Qtd</th>
-                    <th className="pb-4 font-black uppercase text-[10px] tracking-widest text-muted-foreground text-right">Valor</th>
+                  <tr className="border-b border-primary/5 bg-muted/10">
+                    <th className="py-6 pl-8 font-black uppercase text-[10px] tracking-widest text-muted-foreground">Item</th>
+                    <th className="py-6 px-4 font-black uppercase text-[10px] tracking-widest text-muted-foreground text-center">Qtd</th>
+                    <th className="py-6 pr-8 font-black uppercase text-[10px] tracking-widest text-muted-foreground text-right">Faturado</th>
                   </tr>
                 </thead>
                 <tbody>
                   {stats.productSales.map((p, idx) => (
                     <tr key={idx} className="border-b border-primary/5 last:border-0 hover:bg-primary/5 transition-colors group">
-                      <td className="py-4 font-bold uppercase text-xs group-hover:text-primary">{p.name}</td>
-                      <td className="py-4 text-center font-bold text-muted-foreground">{p.quantity}</td>
-                      <td className="py-4 text-right font-black text-primary">R$ {p.value.toFixed(2)}</td>
+                      <td className="py-6 pl-8 font-black uppercase text-xs group-hover:text-primary transition-colors">{p.name}</td>
+                      <td className="py-6 px-4 text-center font-bold text-muted-foreground">{p.quantity}</td>
+                      <td className="py-6 pr-8 text-right font-black text-primary text-base">R$ {p.value.toFixed(2)}</td>
                     </tr>
                   ))}
                   {stats.productSales.length === 0 && (
                     <tr>
-                      <td colSpan={3} className="py-12 text-center text-muted-foreground italic font-medium">Nenhuma venda registrada no período.</td>
+                      <td colSpan={3} className="py-24 text-center text-muted-foreground uppercase text-[10px] font-black tracking-widest opacity-20">Nenhuma venda registrada</td>
                     </tr>
                   )}
                 </tbody>
@@ -248,16 +249,16 @@ export default function DashboardsDetailedPage() {
 
 function StatCard({ title, value, icon, loading }: { title: string, value: string, icon: React.ReactNode, loading?: boolean }) {
   return (
-    <Card className="shadow-sm border-primary/5 hover:border-primary/20 hover:shadow-xl hover:shadow-primary/5 hover:-translate-y-1 transition-all rounded-2xl group overflow-hidden">
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-[10px] font-black uppercase text-muted-foreground tracking-wider group-hover:text-primary transition-colors">{title}</CardTitle>
-        <div className="text-primary bg-primary/10 p-2 rounded-lg group-hover:scale-110 transition-transform">{icon}</div>
+    <Card className="shadow-lg border-none hover:shadow-2xl hover:shadow-primary/10 hover:-translate-y-2 transition-all duration-500 rounded-[2rem] group overflow-hidden bg-card">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 p-8 pb-2">
+        <CardTitle className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em] group-hover:text-primary transition-colors">{title}</CardTitle>
+        <div className="text-primary bg-primary/10 p-4 rounded-2xl group-hover:scale-110 group-hover:rotate-6 transition-all duration-500">{icon}</div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="p-8 pt-4">
         {loading ? (
-          <div className="h-8 w-24 bg-muted animate-pulse rounded" />
+          <div className="h-10 w-32 bg-muted/50 animate-pulse rounded-xl" />
         ) : (
-          <div className="text-2xl font-black text-primary group-hover:scale-[1.02] transition-transform origin-left">{value}</div>
+          <div className="text-3xl font-black text-primary tracking-tighter group-hover:scale-[1.05] transition-transform origin-left">{value}</div>
         )}
       </CardContent>
     </Card>

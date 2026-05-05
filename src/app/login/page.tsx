@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from 'react';
@@ -43,20 +42,20 @@ export default function LoginPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center p-4 bg-background">
-      <Card className="w-full max-w-md shadow-2xl border-primary/10 rounded-[2rem] overflow-hidden">
-        <CardHeader className="text-center pt-10">
+      <Card className="w-full max-w-md shadow-2xl border-primary/10 rounded-[2.5rem] overflow-hidden">
+        <CardHeader className="text-center pt-12 pb-8">
           <div className="flex justify-center mb-6">
             <div className="bg-primary p-5 rounded-[1.5rem] text-white shadow-xl rotate-3 scale-110">
               <OrderTicketIcon className="h-10 w-10" />
             </div>
           </div>
           <CardTitle className="text-3xl font-black uppercase text-primary tracking-tighter">Flow Events</CardTitle>
-          <CardDescription className="font-bold uppercase text-[10px] tracking-widest text-muted-foreground mt-2">Acesse seu evento</CardDescription>
+          <CardDescription className="font-bold uppercase text-[10px] tracking-widest text-muted-foreground mt-2">Acesse sua conta</CardDescription>
         </CardHeader>
         <form onSubmit={handleLogin}>
-          <CardContent className="space-y-6 px-8">
+          <CardContent className="space-y-6 px-6 sm:px-10">
             <div className="space-y-2">
-              <Label htmlFor="email" className="font-bold uppercase text-[10px] ml-1">E-mail</Label>
+              <Label htmlFor="email" className="font-black uppercase text-[10px] ml-1 tracking-wider text-muted-foreground">E-mail</Label>
               <Input 
                 id="email" 
                 type="email" 
@@ -64,28 +63,28 @@ export default function LoginPage() {
                 value={email} 
                 onChange={(e) => setEmail(e.target.value)} 
                 required 
-                className="h-12 rounded-xl border-primary/10 focus:border-primary"
+                className="h-14 rounded-2xl border-primary/10 focus:border-primary bg-muted/30 font-bold px-6"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password" className="font-bold uppercase text-[10px] ml-1">Senha</Label>
+              <Label htmlFor="password" className="font-black uppercase text-[10px] ml-1 tracking-wider text-muted-foreground">Senha</Label>
               <Input 
                 id="password" 
                 type="password" 
                 value={password} 
                 onChange={(e) => setPassword(e.target.value)} 
                 required 
-                className="h-12 rounded-xl border-primary/10 focus:border-primary"
+                className="h-14 rounded-2xl border-primary/10 focus:border-primary bg-muted/30 font-bold px-6"
               />
             </div>
           </CardContent>
-          <CardFooter className="flex flex-col gap-6 p-8">
-            <Button type="submit" className="w-full h-14 font-black uppercase text-lg rounded-2xl shadow-xl shadow-primary/20" disabled={loading}>
-              {loading ? <Loader2 className="animate-spin mr-2 h-5 w-5" /> : "Entrar no Flow Events"}
+          <CardFooter className="flex flex-col gap-6 p-6 sm:p-10">
+            <Button type="submit" className="w-full h-16 font-black uppercase text-lg rounded-2xl shadow-2xl shadow-primary/30 transition-all hover:scale-[1.02] active:scale-95" disabled={loading}>
+              {loading ? <Loader2 className="animate-spin mr-2 h-6 w-6" /> : "Entrar no Flow Events"}
             </Button>
             <p className="text-sm text-center text-muted-foreground font-medium">
-              Ainda não tem uma conta?{" "}
-              <Link href="/register" className="text-primary font-black hover:underline uppercase text-xs">
+              Não tem uma conta?{" "}
+              <Link href="/register" className="text-primary font-black hover:underline uppercase text-xs tracking-tighter">
                 Crie seu Evento
               </Link>
             </p>

@@ -1,10 +1,9 @@
-
 "use client";
 
 import { AppShell } from '@/components/layout/AppShell';
 import { useAuth } from '@/hooks/use-auth-context';
 import { useState, useEffect } from 'react';
-import { collection, query, getDocs, addDoc, updateDoc, doc, orderBy, onSnapshot } from 'firebase/firestore';
+import { collection, query, addDoc, doc, orderBy, onSnapshot } from 'firebase/firestore';
 import { useFirestore } from '@/firebase';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
@@ -14,9 +13,10 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
-import { Pencil, Trash2, PlusCircle, Loader2, Package, Power } from 'lucide-react';
+import { Pencil, Trash2, PlusCircle, Loader2, Package } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { deleteDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { cn } from '@/lib/utils';
 
 interface Product {
   id: string;
@@ -72,7 +72,7 @@ export default function ProductsPage() {
         });
       }
       setIsDialogOpen(false);
-      toast({ title: 'Sucesso!', description: 'Produto atualizado no cardápio.' });
+      toast({ title: 'Sucesso!', description: 'Cardápio atualizado.' });
     } catch (e) {
       toast({ title: 'Erro', description: 'Não foi possível salvar.', variant: 'destructive' });
     }
@@ -83,8 +83,8 @@ export default function ProductsPage() {
     const productRef = doc(db, 'tenants', tenantId, 'products', product.id);
     updateDocumentNonBlocking(productRef, { active: !product.active });
     toast({ 
-      title: product.active ? 'Produto Desativado' : 'Produto Ativado', 
-      description: `${product.name} foi ${product.active ? 'removido' : 'adicionado'} aos caixas.` 
+      title: product.active ? 'Produto Ocultado' : 'Produto Visível', 
+      description: `${product.name} foi ${product.active ? 'desativado' : 'ativado'} nos caixas.` 
     });
   };
 
@@ -92,7 +92,7 @@ export default function ProductsPage() {
     if (confirm('Deseja excluir este produto permanentemente?') && tenantId) {
       const productRef = doc(db, 'tenants', tenantId, 'products', id);
       deleteDocumentNonBlocking(productRef);
-      toast({ title: 'Produto Excluído' });
+      toast({ title: 'Produto Removido' });
     }
   };
 
@@ -109,142 +109,139 @@ export default function ProductsPage() {
 
   return (
     <AppShell>
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8 max-w-6xl mx-auto">
         <div>
-          <h2 className="text-3xl font-black text-primary uppercase">Cardápio do Evento</h2>
-          <p className="text-muted-foreground font-medium italic">Gerencie o que está disponível para venda nos caixas.</p>
+          <h2 className="text-3xl font-black text-primary uppercase tracking-tighter">Cardápio do Evento</h2>
+          <p className="text-muted-foreground font-medium italic">Gerencie os produtos disponíveis para venda.</p>
         </div>
-        <Button onClick={() => openDialog()} className="font-black uppercase rounded-xl h-12 px-6 shadow-lg shadow-primary/20">
-          <PlusCircle className="mr-2 h-5 w-5" /> Novo Produto
+        <Button onClick={() => openDialog()} className="w-full md:w-auto font-black uppercase rounded-2xl h-14 px-8 shadow-xl shadow-primary/20 transition-all hover:scale-[1.05] active:scale-95">
+          <PlusCircle className="mr-2 h-6 w-6" /> Novo Produto
         </Button>
       </div>
 
-      <div className="rounded-[2rem] border border-primary/5 bg-card shadow-xl overflow-hidden">
-        <Table>
-          <TableHeader className="bg-muted/50">
-            <TableRow className="hover:bg-transparent border-primary/5">
-              <TableHead className="font-black uppercase text-[10px] py-6 pl-8">Produto</TableHead>
-              <TableHead className="font-black uppercase text-[10px]">Categoria</TableHead>
-              <TableHead className="font-black uppercase text-[10px]">Preço</TableHead>
-              <TableHead className="font-black uppercase text-[10px] text-center">Disponibilidade</TableHead>
-              <TableHead className="text-right font-black uppercase text-[10px] pr-8">Ações</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {loading ? (
-              <TableRow>
-                <TableCell colSpan={5} className="text-center py-20">
-                  <div className="flex flex-col items-center gap-4">
-                    <Loader2 className="h-10 w-10 animate-spin text-primary" />
-                    <span className="font-black uppercase text-[10px] tracking-widest text-primary/40">Sincronizando Cardápio...</span>
-                  </div>
-                </TableCell>
+      <div className="rounded-[2.5rem] border border-primary/5 bg-card shadow-2xl overflow-hidden max-w-6xl mx-auto">
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader className="bg-muted/30">
+              <TableRow className="hover:bg-transparent border-primary/5">
+                <TableHead className="font-black uppercase text-[10px] py-6 pl-8">Produto</TableHead>
+                <TableHead className="font-black uppercase text-[10px]">Categoria</TableHead>
+                <TableHead className="font-black uppercase text-[10px]">Preço</TableHead>
+                <TableHead className="font-black uppercase text-[10px] text-center">Status</TableHead>
+                <TableHead className="text-right font-black uppercase text-[10px] pr-8">Ações</TableHead>
               </TableRow>
-            ) : products.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={5} className="text-center py-20 text-muted-foreground">
-                  <div className="flex flex-col items-center gap-2 opacity-20">
-                    <Package className="h-16 w-16 mb-2" />
-                    <span className="font-black uppercase text-sm">Nenhum produto cadastrado</span>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ) : (
-              products.map((p) => (
-                <TableRow key={p.id} className={cn("border-primary/5 transition-all group", !p.active && "opacity-50 grayscale-[0.5]")}>
-                  <TableCell className="py-6 pl-8">
-                    <div className="flex flex-col">
-                      <span className="font-black text-primary uppercase text-sm tracking-tight">{p.name}</span>
-                      <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">ID: {p.id.substring(0, 6)}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="secondary" className="font-black uppercase text-[9px] bg-primary/5 text-primary border-none">
-                      {p.category}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="font-black text-lg text-primary tracking-tighter">
-                    R$ {p.price.toFixed(2)}
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <div className="flex items-center justify-center gap-3">
-                      <span className={cn("text-[10px] font-black uppercase tracking-tighter", p.active ? "text-green-600" : "text-muted-foreground")}>
-                        {p.active ? 'Ativo' : 'Inativo'}
-                      </span>
-                      <Switch 
-                        checked={p.active} 
-                        onCheckedChange={() => toggleStatus(p)}
-                        className="data-[state=checked]:bg-green-500"
-                      />
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-right pr-8">
-                    <div className="flex justify-end gap-2">
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        onClick={() => openDialog(p)}
-                        className="h-10 w-10 rounded-xl text-primary/40 hover:text-primary hover:bg-primary/10"
-                      >
-                        <Pencil className="h-5 w-5" />
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        onClick={() => handleDelete(p.id)}
-                        className="h-10 w-10 rounded-xl text-destructive/40 hover:text-destructive hover:bg-destructive/10"
-                      >
-                        <Trash2 className="h-5 w-5" />
-                      </Button>
-                    </div>
+            </TableHeader>
+            <TableBody>
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center py-24">
+                    <Loader2 className="h-12 w-12 animate-spin mx-auto text-primary opacity-20" />
                   </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+              ) : products.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center py-24">
+                    <Package className="h-16 w-16 mx-auto mb-4 text-primary/10" />
+                    <p className="font-black uppercase text-xs text-muted-foreground tracking-widest">Nenhum produto cadastrado</p>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                products.map((p) => (
+                  <TableRow key={p.id} className={cn("border-primary/5 transition-all group", !p.active && "opacity-50")}>
+                    <TableCell className="py-6 pl-8">
+                      <div className="flex flex-col">
+                        <span className="font-black text-primary uppercase text-sm tracking-tight group-hover:translate-x-1 transition-transform">{p.name}</span>
+                        <span className="text-[9px] font-bold text-muted-foreground tracking-[0.2em] uppercase">Ref: {p.id.substring(0, 5)}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="secondary" className="font-black uppercase text-[9px] bg-primary/5 text-primary border-none px-3">
+                        {p.category}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="font-black text-lg text-primary tracking-tighter">
+                      R$ {p.price.toFixed(2)}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <div className="flex items-center justify-center gap-3">
+                        <span className={cn("text-[10px] font-black uppercase hidden sm:block", p.active ? "text-green-600" : "text-muted-foreground")}>
+                          {p.active ? 'Ativo' : 'Pausado'}
+                        </span>
+                        <Switch 
+                          checked={p.active} 
+                          onCheckedChange={() => toggleStatus(p)}
+                          className="data-[state=checked]:bg-green-500"
+                        />
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-right pr-8">
+                      <div className="flex justify-end gap-2">
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          onClick={() => openDialog(p)}
+                          className="h-10 w-10 rounded-xl text-primary/40 hover:text-primary hover:bg-primary/10 transition-all hover:scale-110"
+                        >
+                          <Pencil className="h-5 w-5" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          onClick={() => handleDelete(p.id)}
+                          className="h-10 w-10 rounded-xl text-destructive/40 hover:text-destructive hover:bg-destructive/10 transition-all hover:scale-110"
+                        >
+                          <Trash2 className="h-5 w-5" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
       </div>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="rounded-[2rem] border-none shadow-2xl p-0 overflow-hidden">
+        <DialogContent className="rounded-[2.5rem] border-none shadow-3xl p-0 overflow-hidden sm:max-w-md w-[95vw] sm:w-full">
           <DialogHeader className="bg-primary p-8 text-white">
-            <DialogTitle className="text-2xl font-black uppercase tracking-tighter italic">
-              {isEditing ? 'Editar Item' : 'Novo Item'}
+            <DialogTitle className="text-3xl font-black uppercase tracking-tighter italic">
+              {isEditing ? 'Editar Item' : 'Novo Produto'}
             </DialogTitle>
             <DialogDescription className="text-white/70 font-bold uppercase text-[10px] tracking-widest">
-              Configure as informações do produto
+              Ajuste os detalhes do produto
             </DialogDescription>
           </DialogHeader>
           <div className="p-8 space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="name" className="font-black uppercase text-[10px] ml-1">Nome do Produto</Label>
+              <Label htmlFor="name" className="font-black uppercase text-[10px] ml-1 tracking-widest text-muted-foreground">Nome Comercial</Label>
               <Input 
                 id="name" 
-                placeholder="Ex: Cerveja Lata"
-                className="h-12 rounded-xl border-primary/10 font-bold"
+                placeholder="Ex: Cerveja Lata 350ml"
+                className="h-14 rounded-2xl border-primary/10 font-bold bg-muted/20 px-6"
                 value={currentProduct.name} 
                 onChange={(e) => setCurrentProduct({ ...currentProduct, name: e.target.value })} 
               />
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <Label htmlFor="price" className="font-black uppercase text-[10px] ml-1">Preço (R$)</Label>
+                <Label htmlFor="price" className="font-black uppercase text-[10px] ml-1 tracking-widest text-muted-foreground">Preço (R$)</Label>
                 <Input 
                   id="price" 
                   type="number" 
                   step="0.5" 
-                  className="h-12 rounded-xl border-primary/10 font-bold"
+                  className="h-14 rounded-2xl border-primary/10 font-bold bg-muted/20 px-6"
                   value={currentProduct.price} 
                   onChange={(e) => setCurrentProduct({ ...currentProduct, price: parseFloat(e.target.value) })} 
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="category" className="font-black uppercase text-[10px] ml-1">Categoria</Label>
+                <Label htmlFor="category" className="font-black uppercase text-[10px] ml-1 tracking-widest text-muted-foreground">Categoria</Label>
                 <Select value={currentProduct.category} onValueChange={(v) => setCurrentProduct({ ...currentProduct, category: v })}>
-                  <SelectTrigger className="h-12 rounded-xl border-primary/10 font-bold">
+                  <SelectTrigger className="h-14 rounded-2xl border-primary/10 font-bold bg-muted/20 px-6">
                     <SelectValue placeholder="Selecione" />
                   </SelectTrigger>
-                  <SelectContent className="rounded-xl">
+                  <SelectContent className="rounded-2xl border-none shadow-2xl">
                     <SelectItem value="Geral" className="font-bold uppercase text-xs">Geral</SelectItem>
                     <SelectItem value="Alimentação" className="font-bold uppercase text-xs">Alimentação</SelectItem>
                     <SelectItem value="Bebidas" className="font-bold uppercase text-xs">Bebidas</SelectItem>
@@ -255,16 +252,12 @@ export default function ProductsPage() {
             </div>
           </div>
           <DialogFooter className="bg-muted/30 p-8 pt-4">
-            <Button onClick={handleSave} className="w-full h-14 font-black uppercase text-lg rounded-2xl shadow-xl shadow-primary/20">
-              Salvar Alterações
+            <Button onClick={handleSave} className="w-full h-16 font-black uppercase text-xl rounded-2xl shadow-2xl shadow-primary/20 transition-all hover:scale-[1.02] active:scale-95">
+              Confirmar Alterações
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
     </AppShell>
   );
-}
-
-function cn(...inputs: any[]) {
-  return inputs.filter(Boolean).join(' ');
 }
