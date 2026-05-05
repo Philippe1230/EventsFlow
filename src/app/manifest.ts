@@ -13,13 +13,13 @@ export default function manifest(): MetadataRoute.Manifest {
     orientation: 'any',
     icons: [
       {
-        src: 'https://picsum.photos/seed/event-app-192/192/192',
+        src: 'https://picsum.photos/seed/ticket-icon-192/192/192',
         sizes: '192x192',
         type: 'image/png',
         purpose: 'maskable'
       },
       {
-        src: 'https://picsum.photos/seed/event-app-512/512/512',
+        src: 'https://picsum.photos/seed/ticket-icon-512/512/512',
         sizes: '512x512',
         type: 'image/png',
         purpose: 'any'
