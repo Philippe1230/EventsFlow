@@ -2,7 +2,7 @@
 "use client";
 
 import React from 'react';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { CheckCircle2, Printer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -39,7 +39,9 @@ export function SuccessModal({ isOpen, onClose, orderNumber }: SuccessModalProps
           <div className="bg-white/20 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner">
             <CheckCircle2 className="h-14 w-14 text-white" />
           </div>
-          <h2 className="text-4xl font-black uppercase tracking-tighter mb-2 italic">Pedido Feito!</h2>
+          <DialogTitle className="text-4xl font-black uppercase tracking-tighter mb-2 italic text-white text-center">
+            Pedido Feito!
+          </DialogTitle>
           <p className="text-white/80 font-black uppercase text-xs tracking-[0.2em]">Sucesso no seu Arraial</p>
         </div>
         
