@@ -1,4 +1,3 @@
-
 "use client";
 
 import { AppShell, OrderTicketIcon } from '@/components/layout/AppShell';
@@ -176,7 +175,7 @@ export default function PDVPage() {
               <Plus className="h-5 w-5" /> Cardápio
             </h2>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={repeatLastOrder} className="font-bold text-[10px] uppercase h-10 border-primary/20 hover:bg-primary/5 rounded-xl lg:flex hidden">
+              <Button variant="outline" size="sm" onClick={repeatLastOrder} className="font-bold text-[10px] uppercase h-10 border-primary/20 hover:bg-primary/5 hover:border-primary/40 rounded-xl lg:flex hidden">
                 <RefreshCcw className="mr-1 h-3 w-3" /> Repetir Último
               </Button>
             </div>
@@ -203,13 +202,13 @@ export default function PDVPage() {
                   <button
                     key={p.id}
                     onClick={() => addToCart(p)}
-                    className="flex flex-col items-center justify-center p-4 bg-card border-2 border-primary/10 hover:border-primary hover:bg-primary/5 rounded-[2rem] shadow-sm transition-all active:scale-90 group relative overflow-hidden h-40"
+                    className="flex flex-col items-center justify-center p-4 bg-card border-2 border-primary/10 hover:border-primary hover:bg-primary/5 hover:shadow-xl hover:shadow-primary/10 hover:-translate-y-1 rounded-[2rem] shadow-sm transition-all active:scale-95 group relative overflow-hidden h-40"
                   >
                     <div className="absolute top-0 right-0 p-3 opacity-0 group-hover:opacity-100 transition-opacity">
                       <Plus className="h-6 w-6 text-primary" />
                     </div>
-                    <span className="font-black text-sm leading-tight uppercase line-clamp-2 mb-4 px-2 text-center">{p.name}</span>
-                    <span className="bg-primary text-white px-5 py-2 rounded-full text-[11px] font-black shadow-lg">
+                    <span className="font-black text-sm leading-tight uppercase line-clamp-2 mb-4 px-2 text-center group-hover:text-primary">{p.name}</span>
+                    <span className="bg-primary text-white px-5 py-2 rounded-full text-[11px] font-black shadow-lg group-hover:scale-110 transition-transform">
                       R$ {p.price.toFixed(2)}
                     </span>
                   </button>
@@ -220,7 +219,7 @@ export default function PDVPage() {
         </div>
 
         <div id="cart-section" className="lg:col-span-5 xl:col-span-4 flex flex-col gap-6 lg:h-[calc(100vh-140px)] lg:sticky lg:top-0">
-          <Card className="flex flex-col flex-1 shadow-2xl border-none overflow-hidden rounded-[2.5rem] bg-card">
+          <Card className="flex flex-col flex-1 shadow-2xl border-none overflow-hidden rounded-[2.5rem] bg-card hover:shadow-primary/5 transition-shadow">
             <CardHeader className="bg-primary text-white py-6 shrink-0 relative overflow-hidden">
               <div className="absolute top-0 right-0 p-4 opacity-20">
                  <OrderTicketIcon className="h-20 w-20 rotate-12" />
@@ -241,18 +240,18 @@ export default function PDVPage() {
                   </div>
                 ) : (
                   cart.map(item => (
-                    <div key={item.id} className="flex flex-col bg-card border border-primary/5 p-4 rounded-2xl shadow-sm hover:border-primary/20 transition-colors">
+                    <div key={item.id} className="flex flex-col bg-card border border-primary/5 p-4 rounded-2xl shadow-sm hover:border-primary/20 hover:shadow-md transition-all">
                       <div className="flex justify-between items-start mb-3">
                         <span className="font-black uppercase text-xs leading-tight flex-1 pr-2">{item.name}</span>
                         <span className="font-black text-primary text-sm whitespace-nowrap">R$ {(item.price * item.quantity).toFixed(2)}</span>
                       </div>
                       <div className="flex justify-between items-center">
                         <div className="flex items-center bg-muted/50 rounded-xl p-1">
-                          <Button variant="ghost" size="icon" className="h-10 w-10 rounded-lg" onClick={() => updateQuantity(item.id, -1)}>
+                          <Button variant="ghost" size="icon" className="h-10 w-10 rounded-lg hover:bg-primary/10" onClick={() => updateQuantity(item.id, -1)}>
                             <Minus className="h-4 w-4" />
                           </Button>
                           <span className="w-10 text-center font-black text-sm">{item.quantity}</span>
-                          <Button variant="ghost" size="icon" className="h-10 w-10 rounded-lg" onClick={() => updateQuantity(item.id, 1)}>
+                          <Button variant="ghost" size="icon" className="h-10 w-10 rounded-lg hover:bg-primary/10" onClick={() => updateQuantity(item.id, 1)}>
                             <Plus className="h-4 w-4" />
                           </Button>
                         </div>
@@ -302,7 +301,7 @@ export default function PDVPage() {
                 </Button>
                 
                 {cart.length > 0 && (
-                  <button className="w-full text-[10px] font-black uppercase text-muted-foreground/40 hover:text-destructive transition-colors tracking-widest" onClick={clearCart}>
+                  <button className="w-full text-[10px] font-black uppercase text-muted-foreground/40 hover:text-destructive transition-colors tracking-widest py-2" onClick={clearCart}>
                     Limpar Carrinho
                   </button>
                 )}
@@ -316,7 +315,7 @@ export default function PDVPage() {
         <div className="fixed bottom-6 right-6 lg:hidden z-50">
           <Button 
             onClick={scrollToCart} 
-            className="h-16 w-16 rounded-full shadow-2xl animate-bounce flex items-center justify-center p-0"
+            className="h-16 w-16 rounded-full shadow-2xl animate-bounce flex items-center justify-center p-0 hover:scale-110 active:scale-90"
           >
             <div className="relative">
               <ShoppingCart className="h-8 w-8" />
@@ -344,7 +343,7 @@ function PaymentButton({ active, onClick, icon, label }: { active: boolean, onCl
       variant={active ? 'default' : 'outline'} 
       className={cn(
         "flex flex-col h-16 sm:h-20 gap-1 sm:gap-2 border-2 transition-all rounded-2xl flex-1",
-        active ? "border-primary shadow-lg scale-105" : "border-primary/5 opacity-50"
+        active ? "border-primary shadow-lg scale-105" : "border-primary/5 opacity-50 hover:opacity-100 hover:border-primary/20"
       )}
       onClick={onClick}
     >

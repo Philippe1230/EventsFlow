@@ -1,4 +1,3 @@
-
 "use client";
 
 import { AppShell } from '@/components/layout/AppShell';
@@ -113,10 +112,10 @@ export default function DashboardsDetailedPage() {
           <div className="flex-1 space-y-2">
             <span className="text-[10px] font-black uppercase text-muted-foreground ml-1">Selecione o Operador</span>
             <Select value={selectedCashier} onValueChange={setSelectedCashier}>
-              <SelectTrigger className="h-12 rounded-xl border-primary/20 font-bold bg-card shadow-sm">
+              <SelectTrigger className="h-12 rounded-xl border-primary/20 font-bold bg-card shadow-sm hover:border-primary/50 transition-all">
                 <SelectValue placeholder="Escolha um caixa" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="rounded-xl shadow-2xl">
                 <SelectItem value="all" className="font-bold uppercase text-xs">Todos os Caixas</SelectItem>
                 {cashierList.map((c) => (
                   <SelectItem key={c.id} value={c.id} className="font-bold uppercase text-xs">
@@ -134,7 +133,7 @@ export default function DashboardsDetailedPage() {
                 <Button
                   variant={"outline"}
                   className={cn(
-                    "w-full justify-start text-left font-bold h-12 rounded-xl border-primary/20 bg-card shadow-sm",
+                    "w-full justify-start text-left font-bold h-12 rounded-xl border-primary/20 bg-card shadow-sm hover:border-primary/50 hover:bg-card transition-all",
                     !date && "text-muted-foreground"
                   )}
                 >
@@ -142,7 +141,7 @@ export default function DashboardsDetailedPage() {
                   {date ? format(date, "PPP", { locale: ptBR }) : <span>Escolha um dia</span>}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="end">
+              <PopoverContent className="w-auto p-0 border-none shadow-2xl rounded-[2rem] overflow-hidden" align="end">
                 <Calendar
                   mode="single"
                   selected={date}
@@ -171,7 +170,7 @@ export default function DashboardsDetailedPage() {
       </div>
 
       <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
-        <Card className="shadow-md border-primary/5">
+        <Card className="shadow-md border-primary/5 hover:shadow-xl hover:shadow-primary/5 transition-all rounded-[2rem] overflow-hidden">
           <CardHeader>
             <CardTitle className="text-xs font-black uppercase text-primary tracking-tighter flex items-center gap-2">
               <TrendingUp className="h-4 w-4" /> Distribuição de Lucro
@@ -195,11 +194,11 @@ export default function DashboardsDetailedPage() {
                     dataKey="value"
                   >
                     {stats.productSales.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} className="hover:opacity-80 transition-opacity" />
                     ))}
                   </Pie>
                   <Tooltip 
-                    contentStyle={{ backgroundColor: 'hsl(var(--card))', borderRadius: '12px', border: '1px solid hsl(var(--border))', fontSize: '11px' }}
+                    contentStyle={{ backgroundColor: 'hsl(var(--card))', borderRadius: '12px', border: '1px solid hsl(var(--border))', fontSize: '11px', fontWeight: 'bold', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
                     formatter={(value: number, name: string, props: any) => [`R$ ${value.toFixed(2)} (${props.payload.quantity}un)`, name]}
                   />
                 </PieChart>
@@ -208,7 +207,7 @@ export default function DashboardsDetailedPage() {
           </CardContent>
         </Card>
 
-        <Card className="shadow-md border-primary/5">
+        <Card className="shadow-md border-primary/5 hover:shadow-xl hover:shadow-primary/5 transition-all rounded-[2rem] overflow-hidden">
           <CardHeader>
             <CardTitle className="text-xs font-black uppercase text-muted-foreground flex items-center gap-2">
                <UserIcon className="h-4 w-4" /> Detalhamento por Item
@@ -219,22 +218,22 @@ export default function DashboardsDetailedPage() {
               <table className="w-full text-left text-sm">
                 <thead>
                   <tr className="border-b border-primary/10">
-                    <th className="pb-3 font-black uppercase text-[10px]">Produto</th>
-                    <th className="pb-3 font-black uppercase text-[10px] text-center">Qtd</th>
-                    <th className="pb-3 font-black uppercase text-[10px] text-right">Valor</th>
+                    <th className="pb-4 font-black uppercase text-[10px] tracking-widest text-muted-foreground">Produto</th>
+                    <th className="pb-4 font-black uppercase text-[10px] tracking-widest text-muted-foreground text-center">Qtd</th>
+                    <th className="pb-4 font-black uppercase text-[10px] tracking-widest text-muted-foreground text-right">Valor</th>
                   </tr>
                 </thead>
                 <tbody>
                   {stats.productSales.map((p, idx) => (
-                    <tr key={idx} className="border-b border-primary/5 last:border-0 hover:bg-primary/5 transition-colors">
-                      <td className="py-3 font-bold uppercase text-xs">{p.name}</td>
-                      <td className="py-3 text-center font-bold text-muted-foreground">{p.quantity}</td>
-                      <td className="py-3 text-right font-black text-primary">R$ {p.value.toFixed(2)}</td>
+                    <tr key={idx} className="border-b border-primary/5 last:border-0 hover:bg-primary/5 transition-colors group">
+                      <td className="py-4 font-bold uppercase text-xs group-hover:text-primary">{p.name}</td>
+                      <td className="py-4 text-center font-bold text-muted-foreground">{p.quantity}</td>
+                      <td className="py-4 text-right font-black text-primary">R$ {p.value.toFixed(2)}</td>
                     </tr>
                   ))}
                   {stats.productSales.length === 0 && (
                     <tr>
-                      <td colSpan={3} className="py-8 text-center text-muted-foreground italic">Nenhuma venda registrada.</td>
+                      <td colSpan={3} className="py-12 text-center text-muted-foreground italic font-medium">Nenhuma venda registrada no período.</td>
                     </tr>
                   )}
                 </tbody>
@@ -249,16 +248,16 @@ export default function DashboardsDetailedPage() {
 
 function StatCard({ title, value, icon, loading }: { title: string, value: string, icon: React.ReactNode, loading?: boolean }) {
   return (
-    <Card className="shadow-sm border-primary/5 hover:border-primary/20 transition-all">
+    <Card className="shadow-sm border-primary/5 hover:border-primary/20 hover:shadow-xl hover:shadow-primary/5 hover:-translate-y-1 transition-all rounded-2xl group overflow-hidden">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-[10px] font-black uppercase text-muted-foreground tracking-wider">{title}</CardTitle>
-        <div className="text-primary bg-primary/10 p-2 rounded-lg">{icon}</div>
+        <CardTitle className="text-[10px] font-black uppercase text-muted-foreground tracking-wider group-hover:text-primary transition-colors">{title}</CardTitle>
+        <div className="text-primary bg-primary/10 p-2 rounded-lg group-hover:scale-110 transition-transform">{icon}</div>
       </CardHeader>
       <CardContent>
         {loading ? (
           <div className="h-8 w-24 bg-muted animate-pulse rounded" />
         ) : (
-          <div className="text-2xl font-black text-primary">{value}</div>
+          <div className="text-2xl font-black text-primary group-hover:scale-[1.02] transition-transform origin-left">{value}</div>
         )}
       </CardContent>
     </Card>

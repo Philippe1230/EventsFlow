@@ -1,4 +1,3 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -35,7 +34,7 @@
 
 @layer base {
   * {
-    @apply border-border;
+    @apply border-border transition-all duration-300 ease-out;
   }
   body {
     @apply bg-background text-foreground font-body;
@@ -70,4 +69,15 @@
   .pdv-grid {
     grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
   }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  @apply bg-primary/20 rounded-full hover:bg-primary/40;
 }
