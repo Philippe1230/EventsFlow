@@ -5,6 +5,7 @@ import React from 'react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { CheckCircle2, Printer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { OrderTicketIcon } from '@/components/layout/AppShell';
 
 const JuninaFlags = () => (
   <div className="flex justify-center gap-2 mb-6 overflow-hidden">
@@ -27,13 +28,7 @@ export function SuccessModal({ isOpen, onClose, orderNumber }: SuccessModalProps
       <DialogContent className="sm:max-w-md border-none bg-background p-0 overflow-hidden rounded-[2.5rem] shadow-2xl">
         <div className="bg-primary p-10 text-center text-white relative">
           <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none">
-            <svg className="w-full h-full" viewBox="0 0 100 100">
-              <pattern id="pattern" x="0" y="0" width="10" height="10" patternUnits="userSpaceOnUse">
-                <path d="M0 0h10v10H0z" fill="none"/>
-                <path d="M5 0v10M0 5h10" stroke="currentColor" strokeWidth="0.5"/>
-              </pattern>
-              <rect width="100" height="100" fill="url(#pattern)"/>
-            </svg>
+            <OrderTicketIcon className="w-full h-full" />
           </div>
           <JuninaFlags />
           <div className="bg-white/20 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner">
@@ -42,7 +37,7 @@ export function SuccessModal({ isOpen, onClose, orderNumber }: SuccessModalProps
           <DialogTitle className="text-4xl font-black uppercase tracking-tighter mb-2 italic text-white text-center">
             Pedido Feito!
           </DialogTitle>
-          <p className="text-white/80 font-black uppercase text-xs tracking-[0.2em]">Sucesso no seu Arraial</p>
+          <p className="text-white/80 font-black uppercase text-xs tracking-[0.2em]">Retire sua ficha</p>
         </div>
         
         <div className="p-10 text-center bg-card">

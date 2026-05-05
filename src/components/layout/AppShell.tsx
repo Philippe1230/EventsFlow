@@ -4,12 +4,12 @@
 import React, { useMemo } from 'react';
 import { SidebarProvider, Sidebar, SidebarContent, SidebarHeader, SidebarFooter, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import { useAuth } from '@/hooks/use-auth-context';
-import { LayoutDashboard, ShoppingCart, Package, ListOrdered, LogOut, Users, BarChart3, ShieldCheck, User } from 'lucide-react';
+import { LayoutDashboard, ShoppingCart, Package, ListOrdered, LogOut, Users, BarChart3, ShieldCheck, User, Ticket } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 
-export const JuninaFlagsIcon = (props: React.SVGProps<SVGSVGElement>) => (
+export const OrderTicketIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
     viewBox="0 0 24 24"
     fill="none"
@@ -19,9 +19,11 @@ export const JuninaFlagsIcon = (props: React.SVGProps<SVGSVGElement>) => (
     strokeLinejoin="round"
     {...props}
   >
-    <path d="M2 4c5 0 5 4 10 4s5-4 10-4" />
-    <path d="M4 4v7l3-2 3 2V4" />
-    <path d="M14 4v7l3-2 3 2V4" />
+    <path d="M2 9V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v4a3 3 0 0 0 0 6v4a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-4a3 3 0 0 0 0-6Z" />
+    <path d="M13 3v2" />
+    <path d="M13 8v2" />
+    <path d="M13 13v2" />
+    <path d="M13 18v2" />
   </svg>
 );
 
@@ -40,6 +42,7 @@ const LoadingJunina = () => (
         />
       ))}
     </div>
+    <p className="mt-8 font-black uppercase tracking-[0.3em] text-primary animate-pulse text-xs">Preparando Fichas...</p>
   </div>
 );
 
@@ -74,13 +77,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <Sidebar collapsible="icon" className="border-r border-primary/10 shadow-xl bg-card">
         <SidebarHeader className="p-6 flex flex-row items-center gap-3">
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary text-white shadow-lg shrink-0">
-            <JuninaFlagsIcon className="h-7 w-7" />
+            <OrderTicketIcon className="h-7 w-7" />
           </div>
           <div className="flex flex-col group-data-[collapsible=icon]:hidden">
             <span className="font-black text-lg leading-none text-primary uppercase tracking-tighter">
               {organizationName || 'Arraial'}
             </span>
-            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">PDV Digital</span>
+            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Fichas & Vendas</span>
           </div>
         </SidebarHeader>
         <SidebarContent>

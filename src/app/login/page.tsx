@@ -12,7 +12,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import Link from 'next/link';
-import { JuninaFlagsIcon } from '@/components/layout/AppShell';
+import { OrderTicketIcon } from '@/components/layout/AppShell';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -47,7 +47,7 @@ export default function LoginPage() {
         <CardHeader className="text-center pt-10">
           <div className="flex justify-center mb-6">
             <div className="bg-primary p-5 rounded-[1.5rem] text-white shadow-xl rotate-3 scale-110">
-              <JuninaFlagsIcon className="h-10 w-10" />
+              <OrderTicketIcon className="h-10 w-10" />
             </div>
           </div>
           <CardTitle className="text-3xl font-black uppercase text-primary tracking-tighter">Arraial PDV</CardTitle>

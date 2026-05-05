@@ -13,7 +13,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import Link from 'next/link';
-import { JuninaFlagsIcon } from '@/components/layout/AppShell';
+import { OrderTicketIcon } from '@/components/layout/AppShell';
 
 export default function RegisterPage() {
   const [name, setName] = useState('');
@@ -88,7 +88,7 @@ export default function RegisterPage() {
         <CardHeader className="text-center pt-8">
           <div className="flex justify-center mb-6">
             <div className="bg-primary p-4 rounded-2xl text-white shadow-xl -rotate-3">
-              <JuninaFlagsIcon className="h-8 w-8" />
+              <OrderTicketIcon className="h-8 w-8" />
             </div>
           </div>
           <CardTitle className="text-3xl font-black uppercase text-primary tracking-tighter">Novo Arraial</CardTitle>

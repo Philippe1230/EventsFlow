@@ -1,7 +1,7 @@
 
 "use client";
 
-import { AppShell, JuninaFlagsIcon } from '@/components/layout/AppShell';
+import { AppShell, OrderTicketIcon } from '@/components/layout/AppShell';
 import { useAuth } from '@/hooks/use-auth-context';
 import { useState } from 'react';
 import { collection, doc, getDoc, serverTimestamp, addDoc } from 'firebase/firestore';
@@ -170,7 +170,6 @@ export default function PDVPage() {
   return (
     <AppShell>
       <div className="flex flex-col lg:grid lg:grid-cols-12 gap-6 pb-24 lg:pb-0">
-        {/* Lado Esquerdo: Produtos */}
         <div className="lg:col-span-7 xl:col-span-8 flex flex-col gap-4">
           <div className="flex justify-between items-center bg-card p-4 rounded-2xl border border-primary/10 shadow-sm sticky top-0 z-10 lg:static">
             <h2 className="text-lg font-black text-primary uppercase flex items-center gap-2">
@@ -195,7 +194,7 @@ export default function PDVPage() {
               </div>
             ) : products.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 text-center bg-card rounded-[2rem] border-2 border-dashed border-primary/10 p-8">
-                <JuninaFlagsIcon className="h-16 w-16 text-primary/20 mb-6" />
+                <OrderTicketIcon className="h-16 w-16 text-primary/20 mb-6" />
                 <p className="text-muted-foreground font-black uppercase text-sm tracking-widest">Nenhum produto ativo</p>
               </div>
             ) : (
@@ -220,12 +219,11 @@ export default function PDVPage() {
           </div>
         </div>
 
-        {/* Lado Direito: Carrinho */}
         <div id="cart-section" className="lg:col-span-5 xl:col-span-4 flex flex-col gap-6 lg:h-[calc(100vh-140px)] lg:sticky lg:top-0">
           <Card className="flex flex-col flex-1 shadow-2xl border-none overflow-hidden rounded-[2.5rem] bg-card">
             <CardHeader className="bg-primary text-white py-6 shrink-0 relative overflow-hidden">
               <div className="absolute top-0 right-0 p-4 opacity-20">
-                 <JuninaFlagsIcon className="h-20 w-20 rotate-12" />
+                 <OrderTicketIcon className="h-20 w-20 rotate-12" />
               </div>
               <CardTitle className="flex items-center justify-between text-base uppercase font-black relative z-10">
                 <div className="flex items-center gap-3">
@@ -238,7 +236,7 @@ export default function PDVPage() {
               <div className="flex-1 overflow-y-auto p-4 lg:p-6 space-y-4 max-h-[500px] lg:max-h-none">
                 {cart.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-20 opacity-10">
-                    <JuninaFlagsIcon className="h-24 w-24 text-primary mb-6" />
+                    <OrderTicketIcon className="h-24 w-24 text-primary mb-6" />
                     <p className="text-center font-black uppercase text-xs tracking-widest">Carrinho Vazio</p>
                   </div>
                 ) : (
@@ -314,7 +312,6 @@ export default function PDVPage() {
         </div>
       </div>
 
-      {/* Botão flutuante para mobile quando o carrinho tem itens */}
       {cart.length > 0 && (
         <div className="fixed bottom-6 right-6 lg:hidden z-50">
           <Button 
