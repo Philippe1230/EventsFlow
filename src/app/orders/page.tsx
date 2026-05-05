@@ -3,16 +3,17 @@
 
 import { AppShell } from '@/components/layout/AppShell';
 import { useAuth } from '@/hooks/use-auth-context';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { collection, query, getDocs, orderBy, Timestamp, limit, where } from 'firebase/firestore';
 import { useFirestore } from '@/firebase';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Download, Loader2, Printer, Filter } from 'lucide-react';
+import { Download, Loader2, Printer, Filter, User as UserIcon, Users } from 'lucide-react';
 import { format } from 'date-fns';
 import { PrintTickets } from '@/components/pdv/PrintTickets';
+import { cn } from '@/lib/utils';
 
 interface Order {
   id: string;
@@ -25,12 +26,25 @@ interface Order {
 }
 
 export default function OrdersPage() {
-  const { tenantId, user, role, loading: authLoading } = useAuth();
+  const { tenantId, user, role, tenantMembers, isSuperAdmin, loading: authLoading } = useAuth();
   const db = useFirestore();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [printableTickets, setPrintableTickets] = useState<any[]>([]);
   const [ordersLimit, setOrdersLimit] = useState<string>("20");
+  
+  // O filtro padrão para o dono é o ID dele mesmo, mas ele pode mudar.
+  // Para o caixa, esse valor será fixo e o seletor ficará escondido.
+  const [selectedCashier, setSelectedCashier] = useState<string>(user?.uid || "all");
+
+  // Lista de caixas para o filtro (apenas para owners/superadmins)
+  const cashierList = useMemo(() => {
+    if (!tenantMembers) return [];
+    return Object.entries(tenantMembers).map(([uid, info]: [string, any]) => ({
+      id: uid,
+      name: typeof info === 'object' ? info.name : `Operador ${uid.substring(0, 4)}`,
+    })).sort((a, b) => a.name.localeCompare(b.name));
+  }, [tenantMembers]);
 
   const fetchOrders = useCallback(async () => {
     if (!tenantId || !user) return;
@@ -39,17 +53,21 @@ export default function OrdersPage() {
       const ordersCol = collection(db, 'tenants', tenantId, 'orders');
       let q;
       
-      // Lógica de Isolamento: Caixas veem apenas seus pedidos, Donos veem tudo.
-      if (role === 'cashier') {
+      // Se for Caixa, força sempre o ID dele
+      const effectiveCashier = role === 'cashier' ? user.uid : selectedCashier;
+
+      if (effectiveCashier === "all") {
+        // Visão Global (Todos os caixas)
         q = query(
           ordersCol, 
-          where('userId', '==', user.uid),
           orderBy('createdAt', 'desc'),
           limit(parseInt(ordersLimit))
         );
       } else {
+        // Visão Específica (Um caixa ou o próprio dono)
         q = query(
           ordersCol, 
+          where('userId', '==', effectiveCashier),
           orderBy('createdAt', 'desc'),
           limit(parseInt(ordersLimit))
         );
@@ -61,23 +79,31 @@ export default function OrdersPage() {
       console.error("Erro ao buscar pedidos:", e);
     }
     setLoading(false);
-  }, [db, tenantId, user, role, ordersLimit]);
+  }, [db, tenantId, user, role, ordersLimit, selectedCashier]);
 
   useEffect(() => {
-    if (tenantId && !authLoading) fetchOrders();
-  }, [tenantId, authLoading, fetchOrders]);
+    if (tenantId && !authLoading && user) {
+      // Se o user.uid mudou ou carregou agora, e o estado estava inicial, atualizamos
+      if (selectedCashier === "all" && role !== 'super-admin') {
+         setSelectedCashier(user.uid);
+      }
+      fetchOrders();
+    }
+  }, [tenantId, authLoading, fetchOrders, user, role]);
 
   const exportCSV = () => {
     if (orders.length === 0) return;
 
     let csvContent = "data:text/csv;charset=utf-8,";
-    csvContent += "Data,Pedido #,Produto,Quantidade,Valor,Pagamento\n";
+    csvContent += "Data,Pedido #,Produto,Quantidade,Valor,Pagamento,Operador\n";
 
     orders.forEach(order => {
       const date = order.createdAt instanceof Timestamp ? order.createdAt.toDate() : new Date(order.createdAt);
       const dateStr = format(date, 'dd/MM/yyyy HH:mm');
+      const cashierName = tenantMembers?.[order.userId]?.name || order.userId;
+      
       order.items.forEach(item => {
-        csvContent += `${dateStr},${order.orderNumber},"${item.name}",${item.quantity},"${item.price.toFixed(2)}","${order.paymentMethod}"\n`;
+        csvContent += `${dateStr},${order.orderNumber},"${item.name}",${item.quantity},"${item.price.toFixed(2)}","${order.paymentMethod}","${cashierName}"\n`;
       });
     });
 
@@ -111,43 +137,72 @@ export default function OrdersPage() {
     }, 100);
   };
 
+  const isAdminView = role === 'owner' || isSuperAdmin;
+
   return (
     <AppShell>
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10 max-w-7xl mx-auto px-1">
-        <div className="space-y-1">
-          <h2 className="text-3xl md:text-4xl font-black text-primary uppercase tracking-tighter italic leading-none">
-            {role === 'cashier' ? 'Minhas Vendas' : 'Histórico Global'}
-          </h2>
-          <p className="text-sm md:text-base text-muted-foreground font-medium italic">
-            {role === 'cashier' ? 'Gerencie seus pedidos realizados.' : 'Acompanhe todas as vendas do evento.'}
-          </p>
+      <div className="flex flex-col gap-8 mb-10 max-w-7xl mx-auto px-1">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+          <div className="space-y-1">
+            <h2 className="text-3xl md:text-4xl font-black text-primary uppercase tracking-tighter italic leading-none">
+              {role === 'cashier' ? 'Minhas Vendas' : 'Histórico de Vendas'}
+            </h2>
+            <p className="text-sm md:text-base text-muted-foreground font-medium italic">
+              {role === 'cashier' ? 'Gerencie seus pedidos realizados.' : 'Filtre e visualize a performance da equipe.'}
+            </p>
+          </div>
+          
+          <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+            <Button 
+              onClick={exportCSV} 
+              variant="outline" 
+              className="flex-1 sm:flex-none font-black uppercase rounded-2xl h-14 px-8 shadow-xl shadow-primary/5 border-primary/10 transition-all hover:scale-[1.02] active:scale-95 bg-card" 
+              disabled={orders.length === 0}
+            >
+              <Download className="mr-3 h-5 w-5 text-primary" /> Exportar CSV
+            </Button>
+          </div>
         </div>
-        
-        <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-          <div className="flex items-center gap-2 bg-card border border-primary/10 rounded-2xl px-4 h-14 shadow-sm">
-            <Filter className="h-4 w-4 text-primary" />
-            <span className="text-[10px] font-black uppercase text-muted-foreground tracking-widest whitespace-nowrap">Ver últimos:</span>
+
+        {/* Barra de Filtros */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 bg-card p-6 rounded-[2rem] border border-primary/5 shadow-xl shadow-primary/5">
+          {isAdminView && (
+            <div className="space-y-2">
+              <span className="text-[10px] font-black uppercase text-primary tracking-widest ml-1 flex items-center gap-2">
+                <Users className="h-3 w-3" /> Filtrar por Operador
+              </span>
+              <Select value={selectedCashier} onValueChange={setSelectedCashier}>
+                <SelectTrigger className="h-12 rounded-xl border-primary/10 font-bold bg-muted/20 shadow-none hover:border-primary/40 transition-all px-4">
+                  <SelectValue placeholder="Selecione o caixa" />
+                </SelectTrigger>
+                <SelectContent className="rounded-2xl border-none shadow-2xl">
+                  <SelectItem value="all" className="font-bold uppercase text-xs">Todos os Operadores</SelectItem>
+                  {cashierList.map((c) => (
+                    <SelectItem key={c.id} value={c.id} className="font-bold uppercase text-xs">
+                      {c.name} {c.id === user?.uid ? "(Você)" : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          <div className="space-y-2">
+            <span className="text-[10px] font-black uppercase text-primary tracking-widest ml-1 flex items-center gap-2">
+              <Filter className="h-3 w-3" /> Exibir Quantidade
+            </span>
             <Select value={ordersLimit} onValueChange={setOrdersLimit}>
-              <SelectTrigger className="border-none bg-transparent shadow-none font-black text-primary w-[80px] focus:ring-0">
+              <SelectTrigger className="h-12 rounded-xl border-primary/10 font-bold bg-muted/20 shadow-none hover:border-primary/40 transition-all px-4">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="rounded-2xl border-none shadow-2xl">
-                <SelectItem value="5" className="font-bold uppercase text-xs">5</SelectItem>
-                <SelectItem value="20" className="font-bold uppercase text-xs">20</SelectItem>
-                <SelectItem value="30" className="font-bold uppercase text-xs">30</SelectItem>
-                <SelectItem value="100" className="font-bold uppercase text-xs">100</SelectItem>
+                <SelectItem value="5" className="font-bold uppercase text-xs">Últimos 5 Pedidos</SelectItem>
+                <SelectItem value="20" className="font-bold uppercase text-xs">Últimos 20 Pedidos</SelectItem>
+                <SelectItem value="30" className="font-bold uppercase text-xs">Últimos 30 Pedidos</SelectItem>
+                <SelectItem value="100" className="font-bold uppercase text-xs">Últimos 100 Pedidos</SelectItem>
               </SelectContent>
             </Select>
           </div>
-
-          <Button 
-            onClick={exportCSV} 
-            variant="outline" 
-            className="flex-1 sm:flex-none font-black uppercase rounded-2xl h-14 px-8 shadow-xl shadow-primary/5 border-primary/10 transition-all hover:scale-[1.02] active:scale-95 bg-card" 
-            disabled={orders.length === 0}
-          >
-            <Download className="mr-3 h-5 w-5 text-primary" /> Exportar CSV
-          </Button>
         </div>
       </div>
 
@@ -158,6 +213,7 @@ export default function OrdersPage() {
               <TableRow className="hover:bg-transparent border-primary/5">
                 <TableHead className="font-black uppercase text-[10px] py-6 pl-8 tracking-widest w-[120px]">Ticket</TableHead>
                 <TableHead className="font-black uppercase text-[10px] tracking-widest w-[150px]">Data & Hora</TableHead>
+                {isAdminView && <TableHead className="font-black uppercase text-[10px] tracking-widest w-[150px]">Operador</TableHead>}
                 <TableHead className="font-black uppercase text-[10px] tracking-widest">Produtos Vendidos</TableHead>
                 <TableHead className="font-black uppercase text-[10px] tracking-widest w-[120px]">Pagamento</TableHead>
                 <TableHead className="text-right font-black uppercase text-[10px] tracking-widest w-[140px]">Faturado</TableHead>
@@ -167,7 +223,7 @@ export default function OrdersPage() {
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-24">
+                  <TableCell colSpan={isAdminView ? 7 : 6} className="text-center py-24">
                     <div className="flex flex-col items-center gap-4">
                       <Loader2 className="h-12 w-12 animate-spin text-primary opacity-20" />
                       <span className="font-black uppercase text-[10px] tracking-[0.3em] text-primary/40">Sincronizando Histórico...</span>
@@ -176,7 +232,7 @@ export default function OrdersPage() {
                 </TableRow>
               ) : orders.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-24 text-muted-foreground">
+                  <TableCell colSpan={isAdminView ? 7 : 6} className="text-center py-24 text-muted-foreground">
                     <div className="flex flex-col items-center gap-4">
                       <div className="bg-primary/5 p-6 rounded-[2rem]">
                         <Printer className="h-12 w-12 text-primary/20" />
@@ -200,8 +256,18 @@ export default function OrdersPage() {
                     <TableCell className="font-bold text-muted-foreground text-xs whitespace-nowrap">
                       {format(o.createdAt instanceof Timestamp ? o.createdAt.toDate() : new Date(o.createdAt), 'dd/MM/yyyy HH:mm')}
                     </TableCell>
+                    {isAdminView && (
+                      <TableCell>
+                         <div className="flex items-center gap-2">
+                           <UserIcon className="h-3.5 w-3.5 text-primary/40" />
+                           <span className="font-black uppercase text-[10px] text-muted-foreground">
+                             {tenantMembers?.[o.userId]?.name || "Desconhecido"}
+                           </span>
+                         </div>
+                      </TableCell>
+                    )}
                     <TableCell>
-                      <div className="flex flex-wrap gap-1.5 max-w-[400px]">
+                      <div className="flex flex-wrap gap-1.5 max-w-[350px]">
                         {o.items.map((item, idx) => (
                           <Badge key={idx} variant="secondary" className="text-[9px] font-black uppercase bg-primary/5 text-primary border-none py-1 px-2.5 rounded-lg shadow-sm whitespace-nowrap">
                             {item.quantity}x {item.name}
@@ -240,3 +306,4 @@ export default function OrdersPage() {
     </AppShell>
   );
 }
+
