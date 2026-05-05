@@ -1,3 +1,4 @@
+
 "use client";
 
 import { AppShell } from '@/components/layout/AppShell';
@@ -30,7 +31,7 @@ export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [currentProduct, setCurrentProduct] = useState<Partial<Product>>({ name: '', price: 0, category: 'Comida', active: true });
+  const [currentProduct, setCurrentProduct] = useState<Partial<Product>>({ name: '', price: 0, category: 'Geral', active: true });
   const [isEditing, setIsEditing] = useState(false);
 
   useEffect(() => {
@@ -86,7 +87,7 @@ export default function ProductsPage() {
       setCurrentProduct(product);
       setIsEditing(true);
     } else {
-      setCurrentProduct({ name: '', price: 0, category: 'Comida', active: true });
+      setCurrentProduct({ name: '', price: 0, category: 'Geral', active: true });
       setIsEditing(false);
     }
     setIsDialogOpen(true);
@@ -95,7 +96,7 @@ export default function ProductsPage() {
   return (
     <AppShell>
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold font-headline">Produtos do Arraial</h2>
+        <h2 className="text-2xl font-bold font-headline">Produtos do Evento</h2>
         <Button onClick={() => openDialog()}>
           <PlusCircle className="mr-2 h-4 w-4" /> Novo Produto
         </Button>
@@ -172,10 +173,10 @@ export default function ProductsPage() {
                   <SelectValue placeholder="Selecione" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Comida">Comida</SelectItem>
-                  <SelectItem value="Bebida">Bebida</SelectItem>
-                  <SelectItem value="Brincadeira">Brincadeira</SelectItem>
-                  <SelectItem value="Doces">Doces</SelectItem>
+                  <SelectItem value="Geral">Geral</SelectItem>
+                  <SelectItem value="Alimentação">Alimentação</SelectItem>
+                  <SelectItem value="Bebidas">Bebidas</SelectItem>
+                  <SelectItem value="Outros">Outros</SelectItem>
                 </SelectContent>
               </Select>
             </div>

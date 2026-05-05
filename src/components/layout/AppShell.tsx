@@ -4,7 +4,7 @@
 import React, { useMemo } from 'react';
 import { SidebarProvider, Sidebar, SidebarContent, SidebarHeader, SidebarFooter, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import { useAuth } from '@/hooks/use-auth-context';
-import { LayoutDashboard, ShoppingCart, Package, ListOrdered, LogOut, Users, BarChart3, ShieldCheck, User, Ticket } from 'lucide-react';
+import { LayoutDashboard, ShoppingCart, Package, ListOrdered, LogOut, Users, BarChart3, ShieldCheck, User } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
@@ -81,7 +81,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
           <div className="flex flex-col group-data-[collapsible=icon]:hidden">
             <span className="font-black text-lg leading-none text-primary uppercase tracking-tighter">
-              {organizationName || 'Arraial'}
+              {organizationName || 'Evento'}
             </span>
             <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Fichas & Vendas</span>
           </div>
@@ -146,7 +146,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 className="h-11 rounded-xl text-muted-foreground hover:text-destructive hover:bg-destructive/5 font-black uppercase text-[10px]"
               >
                 <LogOut className="h-4 w-4" />
-                <span className="group-data-[collapsible=icon]:hidden">Sair do Arraial</span>
+                <span className="group-data-[collapsible=icon]:hidden">Sair do Evento</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>

@@ -140,7 +140,7 @@ export default function TeamPage() {
       await updateDoc(tenantRef, {
         [`members.${uid}`]: deleteField()
       });
-      toast({ title: 'Sucesso', description: 'Acesso removido do Arraial.' });
+      toast({ title: 'Sucesso', description: 'Acesso removido do Evento.' });
     } catch (e) {
       console.error(e);
       toast({ title: 'Erro', description: 'Erro ao remover acesso.', variant: 'destructive' });
@@ -181,7 +181,7 @@ export default function TeamPage() {
                 <Input 
                   id="email" 
                   type="email" 
-                  placeholder="caixa1@arraial.com" 
+                  placeholder="caixa1@evento.com" 
                   value={email} 
                   onChange={(e) => setEmail(e.target.value)} 
                   required

@@ -6,12 +6,12 @@ import { AuthProvider } from '@/hooks/use-auth-context';
 import { Toaster } from '@/components/ui/toaster';
 
 export const metadata: Metadata = {
-  title: 'Arraial PDV - Vendas Festa Junina',
-  description: 'Controle de vendas ultra rápido para festas juninas',
+  title: 'Evento PDV - Vendas e Fichas',
+  description: 'Controle de vendas ultra rápido para eventos e festivais',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
-    title: 'Arraial PDV',
+    title: 'Evento PDV',
   },
   formatDetection: {
     telephone: false,

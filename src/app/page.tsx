@@ -12,7 +12,7 @@ import {
   BarChart3, 
   CheckCircle2, 
   ArrowRight,
-  Flame
+  Ticket
 } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect } from 'react';
@@ -33,28 +33,28 @@ export default function GuidePage() {
   const steps = [
     {
       title: "1. Prepare o Cardápio",
-      description: "Vá em 'Produtos' e cadastre tudo o que vai vender. Já deixamos alguns de exemplo para você!",
+      description: "Vá em 'Produtos' e cadastre tudo o que vai vender no seu evento.",
       icon: <Package className="h-6 w-6" />,
       link: "/products",
       color: "bg-orange-500"
     },
     {
       title: "2. Monte sua Equipe",
-      description: "Em 'Equipe', crie os acessos para seus caixas. Você define o nome (ex: Caixa 1) e a senha na hora.",
+      description: "Em 'Equipe', crie os acessos para seus caixas. Você define o nome e a senha na hora.",
       icon: <Users className="h-6 w-6" />,
       link: "/team",
       color: "bg-red-500"
     },
     {
       title: "3. Hora de Vender!",
-      description: "No 'PDV' (Fazer Pedidos), você ou seus caixas realizam as vendas em segundos. Imprima as fichas na hora!",
+      description: "No 'PDV' (Fazer Pedidos), realize as vendas em segundos. Imprima as fichas na hora!",
       icon: <ShoppingCart className="h-6 w-6" />,
       link: "/pdv",
       color: "bg-yellow-500"
     },
     {
-      title: "4. Acompanhe o Lucro",
-      description: "Nos 'Dashboards', veja quanto cada caixa arrecadou e qual produto está bombando no seu Arraial.",
+      title: "4. Acompanhe os Resultados",
+      description: "Nos 'Dashboards', veja quanto cada caixa arrecadou e qual produto está bombando no seu Evento.",
       icon: <BarChart3 className="h-6 w-6" />,
       link: "/dashboards",
       color: "bg-green-500"
@@ -66,13 +66,13 @@ export default function GuidePage() {
       <div className="max-w-4xl mx-auto space-y-8">
         <div className="text-center space-y-2">
           <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full font-black text-xs uppercase tracking-widest mb-2">
-            <Flame className="h-4 w-4" /> Bem-vindo ao seu Arraial
+            <Ticket className="h-4 w-4" /> Bem-vindo ao seu Evento
           </div>
           <h2 className="text-4xl font-black text-primary uppercase tracking-tighter">
-            {organizationName || "Seu Arraial"}
+            {organizationName || "Seu Evento"}
           </h2>
           <p className="text-muted-foreground font-medium italic">
-            Siga os passos abaixo para organizar sua festa e começar a faturar.
+            Siga os passos abaixo para organizar sua operação e começar a faturar.
           </p>
         </div>
 

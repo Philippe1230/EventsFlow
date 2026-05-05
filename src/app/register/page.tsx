@@ -62,17 +62,15 @@ export default function RegisterPage() {
       });
 
       const initialProducts = [
-        { name: 'Pipoca', price: 5.0, category: 'Comida', active: true, tenantId: tenantRef.id, createdAt: new Date() },
-        { name: 'Quentão', price: 8.0, category: 'Bebida', active: true, tenantId: tenantRef.id, createdAt: new Date() },
-        { name: 'Milho Cozido', price: 6.0, category: 'Comida', active: true, tenantId: tenantRef.id, createdAt: new Date() },
-        { name: 'Pescaria', price: 5.0, category: 'Brincadeira', active: true, tenantId: tenantRef.id, createdAt: new Date() },
+        { name: 'Produto Exemplo A', price: 10.0, category: 'Comida', active: true, tenantId: tenantRef.id, createdAt: new Date() },
+        { name: 'Produto Exemplo B', price: 5.0, category: 'Bebida', active: true, tenantId: tenantRef.id, createdAt: new Date() },
       ];
 
       for (const p of initialProducts) {
         await addDoc(collection(db, 'tenants', tenantRef.id, 'products'), p);
       }
 
-      toast({ title: "Arraial criado!", description: "Sua conta e organização foram configuradas." });
+      toast({ title: "Evento criado!", description: "Sua conta e organização foram configuradas." });
       router.push('/');
     } catch (error: any) {
       console.error(error);
@@ -91,7 +89,7 @@ export default function RegisterPage() {
               <OrderTicketIcon className="h-8 w-8" />
             </div>
           </div>
-          <CardTitle className="text-3xl font-black uppercase text-primary tracking-tighter">Novo Arraial</CardTitle>
+          <CardTitle className="text-3xl font-black uppercase text-primary tracking-tighter">Novo Evento</CardTitle>
           <CardDescription className="font-bold uppercase text-[10px] tracking-widest text-muted-foreground mt-2">Crie sua organização</CardDescription>
         </CardHeader>
         <form onSubmit={handleRegister}>
@@ -108,10 +106,10 @@ export default function RegisterPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="orgName" className="font-bold uppercase text-[10px] ml-1">Nome da Festa</Label>
+              <Label htmlFor="orgName" className="font-bold uppercase text-[10px] ml-1">Nome do Evento</Label>
               <Input 
                 id="orgName" 
-                placeholder="Ex: Arraial da Paróquia" 
+                placeholder="Ex: Festival de Verão" 
                 value={orgName} 
                 onChange={(e) => setOrgName(e.target.value)} 
                 required 
@@ -145,7 +143,7 @@ export default function RegisterPage() {
           </CardContent>
           <CardFooter className="flex flex-col gap-4 p-8">
             <Button type="submit" className="w-full h-14 font-black uppercase text-lg rounded-2xl shadow-xl shadow-primary/20" disabled={loading}>
-              {loading ? <Loader2 className="animate-spin mr-2 h-5 w-5" /> : "Criar meu Arraial"}
+              {loading ? <Loader2 className="animate-spin mr-2 h-4 w-4" /> : "Criar meu Evento"}
             </Button>
             <p className="text-sm text-center text-muted-foreground font-medium">
               Já tem uma conta?{" "}
