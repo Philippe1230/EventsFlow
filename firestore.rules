@@ -82,5 +82,7 @@ service cloud.firestore {
     match /{document=**} {
       allow read, write: if isSuperAdmin();
     }
+    
+    // Comentário para forçar deploy das regras e documentar necessidade de índice composto para ordens.
   }
 }
