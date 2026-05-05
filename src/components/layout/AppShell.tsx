@@ -9,7 +9,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 
-const JuninaFlagsIcon = (props: React.SVGProps<SVGSVGElement>) => (
+export const JuninaFlagsIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
     viewBox="0 0 24 24"
     fill="none"
@@ -26,27 +26,20 @@ const JuninaFlagsIcon = (props: React.SVGProps<SVGSVGElement>) => (
 );
 
 const LoadingJunina = () => (
-  <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#fff9f5]">
-    <div className="flex gap-2 mb-8">
-      {[1, 2, 3, 4, 5].map((i) => (
+  <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-background">
+    <div className="flex gap-3">
+      {[1, 2, 3, 4, 5, 6].map((i) => (
         <div 
           key={i} 
-          className="w-10 h-14 rounded-b-2xl animate-bounce shadow-lg" 
+          className="w-12 h-16 rounded-b-3xl animate-bounce shadow-xl" 
           style={{ 
-            backgroundColor: ['#f97316', '#ef4444', '#eab308', '#22c55e', '#06b6d4'][i-1],
-            animationDelay: `${i * 0.1}s`
+            backgroundColor: ['#f97316', '#ef4444', '#eab308', '#22c55e', '#06b6d4', '#ec4899'][i-1],
+            animationDelay: `${i * 0.1}s`,
+            animationDuration: '0.8s'
           }} 
         />
       ))}
     </div>
-    <div className="relative">
-      <div className="h-20 w-20 items-center justify-center rounded-3xl bg-primary/10 flex animate-pulse border-2 border-primary/20">
-        <JuninaFlagsIcon className="h-12 w-12 text-primary" />
-      </div>
-    </div>
-    <p className="mt-8 text-2xl font-black text-primary uppercase tracking-[0.2em] animate-pulse italic">
-      Sincronizando Arraial...
-    </p>
   </div>
 );
 
@@ -54,9 +47,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { user, loading, organizationName, signOut, role } = useAuth();
   const pathname = usePathname();
 
-  // Otimização: Só mostra o loading se não houver usuário ou se estiver carregando inicialmente
   const isInitialLoading = loading && !user;
-  
   const isAdmin = role === 'owner';
 
   const navItems = useMemo(() => [
@@ -82,16 +73,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <SidebarProvider>
       <Sidebar collapsible="icon" className="border-r border-primary/10 shadow-xl bg-card">
         <SidebarHeader className="p-6 flex flex-row items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-white shadow-lg shrink-0">
-            <JuninaFlagsIcon className="h-6 w-6" />
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary text-white shadow-lg shrink-0">
+            <JuninaFlagsIcon className="h-7 w-7" />
           </div>
-          <span className="font-black text-xl truncate text-primary uppercase tracking-tighter group-data-[collapsible=icon]:hidden">
-            {organizationName || 'Arraial'}
-          </span>
+          <div className="flex flex-col group-data-[collapsible=icon]:hidden">
+            <span className="font-black text-lg leading-none text-primary uppercase tracking-tighter">
+              {organizationName || 'Arraial'}
+            </span>
+            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">PDV Digital</span>
+          </div>
         </SidebarHeader>
         <SidebarContent>
           <SidebarMenu className="px-3 pt-2 relative">
-            {/* Marcador deslizante otimizado com CSS transition */}
             <div 
               className="absolute left-3 right-3 h-12 bg-primary rounded-2xl transition-all duration-300 shadow-md shadow-primary/20 z-0 group-data-[collapsible=icon]:hidden"
               style={{ 

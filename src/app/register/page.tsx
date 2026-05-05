@@ -13,14 +13,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import Link from 'next/link';
-
-const JuninaFlagsIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
-    <path d="M2 4c5 0 5 4 10 4s5-4 10-4" />
-    <path d="M4 4v7l3-2 3 2V4" />
-    <path d="M14 4v7l3-2 3 2V4" />
-  </svg>
-);
+import { JuninaFlagsIcon } from '@/components/layout/AppShell';
 
 export default function RegisterPage() {
   const [name, setName] = useState('');
@@ -39,11 +32,9 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
-      // 1. Criar usuário no Auth
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      // 2. Criar Perfil do Usuário
       await setDoc(doc(db, 'userProfiles', user.uid), {
         id: user.uid,
         email: user.email,
@@ -51,7 +42,6 @@ export default function RegisterPage() {
         createdAt: new Date()
       });
 
-      // 3. Criar o Tenant (Organização) com dados denormalizados do proprietário
       const tenantRef = await addDoc(collection(db, 'tenants'), {
         name: orgName,
         createdAt: new Date(),
@@ -64,7 +54,6 @@ export default function RegisterPage() {
         }
       });
 
-      // 4. Criar a Membership ligando o usuário ao tenant
       await addDoc(collection(db, 'userProfiles', user.uid, 'memberships'), {
         userId: user.uid,
         tenantId: tenantRef.id,
@@ -72,7 +61,6 @@ export default function RegisterPage() {
         joinedAt: new Date()
       });
 
-      // 5. Adicionar produtos iniciais (seed) para o novo tenant
       const initialProducts = [
         { name: 'Pipoca', price: 5.0, category: 'Comida', active: true, tenantId: tenantRef.id, createdAt: new Date() },
         { name: 'Quentão', price: 8.0, category: 'Bebida', active: true, tenantId: tenantRef.id, createdAt: new Date() },
@@ -96,40 +84,42 @@ export default function RegisterPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center p-4 bg-background">
-      <Card className="w-full max-w-md shadow-xl border-primary/10">
-        <CardHeader className="text-center">
-          <div className="flex justify-center mb-4">
-            <div className="bg-primary p-3 rounded-2xl text-white shadow-lg">
+      <Card className="w-full max-w-md shadow-2xl border-primary/10 rounded-[2rem] overflow-hidden">
+        <CardHeader className="text-center pt-8">
+          <div className="flex justify-center mb-6">
+            <div className="bg-primary p-4 rounded-2xl text-white shadow-xl -rotate-3">
               <JuninaFlagsIcon className="h-8 w-8" />
             </div>
           </div>
-          <CardTitle className="text-2xl font-black uppercase text-primary">Novo Arraial</CardTitle>
-          <CardDescription className="font-medium">Crie sua conta e organize sua festa junina.</CardDescription>
+          <CardTitle className="text-3xl font-black uppercase text-primary tracking-tighter">Novo Arraial</CardTitle>
+          <CardDescription className="font-bold uppercase text-[10px] tracking-widest text-muted-foreground mt-2">Crie sua organização</CardDescription>
         </CardHeader>
         <form onSubmit={handleRegister}>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 px-8">
             <div className="space-y-2">
-              <Label htmlFor="name">Seu Nome</Label>
+              <Label htmlFor="name" className="font-bold uppercase text-[10px] ml-1">Seu Nome</Label>
               <Input 
                 id="name" 
                 placeholder="Ex: João Silva" 
                 value={name} 
                 onChange={(e) => setName(e.target.value)} 
                 required 
+                className="h-11 rounded-xl"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="orgName">Nome da Festa/Organização</Label>
+              <Label htmlFor="orgName" className="font-bold uppercase text-[10px] ml-1">Nome da Festa</Label>
               <Input 
                 id="orgName" 
                 placeholder="Ex: Arraial da Paróquia" 
                 value={orgName} 
                 onChange={(e) => setOrgName(e.target.value)} 
                 required 
+                className="h-11 rounded-xl"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="email">E-mail</Label>
+              <Label htmlFor="email" className="font-bold uppercase text-[10px] ml-1">E-mail</Label>
               <Input 
                 id="email" 
                 type="email" 
@@ -137,10 +127,11 @@ export default function RegisterPage() {
                 value={email} 
                 onChange={(e) => setEmail(e.target.value)} 
                 required 
+                className="h-11 rounded-xl"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Senha</Label>
+              <Label htmlFor="password" className="font-bold uppercase text-[10px] ml-1">Senha</Label>
               <Input 
                 id="password" 
                 type="password" 
@@ -148,16 +139,17 @@ export default function RegisterPage() {
                 onChange={(e) => setPassword(e.target.value)} 
                 required 
                 minLength={6}
+                className="h-11 rounded-xl"
               />
             </div>
           </CardContent>
-          <CardFooter className="flex flex-col gap-4">
-            <Button type="submit" className="w-full font-black uppercase" disabled={loading}>
-              {loading ? <Loader2 className="animate-spin mr-2 h-4 w-4" /> : "Criar meu Arraial"}
+          <CardFooter className="flex flex-col gap-4 p-8">
+            <Button type="submit" className="w-full h-14 font-black uppercase text-lg rounded-2xl shadow-xl shadow-primary/20" disabled={loading}>
+              {loading ? <Loader2 className="animate-spin mr-2 h-5 w-5" /> : "Criar meu Arraial"}
             </Button>
-            <p className="text-sm text-center text-muted-foreground">
+            <p className="text-sm text-center text-muted-foreground font-medium">
               Já tem uma conta?{" "}
-              <Link href="/login" className="text-primary font-bold hover:underline">
+              <Link href="/login" className="text-primary font-black hover:underline uppercase text-xs">
                 Fazer login
               </Link>
             </p>
