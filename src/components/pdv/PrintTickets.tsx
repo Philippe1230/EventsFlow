@@ -18,41 +18,38 @@ export function PrintTickets({ tickets }: { tickets: TicketProps[] }) {
       {tickets.map((ticket, idx) => (
         <div 
           key={`${ticket.orderId}-${idx}`} 
-          className="ticket flex flex-col items-center justify-center text-center break-after-page border-b border-dashed border-gray-300" 
+          className="ticket flex flex-col items-center justify-between text-center break-after-page border-b border-dashed border-gray-300" 
           style={{ 
             width: '80mm', 
-            minHeight: '80mm', 
-            padding: '10mm 5mm',
-            boxSizing: 'border-box'
+            height: '40mm', 
+            padding: '3mm 5mm',
+            boxSizing: 'border-box',
+            overflow: 'hidden'
           }}
         >
-          {/* Cabeçalho da Ficha */}
-          <div className="w-full border-b-2 border-black pb-2 mb-4">
-            <h1 className="text-[12px] font-black uppercase tracking-widest">Flow Events</h1>
-            <p className="text-[9px] font-bold uppercase opacity-70">Comprovante de Consumo</p>
+          {/* Cabeçalho Reduzido */}
+          <div className="w-full border-b border-black/20 pb-1">
+            <h1 className="text-[10px] font-black uppercase tracking-widest leading-none">Flow Events</h1>
           </div>
           
-          {/* Nome do Produto - O Principal */}
-          <div className="flex-1 flex items-center justify-center my-6">
-            <h2 className="text-3xl font-black uppercase leading-[1.1] tracking-tighter">
+          {/* Nome do Produto - Máximo Destaque */}
+          <div className="flex-1 flex items-center justify-center w-full px-1">
+            <h2 className="text-xl font-black uppercase leading-none tracking-tighter line-clamp-2">
               {ticket.productName}
             </h2>
           </div>
           
-          {/* Rodapé com Infos do Pedido */}
-          <div className="w-full mt-auto pt-4 border-t border-black/20 flex flex-col gap-1">
-            <div className="flex justify-between items-end">
-              <span className="text-[14px] font-black">#{ticket.orderNumber}</span>
-              <span className="text-[10px] font-bold">{format(ticket.timestamp, 'HH:mm:ss')}</span>
+          {/* Rodapé Compacto */}
+          <div className="w-full pt-1 border-t border-black/10 flex flex-col gap-0.5">
+            <div className="flex justify-between items-end leading-none">
+              <span className="text-[12px] font-black">#{ticket.orderNumber}</span>
+              <span className="text-[8px] font-bold">{format(ticket.timestamp, 'HH:mm:ss')}</span>
             </div>
-            <div className="flex justify-between items-center opacity-60">
-              <span className="text-[8px] font-bold uppercase">Cod: {ticket.orderId.substring(0, 8)}</span>
-              <span className="text-[9px] font-bold">{format(ticket.timestamp, 'dd/MM/yyyy')}</span>
+            <div className="flex justify-between items-center opacity-60 leading-none">
+              <span className="text-[7px] font-bold uppercase">ID: {ticket.orderId.substring(0, 6)}</span>
+              <span className="text-[7px] font-bold">{format(ticket.timestamp, 'dd/MM/yy')}</span>
             </div>
           </div>
-          
-          {/* Espaçador de Segurança para o Corte */}
-          <div className="h-4 w-full" />
         </div>
       ))}
     </div>
