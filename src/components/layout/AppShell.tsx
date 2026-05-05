@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useMemo } from 'react';
@@ -96,9 +97,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     isActive={active} 
                     tooltip={item.name} 
                     className={cn(
-                      "h-12 rounded-2xl transition-all duration-200 mb-1 font-black uppercase text-[10px] tracking-widest",
+                      "h-12 rounded-2xl transition-all duration-200 mb-1 font-black uppercase text-[10px] tracking-widest px-4",
                       active 
-                        ? "bg-primary text-white shadow-lg shadow-primary/30 hover:bg-primary hover:text-white" 
+                        ? "!bg-primary !text-white shadow-lg shadow-primary/30" 
                         : "text-primary/60 hover:bg-primary/5 hover:text-primary"
                     )}
                   >
