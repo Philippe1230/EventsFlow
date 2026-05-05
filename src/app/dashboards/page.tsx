@@ -1,4 +1,3 @@
-
 "use client";
 
 import { AppShell } from '@/components/layout/AppShell';
@@ -33,12 +32,6 @@ export default function DashboardsDetailedPage() {
       router.replace('/pdv');
     }
   }, [role, authLoading, router]);
-
-  useEffect(() => {
-    if (user?.uid && selectedCashier === "all") {
-      // Por padrão, mostra todos, mas deixa o usuário atual selecionável
-    }
-  }, [user]);
 
   const cashierList = Object.entries(tenantMembers || {}).map(([uid, info]: [string, any]) => ({
     id: uid,
@@ -160,6 +153,9 @@ export default function DashboardsDetailedPage() {
                   }}
                   initialFocus
                   locale={ptBR}
+                  captionLayout="dropdown"
+                  startMonth={new Date(2023, 0)}
+                  endMonth={new Date(new Date().getFullYear() + 2, 11)}
                 />
               </PopoverContent>
             </Popover>

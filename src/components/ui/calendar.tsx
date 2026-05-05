@@ -23,7 +23,11 @@ function Calendar({
         months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
         month: "space-y-6",
         month_caption: "flex justify-center pt-1 relative items-center mb-4",
-        caption_label: "text-sm font-black uppercase tracking-widest text-primary",
+        caption_label: "text-sm font-black uppercase tracking-widest text-primary hidden", // Escondido quando usa dropdown
+        caption_dropdowns: "flex justify-center gap-2 items-center",
+        dropdown: "bg-transparent border-none text-[10px] font-black uppercase text-primary focus:ring-0 cursor-pointer hover:bg-primary/5 rounded-md px-1 py-0.5 outline-none appearance-none",
+        dropdown_month: "font-black",
+        dropdown_year: "font-black",
         nav: "flex items-center gap-1",
         button_previous: cn(
           buttonVariants({ variant: "outline" }),
