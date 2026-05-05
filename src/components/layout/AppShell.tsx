@@ -68,7 +68,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     { name: 'Equipe', href: '/team', icon: Users, visible: isAdmin },
   ].filter(item => item.visible);
 
-  const activeIndex = navItems.findIndex(item => item.href === pathname);
+  // Função robusta para verificar se o caminho está ativo e evitar problemas com barras no final
+  const isPathActive = (href: string) => {
+    if (href === '/') return pathname === '/';
+    return pathname === href || pathname.startsWith(href + '/');
+  };
+
+  const activeIndex = navItems.findIndex(item => isPathActive(item.href));
 
   return (
     <SidebarProvider>
@@ -80,42 +86,48 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <span className="font-black text-xl truncate text-primary uppercase tracking-tighter">{organizationName || 'Arraial PDV'}</span>
         </SidebarHeader>
         <SidebarContent>
-          <SidebarMenu className="px-3 pt-4 relative space-y-1">
-            {/* Marcador deslizante animado */}
+          <SidebarMenu className="px-3 pt-4 relative">
+            {/* Marcador deslizante animado - h-12 (48px) + gap-1 (4px) = 52px de passo exato */}
             {activeIndex !== -1 && (
               <div 
-                className="absolute left-3 right-3 h-12 bg-primary rounded-2xl transition-all duration-500 shadow-xl shadow-primary/40 z-0"
+                className="absolute left-2 right-2 h-12 bg-primary rounded-2xl transition-all duration-500 shadow-lg shadow-primary/30 z-0"
                 style={{ 
-                  top: '16px', // Alinhado com pt-4
-                  transform: `translateY(${activeIndex * 52}px)`, // h-12 (48px) + space-y-1 (4px)
+                  top: '16px', // Alinhado com o pt-4 do container
+                  transform: `translateY(${activeIndex * 52}px)`, 
                   transitionTimingFunction: 'cubic-bezier(0.34, 1.56, 0.64, 1)'
                 }}
               />
             )}
 
-            {navItems.map((item) => (
-              <SidebarMenuItem key={item.href} className="relative z-10">
-                <SidebarMenuButton 
-                  asChild 
-                  isActive={pathname === item.href} 
-                  tooltip={item.name} 
-                  className={cn(
-                    "h-12 rounded-2xl transition-all duration-300 border-2 border-transparent",
-                    pathname === item.href 
-                      ? "text-white bg-transparent border-white/10" 
-                      : "text-primary/70 hover:bg-primary/5 hover:text-primary"
-                  )}
-                >
-                  <Link href={item.href} className="flex items-center gap-3">
-                    <item.icon className={cn(
-                      "transition-transform duration-300",
-                      pathname === item.href ? "text-white scale-110" : "text-primary"
-                    )} />
-                    <span className="font-black uppercase text-[10px] tracking-widest">{item.name}</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            ))}
+            {navItems.map((item) => {
+              const active = isPathActive(item.href);
+              return (
+                <SidebarMenuItem key={item.href} className="relative z-10">
+                  <SidebarMenuButton 
+                    asChild 
+                    isActive={active} 
+                    tooltip={item.name} 
+                    className={cn(
+                      "h-12 rounded-2xl transition-all duration-300 border-2 border-transparent",
+                      active 
+                        ? "text-white bg-transparent border-white/10" 
+                        : "text-primary/70 hover:bg-primary/5 hover:text-primary"
+                    )}
+                  >
+                    <Link href={item.href} className="flex items-center gap-3">
+                      <item.icon className={cn(
+                        "transition-transform duration-300",
+                        active ? "text-white scale-110" : "text-primary"
+                      )} />
+                      <span className={cn(
+                        "font-black uppercase text-[10px] tracking-widest",
+                        active ? "text-white" : "text-primary/80"
+                      )}>{item.name}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              );
+            })}
           </SidebarMenu>
         </SidebarContent>
         <SidebarFooter className="p-6">
@@ -146,7 +158,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <SidebarTrigger className="hover:bg-primary/5 text-primary" />
           <div className="flex-1">
             <h1 className="text-xl font-black text-primary uppercase tracking-tighter truncate">
-              {navItems.find(i => i.href === pathname)?.name || 'Arraial'}
+              {navItems.find(i => isPathActive(i.href))?.name || 'Arraial'}
             </h1>
           </div>
           <div className="hidden sm:flex items-center gap-3 text-[9px] font-black text-muted-foreground bg-white/80 border border-primary/10 px-5 py-2.5 rounded-full shadow-sm">
