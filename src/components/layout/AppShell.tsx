@@ -153,13 +153,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </SidebarFooter>
       </Sidebar>
       <SidebarInset className="bg-background">
-        <header className="flex h-16 items-center gap-4 border-b bg-card/50 backdrop-blur-sm px-6 no-print shadow-sm sticky top-0 z-40">
+        <header className="flex h-16 items-center gap-4 border-b bg-card/50 backdrop-blur-sm px-4 md:px-6 no-print shadow-sm sticky top-0 z-40">
           <SidebarTrigger className="text-primary" />
-          <h1 className="text-lg font-black text-primary uppercase tracking-tighter">
+          <h1 className="text-base md:text-lg font-black text-primary uppercase tracking-tighter truncate">
             {navItems[activeIndex]?.name || 'Menu'}
           </h1>
         </header>
-        <main className="flex-1 p-6 md:p-10">
+        <main className="flex-1 p-4 md:p-10">
           {children}
         </main>
       </SidebarInset>

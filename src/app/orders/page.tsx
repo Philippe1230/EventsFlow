@@ -1,3 +1,4 @@
+
 "use client";
 
 import { AppShell } from '@/components/layout/AppShell';
@@ -90,32 +91,32 @@ export default function OrdersPage() {
 
   return (
     <AppShell>
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10 max-w-7xl mx-auto">
-        <div>
-          <h2 className="text-3xl font-black text-primary uppercase tracking-tighter italic">Histórico de Vendas</h2>
-          <p className="text-muted-foreground font-medium italic">Gerencie e acompanhe todos os tickets gerados.</p>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10 max-w-7xl mx-auto px-1">
+        <div className="space-y-1">
+          <h2 className="text-3xl md:text-4xl font-black text-primary uppercase tracking-tighter italic leading-none">Histórico de Vendas</h2>
+          <p className="text-sm md:text-base text-muted-foreground font-medium italic">Gerencie e acompanhe todos os tickets gerados.</p>
         </div>
         <Button 
           onClick={exportCSV} 
           variant="outline" 
-          className="w-full md:w-auto font-black uppercase rounded-2xl h-14 px-8 shadow-xl shadow-primary/5 border-primary/10 transition-all hover:scale-[1.02] active:scale-95" 
+          className="w-full md:w-auto font-black uppercase rounded-2xl h-14 px-8 shadow-xl shadow-primary/5 border-primary/10 transition-all hover:scale-[1.02] active:scale-95 bg-card" 
           disabled={orders.length === 0}
         >
           <Download className="mr-3 h-5 w-5 text-primary" /> Exportar Planilha
         </Button>
       </div>
 
-      <div className="rounded-[2.5rem] border border-primary/5 bg-card shadow-2xl overflow-hidden max-w-7xl mx-auto">
-        <div className="overflow-x-auto scrollbar-hide">
-          <Table className="min-w-[800px]">
+      <div className="rounded-[2rem] md:rounded-[2.5rem] border border-primary/5 bg-card shadow-2xl overflow-hidden max-w-7xl mx-auto">
+        <div className="overflow-x-auto">
+          <Table className="min-w-[900px]">
             <TableHeader className="bg-muted/30">
               <TableRow className="hover:bg-transparent border-primary/5">
-                <TableHead className="font-black uppercase text-[10px] py-6 pl-8 tracking-widest">Ticket</TableHead>
-                <TableHead className="font-black uppercase text-[10px] tracking-widest">Data & Hora</TableHead>
+                <TableHead className="font-black uppercase text-[10px] py-6 pl-8 tracking-widest w-[120px]">Ticket</TableHead>
+                <TableHead className="font-black uppercase text-[10px] tracking-widest w-[150px]">Data & Hora</TableHead>
                 <TableHead className="font-black uppercase text-[10px] tracking-widest">Produtos Vendidos</TableHead>
-                <TableHead className="font-black uppercase text-[10px] tracking-widest">Pagamento</TableHead>
-                <TableHead className="text-right font-black uppercase text-[10px] tracking-widest">Faturado</TableHead>
-                <TableHead className="text-right font-black uppercase text-[10px] tracking-widest pr-8">Ações</TableHead>
+                <TableHead className="font-black uppercase text-[10px] tracking-widest w-[120px]">Pagamento</TableHead>
+                <TableHead className="text-right font-black uppercase text-[10px] tracking-widest w-[140px]">Faturado</TableHead>
+                <TableHead className="text-right font-black uppercase text-[10px] tracking-widest pr-8 w-[100px]">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -154,21 +155,21 @@ export default function OrdersPage() {
                     <TableCell className="font-bold text-muted-foreground text-xs whitespace-nowrap">
                       {format(o.createdAt instanceof Timestamp ? o.createdAt.toDate() : new Date(o.createdAt), 'dd/MM/yyyy HH:mm')}
                     </TableCell>
-                    <TableCell className="max-w-[300px]">
-                      <div className="flex flex-wrap gap-2">
+                    <TableCell>
+                      <div className="flex flex-wrap gap-1.5 max-w-[400px]">
                         {o.items.map((item, idx) => (
-                          <Badge key={idx} variant="secondary" className="text-[9px] font-black uppercase bg-primary/5 text-primary border-none py-1.5 px-3 rounded-xl shadow-sm">
+                          <Badge key={idx} variant="secondary" className="text-[9px] font-black uppercase bg-primary/5 text-primary border-none py-1 px-2.5 rounded-lg shadow-sm whitespace-nowrap">
                             {item.quantity}x {item.name}
                           </Badge>
                         ))}
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline" className="uppercase text-[9px] font-black tracking-widest border-primary/10 text-muted-foreground bg-muted/20 px-3 py-1.5">
+                      <Badge variant="outline" className="uppercase text-[9px] font-black tracking-widest border-primary/10 text-muted-foreground bg-muted/20 px-3 py-1.5 whitespace-nowrap">
                         {o.paymentMethod}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-right font-black text-xl text-primary tracking-tighter">
+                    <TableCell className="text-right font-black text-xl text-primary tracking-tighter whitespace-nowrap">
                       R$ {o.total.toFixed(2)}
                     </TableCell>
                     <TableCell className="text-right pr-8">
