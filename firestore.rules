@@ -7,15 +7,24 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    // Identifica o Super Admin (O Dono do Flow Events)
+    function isSuperAdmin() {
+      return isSignedIn() && request.auth.token.email == 'flowevents@gmail.com';
+    }
+
     // Verifica se o usuário é membro do tenant
     function isMember(tId) {
-      return isSignedIn() && 
-        get(/databases/$(database)/documents/tenants/$(tId)).data.members[request.auth.uid] != null;
+      return isSignedIn() && (
+        isSuperAdmin() || 
+        get(/databases/$(database)/documents/tenants/$(tId)).data.members[request.auth.uid] != null
+      );
     }
 
     // Regras para Perfis de Usuário e Memberships
     match /userProfiles/{userId} {
-      allow read, write: if isSignedIn() && request.auth.uid == userId;
+      allow read: if isSignedIn() && (request.auth.uid == userId || isSuperAdmin());
+      allow write: if isSignedIn() && request.auth.uid == userId;
+      allow list: if isSuperAdmin();
       
       match /memberships/{membershipId} {
         allow read, write: if isSignedIn() && request.auth.uid == userId;
@@ -25,12 +34,15 @@ service cloud.firestore {
     // Regras para Tenancy (Organizações)
     match /tenants/{tenantId} {
       allow create: if isSignedIn();
+      allow list: if isSuperAdmin();
       // Donos podem ler e atualizar (incluindo adicionar membros)
-      allow read, update: if isSignedIn() && resource.data.members[request.auth.uid] != null;
+      allow read: if isSignedIn() && (resource.data.members[request.auth.uid] != null || isSuperAdmin());
+      allow update: if isSignedIn() && resource.data.members[request.auth.uid] != null;
       
       // Subcoleções (produtos, pedidos, etc.)
       match /{allPaths=**} {
         allow read, write: if isSignedIn() && (
+          isSuperAdmin() ||
           (resource != null && resource.data.tenantMembers[request.auth.uid] != null) ||
           (request.resource != null && request.resource.data.tenantMembers[request.auth.uid] != null) ||
           isMember(tenantId)

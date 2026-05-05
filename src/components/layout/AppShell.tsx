@@ -4,7 +4,7 @@
 import React, { useMemo } from 'react';
 import { SidebarProvider, Sidebar, SidebarContent, SidebarHeader, SidebarFooter, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import { useAuth } from '@/hooks/use-auth-context';
-import { LayoutDashboard, ShoppingCart, Package, ListOrdered, LogOut, Users, BarChart3, ShieldCheck, User } from 'lucide-react';
+import { LayoutDashboard, ShoppingCart, Package, ListOrdered, LogOut, Users, BarChart3, ShieldCheck, User, Settings2 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
@@ -47,20 +47,21 @@ const LoadingJunina = () => (
 );
 
 export function AppShell({ children }: { children: React.ReactNode }) {
-  const { user, loading, organizationName, signOut, role } = useAuth();
+  const { user, loading, organizationName, signOut, role, isSuperAdmin } = useAuth();
   const pathname = usePathname();
 
   const isInitialLoading = loading && !user;
   const isAdmin = role === 'owner';
 
   const navItems = useMemo(() => [
-    { name: 'Início', href: '/', icon: LayoutDashboard, visible: isAdmin },
-    { name: 'Dashboards', href: '/dashboards', icon: BarChart3, visible: isAdmin },
-    { name: 'Fazer Pedidos', href: '/pdv', icon: ShoppingCart, visible: true },
-    { name: 'Produtos', href: '/products', icon: Package, visible: isAdmin },
-    { name: 'Histórico', href: '/orders', icon: ListOrdered, visible: isAdmin },
-    { name: 'Equipe', href: '/team', icon: Users, visible: isAdmin },
-  ].filter(item => item.visible), [isAdmin]);
+    { name: 'Início', href: '/', icon: LayoutDashboard, visible: isAdmin && !isSuperAdmin },
+    { name: 'Controle Global', href: '/super-admin', icon: Settings2, visible: isSuperAdmin },
+    { name: 'Dashboards', href: '/dashboards', icon: BarChart3, visible: isAdmin && !isSuperAdmin },
+    { name: 'Fazer Pedidos', href: '/pdv', icon: ShoppingCart, visible: !isSuperAdmin },
+    { name: 'Produtos', href: '/products', icon: Package, visible: isAdmin && !isSuperAdmin },
+    { name: 'Histórico', href: '/orders', icon: ListOrdered, visible: isAdmin && !isSuperAdmin },
+    { name: 'Equipe', href: '/team', icon: Users, visible: isAdmin && !isSuperAdmin },
+  ].filter(item => item.visible), [isAdmin, isSuperAdmin]);
 
   const activeIndex = useMemo(() => {
     const idx = navItems.findIndex(item => {
@@ -135,10 +136,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <div className="px-4 py-2 mb-3 bg-muted/40 rounded-xl text-[9px] font-black uppercase text-muted-foreground border border-primary/5 group-data-[collapsible=icon]:hidden">
                 <span className={cn(
                   "flex items-center gap-2",
-                  isAdmin ? "text-primary" : "text-secondary"
+                  isAdmin || isSuperAdmin ? "text-primary" : "text-secondary"
                 )}>
-                  {isAdmin ? <ShieldCheck className="h-3 w-3" /> : <User className="h-3 w-3" />}
-                  {isAdmin ? 'Administrador' : 'Caixa'}
+                  {isSuperAdmin ? <ShieldCheck className="h-3 w-3" /> : (isAdmin ? <ShieldCheck className="h-3 w-3" /> : <User className="h-3 w-3" />)}
+                  {isSuperAdmin ? 'Super Admin' : (isAdmin ? 'Administrador' : 'Caixa')}
                 </span>
               </div>
               <SidebarMenuButton 

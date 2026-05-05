@@ -13,7 +13,8 @@ interface AuthContextType {
   tenantId: string | null;
   organizationName: string | null;
   tenantMembers: Record<string, any> | null;
-  role: 'owner' | 'cashier' | null;
+  role: 'owner' | 'cashier' | 'super-admin' | null;
+  isSuperAdmin: boolean;
   signOut: () => Promise<void>;
 }
 
@@ -30,7 +31,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [tenantId, setTenantId] = useState<string | null>(null);
   const [organizationName, setOrganizationName] = useState<string | null>(null);
   const [tenantMembers, setTenantMembers] = useState<Record<string, any> | null>(null);
-  const [role, setRole] = useState<'owner' | 'cashier' | null>(null);
+  const [role, setRole] = useState<'owner' | 'cashier' | 'super-admin' | null>(null);
+
+  const isSuperAdmin = user?.email === 'flowevents@gmail.com';
 
   useEffect(() => {
     async function loadUserContext() {
@@ -46,6 +49,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (pathname !== '/login' && pathname !== '/register') {
           router.push('/login');
         }
+        return;
+      }
+
+      // Check for Super Admin status first
+      if (isSuperAdmin) {
+        setRole('super-admin');
+        setOrganizationName('Sistema Central');
+        setLoading(false);
         return;
       }
 
@@ -67,7 +78,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setOrganizationName(data.name);
             setTenantMembers(data.members || null);
             
-            // Suporta roles em formato string ou objeto denormalizado
             const memberInfo = data.members?.[user.uid];
             const userRole = typeof memberInfo === 'object' ? memberInfo.role : memberInfo;
             setRole(userRole || 'cashier');
@@ -85,7 +95,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     loadUserContext();
-  }, [user, isUserLoading, db, pathname, router]);
+  }, [user, isUserLoading, db, pathname, router, isSuperAdmin]);
 
   const signOut = async () => {
     await firebaseSignOut(auth);
@@ -103,6 +113,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     organizationName,
     tenantMembers,
     role,
+    isSuperAdmin,
     signOut
   };
 
