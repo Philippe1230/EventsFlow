@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useMemo } from 'react';
@@ -42,7 +41,7 @@ const LoadingJunina = () => (
         />
       ))}
     </div>
-    <p className="mt-8 font-black uppercase tracking-[0.3em] text-primary animate-pulse text-xs">Preparando Fichas...</p>
+    <p className="mt-8 font-black uppercase tracking-[0.3em] text-primary animate-pulse text-xs">Acessando Sistema...</p>
   </div>
 );
 
@@ -74,7 +73,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <SidebarProvider>
-      <Sidebar collapsible="icon" className="border-r border-primary/10 shadow-xl bg-sidebar">
+      <Sidebar collapsible="icon" className="border-r bg-card shadow-xl">
         <SidebarHeader className="p-6 flex flex-row items-center gap-3">
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary text-white shadow-lg shrink-0">
             <OrderTicketIcon className="h-7 w-7" />
@@ -83,11 +82,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <span className="font-black text-lg leading-none text-primary uppercase tracking-tighter truncate">
               {organizationName || 'Flow Events'}
             </span>
-            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Fichas & Vendas</span>
+            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Painel Operacional</span>
           </div>
         </SidebarHeader>
         <SidebarContent>
-          <SidebarMenu className="px-3 pt-2 relative">
+          <SidebarMenu className="px-3 pt-2">
             {navItems.map((item, idx) => {
               const active = idx === activeIndex;
               return (
@@ -97,10 +96,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     isActive={active} 
                     tooltip={item.name} 
                     className={cn(
-                      "h-12 rounded-2xl transition-all duration-200 mb-1",
+                      "h-12 rounded-2xl transition-all duration-200 mb-1 font-black uppercase text-[10px] tracking-widest",
                       active 
-                        ? "text-white bg-primary shadow-lg shadow-primary/30" 
-                        : "text-primary/70 hover:bg-primary/5 hover:text-primary"
+                        ? "bg-primary text-white shadow-lg shadow-primary/30 hover:bg-primary hover:text-white" 
+                        : "text-primary/60 hover:bg-primary/5 hover:text-primary"
                     )}
                   >
                     <Link href={item.href} className="flex items-center gap-3">
@@ -108,10 +107,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                         "h-5 w-5 shrink-0",
                         active ? "text-white" : "text-primary"
                       )} />
-                      <span className={cn(
-                        "font-black uppercase text-[10px] tracking-widest truncate",
-                        active ? "text-white" : "text-primary/80"
-                      )}>{item.name}</span>
+                      <span className="truncate">{item.name}</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -122,12 +118,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <SidebarFooter className="p-4">
           <SidebarMenu>
             <SidebarMenuItem>
-              <div className="px-4 py-2 mb-3 bg-muted/40 rounded-xl text-[9px] font-black uppercase text-muted-foreground border border-primary/5 group-data-[collapsible=icon]:hidden">
+              <div className="px-4 py-2 mb-3 bg-muted rounded-xl text-[9px] font-black uppercase text-muted-foreground border border-primary/5 group-data-[collapsible=icon]:hidden">
                 <span className={cn(
                   "flex items-center gap-2",
-                  isAdmin || isSuperAdmin ? "text-primary" : "text-secondary"
+                  (isAdmin || isSuperAdmin) ? "text-primary" : "text-secondary"
                 )}>
-                  {isSuperAdmin ? <ShieldCheck className="h-3 w-3" /> : (isAdmin ? <ShieldCheck className="h-3 w-3" /> : <User className="h-3 w-3" />)}
+                  <ShieldCheck className="h-3.5 w-3.5" />
                   {isSuperAdmin ? 'Super Admin' : (isAdmin ? 'Administrador' : 'Caixa')}
                 </span>
               </div>

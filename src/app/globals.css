@@ -4,40 +4,54 @@
 
 @layer base {
   :root {
-    --background: 12 53% 96%;
-    --foreground: 18 84% 15%;
+    /* Cores Principais - Tema Flow Events */
+    --background: 12 53% 98%;
+    --foreground: 18 84% 10%;
+    
     --card: 0 0% 100%;
-    --card-foreground: 18 84% 15%;
+    --card-foreground: 18 84% 10%;
+    
     --popover: 0 0% 100%;
-    --popover-foreground: 18 84% 15%;
+    --popover-foreground: 18 84% 10%;
+    
     --primary: 18 84% 44%;
     --primary-foreground: 12 53% 98%;
+    
     --secondary: 348 70% 59%;
     --secondary-foreground: 12 53% 98%;
-    --muted: 12 30% 90%;
+    
+    --muted: 18 20% 95%;
     --muted-foreground: 18 40% 40%;
-    --accent: 348 70% 95%;
-    --accent-foreground: 348 70% 40%;
+    
+    --accent: 18 84% 95%;
+    --accent-foreground: 18 84% 44%;
+    
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
-    --border: 18 20% 85%;
-    --input: 18 20% 85%;
+    
+    --border: 18 20% 90%;
+    --input: 18 20% 90%;
     --ring: 18 84% 44%;
-    --radius: 0.75rem;
-    --chart-1: 18 84% 44%;
-    --chart-2: 348 70% 59%;
-    --chart-3: 45 90% 50%;
-    --chart-4: 160 60% 45%;
-    --chart-5: 280 65% 60%;
+    --radius: 1rem;
+
+    /* Variáveis do Sidebar (Shadcn) */
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 18 84% 15%;
+    --sidebar-primary: 18 84% 44%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 18 84% 96%;
+    --sidebar-accent-foreground: 18 84% 44%;
+    --sidebar-border: 18 20% 92%;
+    --sidebar-ring: 18 84% 44%;
   }
 }
 
 @layer base {
   * {
-    @apply border-border transition-all duration-300 ease-out;
+    @apply border-border;
   }
   body {
-    @apply bg-background text-foreground font-body;
+    @apply bg-background text-foreground font-body antialiased;
   }
 }
 
