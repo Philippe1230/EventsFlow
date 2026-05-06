@@ -185,7 +185,7 @@ export default function PDVPage() {
           clearCart();
           setSubmitting(false);
           setPrintableTickets([]);
-        }, 150); // Reduzido para resposta mais rápida
+        }, 150);
       }).catch((err) => {
         const permissionError = new FirestorePermissionError({
           path: ordersColRef.path,
@@ -350,9 +350,9 @@ export default function PDVPage() {
         </div>
       )}
 
-      {/* Modal de Pagamento Otimizado */}
+      {/* Modal de Pagamento Centralizado */}
       <Dialog open={showPaymentModal} onOpenChange={setShowPaymentModal}>
-        <DialogContent className="rounded-[2rem] border-none shadow-3xl p-0 overflow-hidden sm:max-w-md w-[95vw] animate-snappy gpu-accelerated">
+        <DialogContent className="rounded-[2rem] border-none shadow-3xl p-0 overflow-hidden sm:max-w-md w-[95vw] !top-[50%] !translate-y-[-50%] animate-snappy gpu-accelerated">
           <DialogHeader className="bg-primary p-6 text-white relative">
             <DialogTitle className="text-2xl font-black uppercase tracking-tighter italic z-10">
               Pagamento

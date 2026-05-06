@@ -9,7 +9,7 @@ import { OrderTicketIcon } from '@/components/layout/AppShell';
 export function SuccessModal({ isOpen, onClose, orderNumber }: SuccessModalProps) {
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-md border-none bg-background p-0 overflow-hidden rounded-[2.5rem] shadow-2xl animate-in zoom-in-95 duration-300">
+      <DialogContent className="sm:max-w-md border-none bg-background p-0 overflow-hidden rounded-[2.5rem] shadow-2xl animate-in zoom-in-95 duration-300 !top-[50%] !translate-y-[-50%]">
         <div className="bg-primary p-10 text-center text-white relative">
           <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none">
             <OrderTicketIcon className="w-full h-full" />
