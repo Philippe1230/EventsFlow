@@ -12,7 +12,8 @@ import {
   BarChart3, 
   CheckCircle2, 
   ArrowRight,
-  Ticket
+  Ticket,
+  Loader2
 } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect } from 'react';
@@ -28,7 +29,17 @@ export default function GuidePage() {
     }
   }, [role, loading, router]);
 
-  if (loading || role === 'cashier') return null;
+  // Enquanto carrega ou se for caixa, não mostra nada para evitar flash de conteúdo errado
+  if (loading || role === 'cashier') {
+    return (
+      <div className="flex h-screen w-screen items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-12 w-12 animate-spin text-primary opacity-20" />
+          <span className="font-black uppercase text-[10px] tracking-[0.3em] text-primary/40 italic">Acessando seu painel...</span>
+        </div>
+      </div>
+    );
+  }
 
   const steps = [
     {
