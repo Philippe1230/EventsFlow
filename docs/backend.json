@@ -7,386 +7,102 @@
       "type": "object",
       "description": "Represents an organization or 'tenant' within the Arraial PDV system. All data, such as products and orders, is isolated and scoped to a specific tenant.",
       "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the Tenant entity."
-        },
-        "name": {
-          "type": "string",
-          "description": "The name of the organization or tenant."
-        },
-        "description": {
-          "type": "string",
-          "description": "An optional description of the tenant or organization."
-        },
-        "createdAt": {
-          "type": "string",
-          "description": "Timestamp when the tenant was created.",
-          "format": "date-time"
-        }
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": [
-        "id",
-        "name",
-        "createdAt"
-      ]
+      "required": ["id", "name", "createdAt"]
     },
-    "UserProfile": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "UserProfile",
+    "Event": {
+      "title": "Event",
       "type": "object",
-      "description": "Stores user-specific data related to the application, separate from authentication credentials. The 'id' corresponds to the Firebase Authentication User ID (UID). Passwords and sensitive authentication data are handled by Firebase Auth and are NOT stored here.",
+      "description": "A specific event within a tenant. Contains configuration, status, and links to products and team.",
       "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the UserProfile entity, matching the Firebase Authentication UID."
-        },
-        "email": {
-          "type": "string",
-          "description": "The user's email address.",
-          "format": "email"
-        },
-        "displayName": {
-          "type": "string",
-          "description": "The user's display name or full name."
-        },
-        "createdAt": {
-          "type": "string",
-          "description": "Timestamp when the user profile was created.",
-          "format": "date-time"
-        },
-        "lastLoginAt": {
-          "type": "string",
-          "description": "Timestamp of the user's last login.",
-          "format": "date-time"
-        }
-      },
-      "required": [
-        "id",
-        "email",
-        "displayName",
-        "createdAt"
-      ]
-    },
-    "Membership": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Membership",
-      "type": "object",
-      "description": "Defines the relationship between a UserProfile and a Tenant, indicating which users belong to which organizations and their respective roles.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the Membership entity."
-        },
-        "userId": {
-          "type": "string",
-          "description": "Reference to the UserProfile. (Relationship: UserProfile 1:N Membership)"
-        },
-        "tenantId": {
-          "type": "string",
-          "description": "Reference to the Tenant. (Relationship: Tenant 1:N Membership)"
-        },
-        "role": {
-          "type": "string",
-          "description": "The role of the user within the tenant (e.g., 'owner', 'member')."
-        },
-        "joinedAt": {
-          "type": "string",
-          "description": "Timestamp when the user joined the tenant.",
-          "format": "date-time"
-        }
-      },
-      "required": [
-        "id",
-        "userId",
-        "tenantId",
-        "role",
-        "joinedAt"
-      ]
-    },
-    "Product": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Product",
-      "type": "object",
-      "description": "Represents a salable item available in the Arraial PDV system, associated with a specific tenant.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the Product entity."
-        },
-        "tenantId": {
-          "type": "string",
-          "description": "Reference to the Tenant this product belongs to. (Relationship: Tenant 1:N Product)"
-        },
-        "name": {
-          "type": "string",
-          "description": "The name of the product."
-        },
-        "price": {
-          "type": "number",
-          "description": "The selling price of the product."
-        },
-        "category": {
-          "type": "string",
-          "description": "An optional category for organizing products."
-        },
-        "isActive": {
-          "type": "boolean",
-          "description": "Indicates whether the product is currently active and available for sale."
-        },
-        "createdAt": {
-          "type": "string",
-          "description": "Timestamp when the product was created.",
-          "format": "date-time"
-        },
-        "updatedAt": {
-          "type": "string",
-          "description": "Timestamp when the product was last updated.",
-          "format": "date-time"
-        }
-      },
-      "required": [
-        "id",
-        "tenantId",
-        "name",
-        "price",
-        "isActive",
-        "createdAt"
-      ]
-    },
-    "Order": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Order",
-      "type": "object",
-      "description": "Represents a completed sales transaction in the PDV system, containing summary information and linking to individual order items.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the Order entity."
-        },
-        "tenantId": {
-          "type": "string",
-          "description": "Reference to the Tenant this order belongs to. (Relationship: Tenant 1:N Order)"
-        },
-        "userId": {
-          "type": "string",
-          "description": "Reference to the UserProfile who created this order. (Relationship: UserProfile 1:N Order)"
-        },
-        "orderNumber": {
-          "type": "number",
-          "description": "An incremental order number specific to the tenant, used for easy reference."
-        },
-        "total": {
-          "type": "number",
-          "description": "The total monetary value of the order."
-        },
-        "paymentMethod": {
-          "type": "string",
-          "description": "The method of payment used for the order (e.g., 'dinheiro', 'pix', 'cartão')."
-        },
-        "createdAt": {
-          "type": "string",
-          "description": "Timestamp when the order was created.",
-          "format": "date-time"
-        },
+        "id": { "type": "string" },
+        "tenantId": { "type": "string" },
+        "name": { "type": "string" },
+        "date": { "type": "string", "format": "date" },
+        "location": { "type": "string" },
         "status": {
           "type": "string",
-          "description": "The current status of the order (e.g., 'completed')."
-        }
+          "enum": ["rascunho", "ativo", "finalizado"]
+        },
+        "members": {
+          "type": "object",
+          "description": "Map of user IDs to roles for this specific event."
+        },
+        "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": [
-        "id",
-        "tenantId",
-        "userId",
-        "orderNumber",
-        "total",
-        "paymentMethod",
-        "createdAt",
-        "status"
-      ]
+      "required": ["id", "tenantId", "name", "status", "createdAt"]
     },
-    "OrderItem": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "OrderItem",
+    "Supplier": {
+      "title": "Supplier",
       "type": "object",
-      "description": "Represents a single product item within an order, capturing details like quantity and price at the time of sale for historical accuracy.",
+      "description": "A supplier or stall (barraca) linked to an event.",
       "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the OrderItem entity."
-        },
-        "orderId": {
-          "type": "string",
-          "description": "Reference to the Order this item belongs to. (Relationship: Order 1:N OrderItem)"
-        },
-        "productId": {
-          "type": "string",
-          "description": "Reference to the Product sold. (Relationship: Product 1:N OrderItem)"
-        },
-        "tenantId": {
-          "type": "string",
-          "description": "Reference to the Tenant, inherited from the parent Order, for data isolation. (Relationship: Tenant 1:N OrderItem)"
-        },
-        "productName": {
-          "type": "string",
-          "description": "The name of the product at the time of purchase (snapshot for historical data)."
-        },
-        "productPrice": {
-          "type": "number",
-          "description": "The price of the product at the time of purchase (snapshot for historical data)."
-        },
-        "quantity": {
-          "type": "number",
-          "description": "The quantity of this product in the order."
-        },
-        "subtotal": {
-          "type": "number",
-          "description": "The subtotal for this specific order item (quantity * productPrice)."
-        },
-        "createdAt": {
-          "type": "string",
-          "description": "Timestamp when the order item was created.",
-          "format": "date-time"
-        }
+        "id": { "type": "string" },
+        "eventId": { "type": "string" },
+        "name": { "type": "string" },
+        "responsibleName": { "type": "string" },
+        "phone": { "type": "string" },
+        "notes": { "type": "string" },
+        "totalActualRevenue": { "type": "number", "default": 0 },
+        "totalActualCost": { "type": "number", "default": 0 },
+        "totalActualProfit": { "type": "number", "default": 0 }
       },
-      "required": [
-        "id",
-        "orderId",
-        "productId",
-        "tenantId",
-        "productName",
-        "productPrice",
-        "quantity",
-        "subtotal",
-        "createdAt"
-      ]
+      "required": ["id", "eventId", "name"]
+    },
+    "Product": {
+      "title": "Product",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "price": { "type": "number" },
+        "category": { "type": "string" },
+        "type": { "type": "string", "enum": ["own", "supplier"] },
+        "supplierId": { "type": "string" },
+        "supplierUnitCost": { "type": "number" },
+        "plannedQuantity": { "type": "number" },
+        "active": { "type": "boolean" },
+        "soldQuantity": { "type": "number", "default": 0 }
+      }
     }
   },
   "auth": {
-    "providers": [
-      "password",
-      "anonymous"
-    ]
+    "providers": ["password", "anonymous"]
   },
   "firestore": {
     "structure": [
       {
-        "path": "/userProfiles/{userId}",
+        "path": "/tenants/{tenantId}/events/{eventId}",
         "definition": {
-          "entityName": "UserProfile",
-          "schema": {
-            "$ref": "#/backend/entities/UserProfile"
-          },
-          "description": "Stores user-specific data, with the document ID (`userId`) matching the Firebase Authentication UID. This collection is protected such that only the authenticated user can read or write their own profile.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The unique identifier of the user, matching their Firebase Authentication UID."
-            }
-          ]
+          "entityName": "Event",
+          "description": "Specific events under a tenant."
         }
       },
       {
-        "path": "/userProfiles/{userId}/memberships/{membershipId}",
-        "definition": {
-          "entityName": "Membership",
-          "schema": {
-            "$ref": "#/backend/entities/Membership"
-          },
-          "description": "Defines a user's membership to a specific tenant and their role within it. Nested under the user's profile, ensuring users can only manage their own memberships. This data is used to populate the 'members' map in the Tenant document and subsequently 'tenantMembers' in all tenant-scoped documents.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The unique identifier of the user, matching their Firebase Authentication UID."
-            },
-            {
-              "name": "membershipId",
-              "description": "The unique identifier for the specific membership record."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/tenants/{tenantId}",
-        "definition": {
-          "entityName": "Tenant",
-          "schema": {
-            "$ref": "#/backend/entities/Tenant"
-          },
-          "description": "Represents an organization or 'tenant'. Includes a denormalized 'members' map (`members: {uid: 'role'}`) for efficient authorization checks. Access to this document and its subcollections depends on the user's presence and role in this map.",
-          "params": [
-            {
-              "name": "tenantId",
-              "description": "The unique identifier for the tenant."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/tenants/{tenantId}/products/{productId}",
+        "path": "/tenants/{tenantId}/events/{eventId}/products/{productId}",
         "definition": {
           "entityName": "Product",
-          "schema": {
-            "$ref": "#/backend/entities/Product"
-          },
-          "description": "Contains products available for sale within a specific tenant. Includes a denormalized 'tenantMembers' map (copied from the parent Tenant's 'members' map) for authorization independence, allowing direct security checks on the document without a 'get()' call.",
-          "params": [
-            {
-              "name": "tenantId",
-              "description": "The unique identifier of the tenant this product belongs to."
-            },
-            {
-              "name": "productId",
-              "description": "The unique identifier for the product."
-            }
-          ]
+          "description": "Products specific to an event."
         }
       },
       {
-        "path": "/tenants/{tenantId}/orders/{orderId}",
+        "path": "/tenants/{tenantId}/events/{eventId}/suppliers/{supplierId}",
+        "definition": {
+          "entityName": "Supplier",
+          "description": "Suppliers/Stalls specific to an event."
+        }
+      },
+      {
+        "path": "/tenants/{tenantId}/events/{eventId}/orders/{orderId}",
         "definition": {
           "entityName": "Order",
-          "schema": {
-            "$ref": "#/backend/entities/Order"
-          },
-          "description": "Represents a sales transaction for a specific tenant. Includes a denormalized 'tenantMembers' map (copied from the parent Tenant's 'members' map) for authorization independence and direct security checks.",
-          "params": [
-            {
-              "name": "tenantId",
-              "description": "The unique identifier of the tenant this order belongs to."
-            },
-            {
-              "name": "orderId",
-              "description": "The unique identifier for the order."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/tenants/{tenantId}/orders/{orderId}/orderItems/{orderItemId}",
-        "definition": {
-          "entityName": "OrderItem",
-          "schema": {
-            "$ref": "#/backend/entities/OrderItem"
-          },
-          "description": "Represents an individual item within an order. Includes a denormalized 'tenantMembers' map (copied from the grandparent Tenant's 'members' map) for authorization independence, ensuring that access can be verified directly on the item document.",
-          "params": [
-            {
-              "name": "tenantId",
-              "description": "The unique identifier of the tenant the parent order belongs to."
-            },
-            {
-              "name": "orderId",
-              "description": "The unique identifier of the parent order."
-            },
-            {
-              "name": "orderItemId",
-              "description": "The unique identifier for the order item."
-            }
-          ]
+          "description": "Orders specific to an event."
         }
       }
-    ],
-    "reasoning": "A composite index is required for the Orders collection to filter by 'userId' (ascending) and sort by 'createdAt' (descending) for the cashier's history view. Link: https://console.firebase.google.com/v1/r/project/studio-5012486883-b0506/firestore/indexes?create_composite=ClZwcm9qZWN0cy9zdHVkaW8tNTAxMjQ4Njg4My1iMDUwNi9kYXRhYmFzZXMvKGRlZmF1bHQpL2NvbGxlY3Rpb25Hcm91cHMvb3JkZXJzL2luZGV4ZXMvXxABGgoKBnVzZXJJZBABGg0KCWNyZWF0ZWRBdBACGgwKCF9fbmFtZV9fEAI"
+    ]
   }
 }

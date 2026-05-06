@@ -1,8 +1,9 @@
+
 "use client";
 
 import React, { createContext, useContext, useEffect, useState, useMemo } from 'react';
 import { User, signOut as firebaseSignOut } from 'firebase/auth';
-import { doc, getDoc, collection, query, getDocs, limit } from 'firebase/firestore';
+import { doc, getDoc, collection, query, getDocs, limit, where } from 'firebase/firestore';
 import { useAuth as useFirebaseAuth, useFirestore, useUser } from '@/firebase';
 import { useRouter, usePathname } from 'next/navigation';
 
@@ -15,6 +16,8 @@ interface AuthContextType {
   tenantMembers: Record<string, any> | null;
   role: 'owner' | 'cashier' | 'super-admin' | null;
   isSuperAdmin: boolean;
+  selectedEventId: string | null;
+  setSelectedEventId: (id: string | null) => void;
   signOut: () => Promise<void>;
 }
 
@@ -33,16 +36,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [organizationName, setOrganizationName] = useState<string | null>(null);
   const [tenantMembers, setTenantMembers] = useState<Record<string, any> | null>(null);
   const [role, setRole] = useState<'owner' | 'cashier' | 'super-admin' | null>(null);
+  const [selectedEventId, setSelectedEventIdState] = useState<string | null>(null);
 
-  // Monitorar status da internet
   useEffect(() => {
     setIsOnline(navigator.onLine);
     const goOnline = () => setIsOnline(true);
     const goOffline = () => setIsOnline(false);
-
     window.addEventListener('online', goOnline);
     window.addEventListener('offline', goOffline);
-
     return () => {
       window.removeEventListener('online', goOnline);
       window.removeEventListener('offline', goOffline);
@@ -51,6 +52,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const isSuperAdmin = useMemo(() => firebaseUser?.email === 'flowevents@gmail.com', [firebaseUser?.email]);
 
+  const setSelectedEventId = (id: string | null) => {
+    setSelectedEventIdState(id);
+    if (firebaseUser) {
+      if (id) localStorage.setItem(`selectedEventId_${firebaseUser.uid}`, id);
+      else localStorage.removeItem(`selectedEventId_${firebaseUser.uid}`);
+    }
+  };
+
   useEffect(() => {
     async function loadUserContext() {
       if (isUserLoading) return;
@@ -58,36 +67,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!firebaseUser) {
         setTenantId(null);
         setOrganizationName(null);
-        setTenantMembers(null);
         setRole(null);
+        setSelectedEventIdState(null);
         setLoading(false);
-        
-        if (pathname !== '/login' && pathname !== '/register') {
-          router.push('/login');
-        }
+        if (pathname !== '/login' && pathname !== '/register') router.push('/login');
         return;
       }
 
-      // 1. Tenta carregar do cache local IMEDIATAMENTE para ser ultra rápido
+      // Cache Check
       const cachedTenantId = localStorage.getItem(`tenantId_${firebaseUser.uid}`);
       const cachedRole = localStorage.getItem(`role_${firebaseUser.uid}`) as any;
-      const cachedOrgName = localStorage.getItem(`orgName_${firebaseUser.uid}`);
-      const cachedMembers = localStorage.getItem(`members_${firebaseUser.uid}`);
+      const cachedEventId = localStorage.getItem(`selectedEventId_${firebaseUser.uid}`);
 
       if (cachedTenantId && cachedRole) {
         setTenantId(cachedTenantId);
         setRole(cachedRole);
-        setOrganizationName(cachedOrgName);
-        if (cachedMembers) setTenantMembers(JSON.parse(cachedMembers));
-        
-        // Se estiver offline, já para por aqui e libera a tela
-        if (!navigator.onLine) {
-          setLoading(false);
-          return;
-        }
+        setSelectedEventIdState(cachedEventId);
+        if (!navigator.onLine) { setLoading(false); return; }
       }
 
-      // 2. Tenta atualizar os dados se estiver online ou se não houver cache
       try {
         if (isSuperAdmin) {
           setRole('super-admin');
@@ -99,10 +97,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const membershipsRef = collection(db, 'userProfiles', firebaseUser.uid, 'memberships');
         const membershipsSnap = await getDocs(query(membershipsRef, limit(1)));
         
-        if (!membershipsSnap.empty) {
+        if (!membersSnap.empty) {
           const mData = membershipsSnap.docs[0].data();
           const tId = mData.tenantId;
-          
           setTenantId(tId);
           localStorage.setItem(`tenantId_${firebaseUser.uid}`, tId);
 
@@ -113,26 +110,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             const data = tenantSnap.data();
             setOrganizationName(data.name);
             setTenantMembers(data.members || null);
-            
-            const memberInfo = data.members?.[firebaseUser.uid];
-            const userRole = typeof memberInfo === 'object' ? memberInfo.role : memberInfo;
-            const finalRole = userRole || 'cashier';
-            
-            setRole(finalRole);
-            
-            // Atualiza o cache para o próximo uso offline
-            localStorage.setItem(`role_${firebaseUser.uid}`, finalRole);
-            localStorage.setItem(`orgName_${firebaseUser.uid}`, data.name);
-            localStorage.setItem(`members_${firebaseUser.uid}`, JSON.stringify(data.members || {}));
-          }
-        } else if (navigator.onLine && !cachedTenantId) {
-          // Se não tem nem cache nem membership online, vai para o registro
-          if (pathname !== '/register' && pathname !== '/login') {
-            router.push('/register');
+            const userRole = data.members?.[firebaseUser.uid]?.role || 'cashier';
+            setRole(userRole);
+            localStorage.setItem(`role_${firebaseUser.uid}`, userRole);
+
+            // Redirecionamento Inteligente para Caixas
+            if (userRole === 'cashier' && !cachedEventId) {
+              const eventsRef = collection(db, 'tenants', tId, 'events');
+              const eventsSnap = await getDocs(query(eventsRef, where('status', '==', 'ativo')));
+              const myEvents = eventsSnap.docs.filter(d => d.data().members?.[firebaseUser.uid] != null);
+
+              if (myEvents.length === 1) {
+                const eventId = myEvents[0].id;
+                setSelectedEventId(eventId);
+              } else if (myEvents.length > 1) {
+                // Se múltiplos eventos, o PDV forçará a escolha
+                router.push('/pdv');
+              }
+            }
           }
         }
       } catch (error) {
-        console.warn("Aviso: Rodando com dados de cache devido a erro ou falta de rede.");
+        console.warn("Aviso: Cache ativo.");
       } finally {
         setLoading(false);
       }
@@ -145,14 +144,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (firebaseUser) {
       localStorage.removeItem(`tenantId_${firebaseUser.uid}`);
       localStorage.removeItem(`role_${firebaseUser.uid}`);
-      localStorage.removeItem(`orgName_${firebaseUser.uid}`);
-      localStorage.removeItem(`members_${firebaseUser.uid}`);
+      localStorage.removeItem(`selectedEventId_${firebaseUser.uid}`);
     }
     await firebaseSignOut(auth);
-    setTenantId(null);
-    setOrganizationName(null);
-    setTenantMembers(null);
-    setRole(null);
     router.push('/login');
   };
 
@@ -165,8 +159,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     tenantMembers,
     role,
     isSuperAdmin,
+    selectedEventId,
+    setSelectedEventId,
     signOut
-  }), [firebaseUser, isUserLoading, loading, isOnline, tenantId, organizationName, tenantMembers, role, isSuperAdmin]);
+  }), [firebaseUser, isUserLoading, loading, isOnline, tenantId, organizationName, tenantMembers, role, isSuperAdmin, selectedEventId]);
 
   return (
     <AuthContext.Provider value={contextValue}>
@@ -177,8 +173,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
+  if (context === undefined) throw new Error('useAuth must be used within an AuthProvider');
   return context;
 };
