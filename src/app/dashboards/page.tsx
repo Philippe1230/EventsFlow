@@ -1,31 +1,38 @@
+
 "use client";
 
 import { AppShell } from '@/components/layout/AppShell';
 import { useAuth } from '@/hooks/use-auth-context';
-import { useEffect, useState } from 'react';
-import { collection, query, where, orderBy } from 'firebase/firestore';
+import { useEffect, useState, Suspense } from 'react';
+import { collection, query, where, orderBy, getDocs } from 'firebase/firestore';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from 'recharts';
-import { DollarSign, ShoppingBag, TrendingUp, Calendar as CalendarIcon, Loader2, User as UserIcon } from 'lucide-react';
+import { DollarSign, ShoppingBag, TrendingUp, Calendar as CalendarIcon, Loader2, User as UserIcon, Calendar } from 'lucide-react';
 import { startOfDay, endOfDay, format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
-import { Calendar } from "@/components/ui/calendar";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 const COLORS = ['#f97316', '#ef4444', '#eab308', '#22c55e', '#06b6d4', '#8b5cf6'];
 
-export default function DashboardsDetailedPage() {
-  const { tenantId, user, role, tenantMembers, loading: authLoading } = useAuth();
+function DashboardsContent() {
+  const { tenantId, user, role, tenantMembers, loading: authLoading, selectedEventId, setSelectedEventId } = useAuth();
   const db = useFirestore();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  
+  const urlEventId = searchParams.get('eventId');
+  const activeEventId = urlEventId || selectedEventId;
+
   const [date, setDate] = useState<Date>(new Date());
   const [selectedCashier, setSelectedCashier] = useState<string>("all");
   const [calendarOpen, setCalendarOpen] = useState(false);
+  const [events, setEvents] = useState<any[]>([]);
 
   useEffect(() => {
     if (!authLoading && role === 'cashier') {
@@ -33,20 +40,35 @@ export default function DashboardsDetailedPage() {
     }
   }, [role, authLoading, router]);
 
+  useEffect(() => {
+    if (urlEventId && urlEventId !== selectedEventId) {
+      setSelectedEventId(urlEventId);
+    }
+  }, [urlEventId, selectedEventId, setSelectedEventId]);
+
+  useEffect(() => {
+    async function loadEvents() {
+      if (!tenantId) return;
+      const snap = await getDocs(collection(db, 'tenants', tenantId, 'events'));
+      setEvents(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    }
+    loadEvents();
+  }, [tenantId, db]);
+
   const cashierList = Object.entries(tenantMembers || {}).map(([uid, info]: [string, any]) => ({
     id: uid,
     name: typeof info === 'object' ? info.name : `Caixa ${uid.substring(0, 4)}`,
   })).sort((a, b) => a.name.localeCompare(b.name));
 
   const ordersQuery = useMemoFirebase(() => {
-    if (!tenantId || authLoading) return null;
+    if (!tenantId || !activeEventId || authLoading) return null;
     return query(
-      collection(db, 'tenants', tenantId, 'orders'),
+      collection(db, 'tenants', tenantId, 'events', activeEventId, 'orders'),
       where('createdAt', '>=', startOfDay(date)),
       where('createdAt', '<=', endOfDay(date)),
       orderBy('createdAt', 'desc')
     );
-  }, [tenantId, authLoading, db, date]);
+  }, [tenantId, activeEventId, authLoading, db, date]);
 
   const { data: allOrders, isLoading: ordersLoading } = useCollection(ordersQuery);
 
@@ -103,18 +125,34 @@ export default function DashboardsDetailedPage() {
   return (
     <AppShell>
       <div className="flex flex-col gap-8 mb-10 max-w-7xl mx-auto">
-        <div>
-          <h2 className="text-4xl font-black text-primary uppercase tracking-tighter">Dashboards</h2>
-          <p className="text-muted-foreground font-medium italic">Análise de desempenho do Flow Events.</p>
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
+          <div>
+            <h2 className="text-4xl font-black text-primary uppercase tracking-tighter italic leading-none">Desempenho</h2>
+            <p className="text-muted-foreground font-medium italic">Análise de vendas do evento em tempo real.</p>
+          </div>
+          
+          <div className="w-full md:w-auto">
+            <span className="text-[9px] font-black uppercase text-primary tracking-widest ml-1 mb-2 block">Operando em:</span>
+            <Select value={activeEventId || 'none'} onValueChange={setSelectedEventId}>
+              <SelectTrigger className="h-14 rounded-2xl border-2 border-primary font-bold bg-white text-primary px-6 min-w-[250px]">
+                <SelectValue placeholder="Selecione o Evento" />
+              </SelectTrigger>
+              <SelectContent className="rounded-2xl border-none shadow-2xl">
+                {events.map(e => (
+                  <SelectItem key={e.id} value={e.id} className="font-bold uppercase text-xs">{e.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
-        <div className="flex flex-col lg:flex-row gap-6 bg-card p-6 rounded-[2rem] border-2 border-primary/10 shadow-xl shadow-primary/5">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 bg-card p-6 rounded-[2rem] border-2 border-primary/10 shadow-xl shadow-primary/5">
           <div className="flex-1 space-y-3">
             <span className="text-[11px] font-black uppercase text-primary tracking-[0.2em] ml-1 flex items-center gap-2">
               <UserIcon className="h-4 w-4" /> FILTRO DE OPERADOR
             </span>
             <Select value={selectedCashier} onValueChange={setSelectedCashier}>
-              <SelectTrigger className="h-14 rounded-2xl border-2 border-primary font-bold bg-white shadow-md hover:bg-primary/5 transition-all px-6 text-primary ring-offset-background flex items-center justify-between opacity-100 visible">
+              <SelectTrigger className="h-14 rounded-2xl border-2 border-primary font-bold bg-white shadow-md hover:bg-primary/5 transition-all px-6 text-primary">
                 <SelectValue placeholder="Todos os caixas" />
               </SelectTrigger>
               <SelectContent className="rounded-2xl border-none shadow-2xl">
@@ -137,7 +175,7 @@ export default function DashboardsDetailedPage() {
                 <Button
                   variant={"outline"}
                   className={cn(
-                    "w-full justify-start text-left font-bold h-14 rounded-2xl border-2 border-primary bg-white shadow-md hover:bg-primary/5 transition-all px-6 text-primary flex opacity-100 visible",
+                    "w-full justify-start text-left font-bold h-14 rounded-2xl border-2 border-primary bg-white shadow-md hover:bg-primary/5 transition-all px-6 text-primary flex",
                     !date && "text-muted-foreground"
                   )}
                 >
@@ -145,109 +183,95 @@ export default function DashboardsDetailedPage() {
                   {date ? format(date, "PPP", { locale: ptBR }) : <span>Escolha um dia</span>}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0 border-none shadow-3xl rounded-[2.5rem] overflow-hidden popover-content" align="end">
-                <Calendar
+              <PopoverContent className="w-auto p-0 border-none shadow-3xl rounded-[2.5rem] overflow-hidden" align="end">
+                <CalendarComponent
                   mode="single"
                   selected={date}
-                  onSelect={(d) => {
-                    if (d) {
-                      setDate(d);
-                      setCalendarOpen(false);
-                    }
-                  }}
+                  onSelect={(d) => { if (d) { setDate(d); setCalendarOpen(false); } }}
                   initialFocus
                   locale={ptBR}
-                  captionLayout="dropdown"
-                  startMonth={new Date(2023, 0)}
-                  endMonth={new Date(new Date().getFullYear() + 2, 11)}
                 />
               </PopoverContent>
             </Popover>
           </div>
         </div>
-      </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mb-10 max-w-7xl mx-auto">
-        <StatCard title="Faturamento Total" value={`R$ ${stats.totalRevenue.toFixed(2)}`} icon={<DollarSign className="h-6 w-6" />} loading={ordersLoading} />
-        <StatCard title="Total de Pedidos" value={stats.totalOrders.toString()} icon={<ShoppingBag className="h-6 w-6" />} loading={ordersLoading} />
-        <StatCard title="Top Venda" value={stats.bestSeller} icon={<TrendingUp className="h-6 w-6" />} loading={ordersLoading} />
-      </div>
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <StatCard title="Faturamento Total" value={`R$ ${stats.totalRevenue.toFixed(2)}`} icon={<DollarSign className="h-6 w-6" />} loading={ordersLoading} />
+          <StatCard title="Total de Pedidos" value={stats.totalOrders.toString()} icon={<ShoppingBag className="h-6 w-6" />} loading={ordersLoading} />
+          <StatCard title="Top Venda" value={stats.bestSeller} icon={<TrendingUp className="h-6 w-6" />} loading={ordersLoading} />
+        </div>
 
-      <div className="grid gap-8 md:grid-cols-1 lg:grid-cols-12 max-w-7xl mx-auto">
-        <Card className="lg:col-span-7 shadow-xl border-none rounded-[2.5rem] overflow-hidden bg-card hover:shadow-primary/10 transition-shadow">
-          <CardHeader className="p-8 pb-2">
-            <CardTitle className="text-[11px] font-black uppercase text-primary tracking-widest flex items-center gap-2">
-              <TrendingUp className="h-4 w-4" /> Distribuição de Vendas
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="h-[400px] p-8">
-            {ordersLoading ? (
-              <div className="flex items-center justify-center h-full"><Loader2 className="animate-spin text-primary h-12 w-12 opacity-20" /></div>
-            ) : stats.productSales.length === 0 ? (
-              <div className="flex items-center justify-center h-full text-muted-foreground text-xs font-black uppercase tracking-widest opacity-20">Sem dados para o período</div>
-            ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={stats.productSales}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={80}
-                    outerRadius={130}
-                    paddingAngle={8}
-                    dataKey="value"
-                  >
-                    {stats.productSales.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} className="hover:opacity-80 transition-all cursor-pointer" />
+        <div className="grid gap-8 lg:grid-cols-12">
+          <Card className="lg:col-span-7 shadow-xl border-none rounded-[2.5rem] overflow-hidden bg-card">
+            <CardHeader className="p-8 pb-2">
+              <CardTitle className="text-[11px] font-black uppercase text-primary tracking-widest flex items-center gap-2">
+                <TrendingUp className="h-4 w-4" /> Distribuição de Vendas
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="h-[400px] p-8">
+              {ordersLoading ? (
+                <div className="flex items-center justify-center h-full"><Loader2 className="animate-spin text-primary h-12 w-12 opacity-20" /></div>
+              ) : stats.productSales.length === 0 ? (
+                <div className="flex items-center justify-center h-full text-muted-foreground text-xs font-black uppercase tracking-widest opacity-20">Sem dados para este evento hoje</div>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie data={stats.productSales} cx="50%" cy="50%" innerRadius={80} outerRadius={130} paddingAngle={8} dataKey="value">
+                      {stats.productSales.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip 
+                      contentStyle={{ backgroundColor: 'hsl(var(--card))', borderRadius: '24px', border: 'none', fontSize: '12px', fontWeight: 'bold', boxShadow: '0 25px 50px -12px rgb(0 0 0 / 0.25)' }}
+                      formatter={(value: number, name: string, props: any) => [`R$ ${value.toFixed(2)} (${props.payload.quantity}un)`, name]}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card className="lg:col-span-5 shadow-xl border-none rounded-[2.5rem] overflow-hidden bg-card">
+            <CardHeader className="p-8 pb-2">
+              <CardTitle className="text-[11px] font-black uppercase text-muted-foreground tracking-widest flex items-center gap-2">
+                 <UserIcon className="h-4 w-4" /> Ranking de Itens
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm">
+                  <thead>
+                    <tr className="border-b border-primary/5 bg-muted/10">
+                      <th className="py-6 pl-8 font-black uppercase text-[10px] tracking-widest text-muted-foreground">Item</th>
+                      <th className="py-6 px-4 font-black uppercase text-[10px] tracking-widest text-muted-foreground text-center">Qtd</th>
+                      <th className="py-6 pr-8 font-black uppercase text-[10px] tracking-widest text-muted-foreground text-right">Faturado</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {stats.productSales.map((p, idx) => (
+                      <tr key={idx} className="border-b border-primary/5 last:border-0 hover:bg-primary/5 transition-colors group">
+                        <td className="py-6 pl-8 font-black uppercase text-xs group-hover:text-primary transition-colors">{p.name}</td>
+                        <td className="py-6 px-4 text-center font-bold text-muted-foreground">{p.quantity}</td>
+                        <td className="py-6 pr-8 text-right font-black text-primary text-base">R$ {p.value.toFixed(2)}</td>
+                      </tr>
                     ))}
-                  </Pie>
-                  <Tooltip 
-                    contentStyle={{ backgroundColor: 'hsl(var(--card))', borderRadius: '24px', border: 'none', fontSize: '12px', fontWeight: 'bold', boxShadow: '0 25px 50px -12px rgb(0 0 0 / 0.25)' }}
-                    itemStyle={{ padding: '4px 0' }}
-                    formatter={(value: number, name: string, props: any) => [`R$ ${value.toFixed(2)} (${props.payload.quantity}un)`, name]}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card className="lg:col-span-5 shadow-xl border-none rounded-[2.5rem] overflow-hidden bg-card hover:shadow-primary/10 transition-shadow">
-          <CardHeader className="p-8 pb-2">
-            <CardTitle className="text-[11px] font-black uppercase text-muted-foreground tracking-widest flex items-center gap-2">
-               <UserIcon className="h-4 w-4" /> Ranking de Produtos
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
-                <thead>
-                  <tr className="border-b border-primary/5 bg-muted/10">
-                    <th className="py-6 pl-8 font-black uppercase text-[10px] tracking-widest text-muted-foreground">Item</th>
-                    <th className="py-6 px-4 font-black uppercase text-[10px] tracking-widest text-muted-foreground text-center">Qtd</th>
-                    <th className="py-6 pr-8 font-black uppercase text-[10px] tracking-widest text-muted-foreground text-right">Faturado</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {stats.productSales.map((p, idx) => (
-                    <tr key={idx} className="border-b border-primary/5 last:border-0 hover:bg-primary/5 transition-colors group">
-                      <td className="py-6 pl-8 font-black uppercase text-xs group-hover:text-primary transition-colors">{p.name}</td>
-                      <td className="py-6 px-4 text-center font-bold text-muted-foreground">{p.quantity}</td>
-                      <td className="py-6 pr-8 text-right font-black text-primary text-base">R$ {p.value.toFixed(2)}</td>
-                    </tr>
-                  ))}
-                  {stats.productSales.length === 0 && (
-                    <tr>
-                      <td colSpan={3} className="py-24 text-center text-muted-foreground uppercase text-[10px] font-black tracking-widest opacity-20">Nenhuma venda registrada</td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </AppShell>
+  );
+}
+
+export default function DashboardsPage() {
+  return (
+    <Suspense fallback={<div className="flex h-screen w-full items-center justify-center"><Loader2 className="h-12 w-12 animate-spin text-primary opacity-20" /></div>}>
+      <DashboardsContent />
+    </Suspense>
   );
 }
 

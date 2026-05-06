@@ -83,7 +83,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setTenantId(cachedTenantId);
         setRole(cachedRole);
         setSelectedEventIdState(cachedEventId);
-        if (!navigator.onLine) { setLoading(false); return; }
       }
 
       try {
@@ -114,21 +113,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setRole(userRole);
             localStorage.setItem(`role_${firebaseUser.uid}`, userRole);
 
-            // Redirecionamento Inteligente para Caixas
+            // Redirecionamento Inteligente para Caixas sem evento selecionado
             if (userRole === 'cashier' && !cachedEventId) {
               const eventsRef = collection(db, 'tenants', tId, 'events');
               const eventsSnap = await getDocs(query(eventsRef, where('status', '==', 'ativo')));
+              
+              // Find events where this cashier is a member
               const myEvents = eventsSnap.docs.filter(d => d.data().members?.[firebaseUser.uid] != null);
 
               if (myEvents.length === 1) {
                 const eventId = myEvents[0].id;
                 setSelectedEventId(eventId);
+                if (pathname === '/' || pathname === '/login') {
+                  router.replace(`/pdv?eventId=${eventId}`);
+                }
               }
             }
           }
         }
       } catch (error) {
-        console.warn("Aviso: Cache ativo.");
+        console.warn("Aviso: Erro ao carregar contexto de usuário.");
       } finally {
         setLoading(false);
       }

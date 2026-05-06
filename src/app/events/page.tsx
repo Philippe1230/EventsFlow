@@ -4,7 +4,7 @@
 import { AppShell } from '@/components/layout/AppShell';
 import { useAuth } from '@/hooks/use-auth-context';
 import { useState, useEffect } from 'react';
-import { collection, query, orderBy, addDoc, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, orderBy, addDoc, doc, updateDoc, serverTimestamp, where } from 'firebase/firestore';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -13,7 +13,7 @@ import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Calendar as CalendarIcon, MapPin, Plus, Loader2, Edit3, ArrowRight, CheckCircle2, Clock, Settings } from 'lucide-react';
+import { Calendar as CalendarIcon, MapPin, Plus, Loader2, Edit3, ArrowRight, CheckCircle2, Clock, Settings, LayoutDashboard } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
@@ -27,10 +27,11 @@ interface Event {
   location: string;
   status: 'rascunho' | 'ativo' | 'finalizado';
   createdAt: any;
+  members: Record<string, any>;
 }
 
 export default function EventsPage() {
-  const { tenantId, role, loading: authLoading } = useAuth();
+  const { tenantId, role, user, loading: authLoading, setSelectedEventId } = useAuth();
   const db = useFirestore();
   const { toast } = useToast();
   
@@ -44,17 +45,24 @@ export default function EventsPage() {
     status: 'rascunho'
   });
 
+  const isAdmin = role === 'owner' || role === 'super-admin';
+
   const eventsQuery = useMemoFirebase(() => {
     if (!tenantId) return null;
     return query(collection(db, 'tenants', tenantId, 'events'), orderBy('createdAt', 'desc'));
   }, [tenantId, db]);
 
-  const { data: eventsData, isLoading } = useCollection<Event>(eventsQuery);
-  const events = eventsData || [];
+  const { data: allEventsData, isLoading } = useCollection<Event>(eventsQuery);
+  
+  // Filter events based on role
+  const events = (allEventsData || []).filter(e => {
+    if (isAdmin) return true;
+    return e.members?.[user?.uid || ''] != null;
+  });
 
   const handleSave = async () => {
     if (!tenantId) {
-      toast({ title: 'Erro de Sistema', description: 'ID da organização não encontrado. Tente recarregar.', variant: 'destructive' });
+      toast({ title: 'Erro de Sistema', description: 'ID da organização não encontrado.', variant: 'destructive' });
       return;
     }
 
@@ -71,21 +79,26 @@ export default function EventsPage() {
           ...currentEvent,
           updatedAt: serverTimestamp()
         });
-        toast({ title: 'Evento Atualizado!', description: 'As alterações foram salvas.' });
+        toast({ title: 'Evento Atualizado!' });
       } else {
         await addDoc(collection(db, 'tenants', tenantId, 'events'), {
           ...currentEvent,
           tenantId,
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
-          members: {} 
+          members: {
+            [user?.uid || '']: {
+              role: role,
+              name: user?.displayName || 'Dono',
+              email: user?.email || ''
+            }
+          } 
         });
-        toast({ title: 'Sucesso!', description: 'Seu novo evento foi criado.' });
+        toast({ title: 'Sucesso!', description: 'Evento criado.' });
       }
       setIsDialogOpen(false);
     } catch (e: any) {
-      console.error("Erro ao salvar evento:", e);
-      toast({ title: 'Erro ao Salvar', description: e.message || 'Verifique sua conexão e tente novamente.', variant: 'destructive' });
+      toast({ title: 'Erro ao Salvar', description: e.message, variant: 'destructive' });
     } finally {
       setSubmitting(false);
     }
@@ -107,31 +120,31 @@ export default function EventsPage() {
     setIsDialogOpen(true);
   };
 
-  if (role !== 'owner' && role !== 'super-admin') return null;
-
   return (
     <AppShell>
       <div className="flex flex-col gap-10 max-w-7xl mx-auto mb-20">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
           <div className="space-y-1">
-            <h2 className="text-4xl font-black text-primary uppercase tracking-tighter italic leading-none">Gestão de Eventos</h2>
-            <p className="text-muted-foreground font-medium italic">Configure múltiplos eventos e suas respectivas equipes.</p>
+            <h2 className="text-4xl font-black text-primary uppercase tracking-tighter italic leading-none">Eventos</h2>
+            <p className="text-muted-foreground font-medium italic">Selecione um evento para operar ou gerenciar.</p>
           </div>
-          <Button onClick={() => openDialog()} className="h-16 px-10 rounded-2xl font-black uppercase text-lg shadow-2xl shadow-primary/20 hover:scale-105 active:scale-95 transition-all">
-            <Plus className="mr-2 h-6 w-6" /> Criar Novo Evento
-          </Button>
+          {isAdmin && (
+            <Button onClick={() => openDialog()} className="h-16 px-10 rounded-2xl font-black uppercase text-lg shadow-2xl shadow-primary/20 hover:scale-105 active:scale-95 transition-all">
+              <Plus className="mr-2 h-6 w-6" /> Criar Novo Evento
+            </Button>
+          )}
         </div>
 
         {isLoading ? (
           <div className="flex flex-col items-center justify-center py-40 gap-4 opacity-20">
             <Loader2 className="h-12 w-12 animate-spin text-primary" />
-            <span className="font-black uppercase text-[10px] tracking-widest">Sincronizando Eventos...</span>
+            <span className="font-black uppercase text-[10px] tracking-widest">Carregando Eventos...</span>
           </div>
         ) : events.length === 0 ? (
           <div className="bg-card border-2 border-dashed border-primary/10 rounded-[3rem] p-20 text-center">
             <CalendarIcon className="h-20 w-20 text-primary/10 mx-auto mb-6" />
-            <h3 className="text-xl font-black uppercase text-muted-foreground">Nenhum evento cadastrado</h3>
-            <p className="text-sm text-muted-foreground/60 mt-2">Clique no botão acima para começar.</p>
+            <h3 className="text-xl font-black uppercase text-muted-foreground">Nenhum evento ativo</h3>
+            <p className="text-sm text-muted-foreground/60 mt-2">{isAdmin ? 'Clique no botão acima para começar.' : 'Você ainda não foi vinculado a nenhum evento.'}</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -146,9 +159,11 @@ export default function EventsPage() {
                     )}>
                       {event.status}
                     </Badge>
-                    <Button variant="ghost" size="icon" onClick={() => openDialog(event)} className="h-10 w-10 rounded-xl text-primary/40 hover:text-primary hover:bg-primary/5">
-                      <Edit3 className="h-5 w-5" />
-                    </Button>
+                    {isAdmin && (
+                      <Button variant="ghost" size="icon" onClick={() => openDialog(event)} className="h-10 w-10 rounded-xl text-primary/40 hover:text-primary hover:bg-primary/5">
+                        <Edit3 className="h-5 w-5" />
+                      </Button>
+                    )}
                   </div>
                   <CardTitle className="text-2xl font-black uppercase tracking-tighter text-primary group-hover:translate-x-1 transition-transform">{event.name}</CardTitle>
                 </CardHeader>
@@ -157,7 +172,7 @@ export default function EventsPage() {
                     <div className="flex items-center gap-3 text-muted-foreground">
                       <CalendarIcon className="h-4 w-4 text-primary" />
                       <span className="text-xs font-bold uppercase">
-                        {event.date ? format(new Date(event.date + 'T00:00:00'), "dd 'de' MMMM", { locale: ptBR }) : 'Data não definida'}
+                        {event.date ? format(new Date(event.date + 'T00:00:00'), "dd 'de' MMMM", { locale: ptBR }) : '---'}
                       </span>
                     </div>
                     <div className="flex items-center gap-3 text-muted-foreground">
@@ -166,12 +181,29 @@ export default function EventsPage() {
                     </div>
                   </div>
                   <div className="pt-4 grid grid-cols-2 gap-3">
-                    <Button asChild variant="secondary" className="font-black uppercase text-[10px] h-12 rounded-xl">
-                      <Link href={`/events/${event.id}/config`}><Settings className="mr-1.5 h-3.5 w-3.5" /> Configurar</Link>
-                    </Button>
-                    <Button asChild className="font-black uppercase text-[10px] h-12 rounded-xl shadow-lg shadow-primary/10">
+                    <Button 
+                      onClick={() => setSelectedEventId(event.id)}
+                      asChild 
+                      className="font-black uppercase text-[10px] h-12 rounded-xl shadow-lg shadow-primary/10 col-span-2 sm:col-span-1"
+                    >
                       <Link href={`/pdv?eventId=${event.id}`}>Ir para o PDV <ArrowRight className="ml-1 h-3.5 w-3.5" /></Link>
                     </Button>
+                    
+                    {isAdmin ? (
+                      <Button asChild variant="secondary" className="font-black uppercase text-[10px] h-12 rounded-xl">
+                        <Link href={`/events/${event.id}/config`}><Settings className="mr-1.5 h-3.5 w-3.5" /> Configurar</Link>
+                      </Button>
+                    ) : (
+                      <Button asChild variant="secondary" className="font-black uppercase text-[10px] h-12 rounded-xl">
+                        <Link href={`/orders?eventId=${event.id}`} onClick={() => setSelectedEventId(event.id)}>Histórico <Clock className="ml-1.5 h-3.5 w-3.5" /></Link>
+                      </Button>
+                    )}
+
+                    {isAdmin && (
+                      <Button asChild variant="outline" className="font-black uppercase text-[10px] h-12 rounded-xl border-primary/20 text-primary col-span-2 mt-1">
+                        <Link href={`/dashboards?eventId=${event.id}`} onClick={() => setSelectedEventId(event.id)}>Dashboards <LayoutDashboard className="ml-1.5 h-3.5 w-3.5" /></Link>
+                      </Button>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -186,9 +218,6 @@ export default function EventsPage() {
             <DialogTitle className="text-3xl font-black uppercase tracking-tighter italic">
               {isEditing ? 'Editar Evento' : 'Novo Evento'}
             </DialogTitle>
-            <DialogDescription className="text-white/70 font-bold uppercase text-[10px] tracking-widest">
-              Defina as informações básicas do evento
-            </DialogDescription>
           </DialogHeader>
           <div className="p-8 space-y-6">
             <div className="space-y-2">
@@ -235,12 +264,8 @@ export default function EventsPage() {
             </div>
           </div>
           <DialogFooter className="bg-muted/30 p-8 pt-4">
-            <Button 
-              onClick={handleSave} 
-              className="w-full h-16 font-black uppercase text-xl rounded-2xl shadow-xl shadow-primary/20" 
-              disabled={submitting}
-            >
-              {submitting ? <Loader2 className="animate-spin h-6 w-6" /> : (isEditing ? 'Salvar Alterações' : 'Confirmar Evento')}
+            <Button onClick={handleSave} className="w-full h-16 font-black uppercase text-xl rounded-2xl shadow-xl shadow-primary/20" disabled={submitting}>
+              {submitting ? <Loader2 className="animate-spin h-6 w-6" /> : 'Confirmar Evento'}
             </Button>
           </DialogFooter>
         </DialogContent>

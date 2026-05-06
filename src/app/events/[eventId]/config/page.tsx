@@ -14,7 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Loader2, Edit3, Trash2, Store, Package, Users, ChevronLeft, Save } from 'lucide-react';
+import { Plus, Loader2, Edit3, Trash2, Store, Package, Users, ChevronLeft, UserPlus, UserMinus, ShieldCheck } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
@@ -41,10 +41,9 @@ interface Product {
 
 export default function EventConfigPage({ params }: { params: Promise<{ eventId: string }> }) {
   const { eventId } = use(params);
-  const { tenantId, role } = useAuth();
+  const { tenantId, role, tenantMembers } = useAuth();
   const db = useFirestore();
   const { toast } = useToast();
-  const router = useRouter();
 
   const [activeTab, setActiveTab] = useState("suppliers");
 
@@ -107,6 +106,26 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const toggleMemberInEvent = async (userId: string, memberInfo: any) => {
+    if (!tenantId || !event) return;
+    const currentMembers = event.members || {};
+    const newMembers = { ...currentMembers };
+
+    if (newMembers[userId]) {
+      delete newMembers[userId];
+      toast({ title: "Acesso Removido", description: "O caixa não verá mais este evento." });
+    } else {
+      newMembers[userId] = {
+        role: memberInfo.role || 'cashier',
+        name: memberInfo.name || 'Operador',
+        email: memberInfo.email || ''
+      };
+      toast({ title: "Acesso Concedido", description: "O caixa agora pode operar neste evento." });
+    }
+
+    await updateDoc(eventRef!, { members: newMembers });
   };
 
   const deleteSupplier = async (id: string) => {
@@ -408,13 +427,54 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
           </TabsContent>
 
           <TabsContent value="team" className="space-y-6">
-            <Card className="border-2 border-dashed border-primary/10 rounded-[3rem] p-20 text-center bg-card">
-              <Users className="h-20 w-20 text-primary/10 mx-auto mb-6" />
-              <h3 className="text-xl font-black uppercase text-muted-foreground">Gestão de Equipe por Evento</h3>
-              <p className="text-sm text-muted-foreground/60 mt-2 max-w-md mx-auto">
-                Em breve você poderá vincular caixas específicos a este evento. Por enquanto, todos os caixas da organização têm acesso a todos os eventos ativos.
-              </p>
-            </Card>
+            <div className="flex justify-between items-center">
+              <h3 className="text-xl font-black text-primary uppercase tracking-tight">Equipe Vinculada</h3>
+              <p className="text-xs text-muted-foreground font-medium italic">Selecione quais operadores podem trabalhar neste evento.</p>
+            </div>
+
+            <div className="rounded-[2.5rem] border border-primary/5 bg-card shadow-2xl overflow-hidden">
+              <Table>
+                <TableHeader className="bg-muted/30">
+                  <TableRow className="hover:bg-transparent border-primary/5">
+                    <TableHead className="font-black uppercase text-[10px] py-6 pl-8">Operador</TableHead>
+                    <TableHead className="font-black uppercase text-[10px]">Acesso</TableHead>
+                    <TableHead className="font-black uppercase text-[10px]">Vínculo</TableHead>
+                    <TableHead className="text-right font-black uppercase text-[10px] pr-8">Ação</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {Object.entries(tenantMembers || {}).map(([uid, info]: [string, any]) => {
+                    const isLinked = event?.members?.[uid] != null;
+                    return (
+                      <TableRow key={uid} className={cn("border-primary/5 transition-all", isLinked ? "bg-primary/5" : "hover:bg-muted/30")}>
+                        <TableCell className="font-black text-primary py-6 pl-8 uppercase text-sm">
+                          {info.name || 'Operador'}
+                          {info.role === 'owner' && <Badge variant="outline" className="ml-2 text-[8px] border-primary/20 text-primary">Dono</Badge>}
+                        </TableCell>
+                        <TableCell className="font-bold text-muted-foreground text-xs">{info.email}</TableCell>
+                        <TableCell>
+                          {isLinked ? (
+                            <Badge className="bg-green-500 font-black uppercase text-[8px] tracking-widest px-2">Ativo no Evento</Badge>
+                          ) : (
+                            <Badge variant="outline" className="font-black uppercase text-[8px] tracking-widest px-2 opacity-40">Sem acesso</Badge>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right pr-8">
+                          <Button 
+                            variant={isLinked ? "ghost" : "default"} 
+                            size="sm" 
+                            onClick={() => toggleMemberInEvent(uid, info)}
+                            className={cn("font-black uppercase text-[9px] rounded-lg h-10 px-4", isLinked ? "text-destructive hover:bg-destructive/5" : "shadow-lg shadow-primary/10")}
+                          >
+                            {isLinked ? <><UserMinus className="mr-1.5 h-3 w-3" /> Remover</> : <><UserPlus className="mr-1.5 h-3 w-3" /> Vincular</>}
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
           </TabsContent>
         </Tabs>
       </div>
