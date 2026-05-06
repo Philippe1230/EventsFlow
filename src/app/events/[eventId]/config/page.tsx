@@ -13,6 +13,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, Loader2, Edit3, Trash2, Store, Package, Users, ChevronLeft, Save } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -53,11 +54,13 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
 
   // Suppliers Data
   const suppliersQuery = useMemoFirebase(() => tenantId ? query(collection(db, 'tenants', tenantId, 'events', eventId, 'suppliers'), orderBy('name')) : null, [tenantId, db, eventId]);
-  const { data: suppliers = [], isLoading: suppliersLoading } = useCollection<Supplier>(suppliersQuery);
+  const { data: suppliersData, isLoading: suppliersLoading } = useCollection<Supplier>(suppliersQuery);
+  const suppliers = suppliersData || [];
 
   // Products Data
   const productsQuery = useMemoFirebase(() => tenantId ? query(collection(db, 'tenants', tenantId, 'events', eventId, 'products'), orderBy('name')) : null, [tenantId, db, eventId]);
-  const { data: products = [], isLoading: productsLoading } = useCollection<Product>(productsQuery);
+  const { data: productsData, isLoading: productsLoading } = useCollection<Product>(productsQuery);
+  const products = productsData || [];
 
   // Forms State
   const [submitting, setSubmitting] = useState(false);
