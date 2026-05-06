@@ -1,10 +1,9 @@
-
 "use client";
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { SidebarProvider, Sidebar, SidebarContent, SidebarHeader, SidebarFooter, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import { useAuth } from '@/hooks/use-auth-context';
-import { LayoutDashboard, ShoppingCart, Package, ListOrdered, LogOut, Users, BarChart3, ShieldCheck, User, Settings2, WifiOff, Wifi } from 'lucide-react';
+import { LayoutDashboard, ShoppingCart, Package, ListOrdered, LogOut, Users, BarChart3, ShieldCheck, Settings2, WifiOff, Wifi, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
@@ -29,7 +28,7 @@ export const OrderTicketIcon = (props: React.SVGProps<SVGSVGElement>) => (
 );
 
 const LoadingJunina = () => (
-  <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-background">
+  <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-background gpu-accelerated">
     <div className="flex gap-3">
       {[1, 2, 3, 4, 5, 6].map((i) => (
         <div 
@@ -50,8 +49,13 @@ const LoadingJunina = () => (
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { user, loading, organizationName, signOut, role, isSuperAdmin, isOnline } = useAuth();
   const pathname = usePathname();
+  const [isNavigating, setIsNavigating] = useState(false);
 
-  const isInitialLoading = loading && !user;
+  // Prefetching logic is handled by Next.js Link, but we add a visual hint
+  useEffect(() => {
+    setIsNavigating(false);
+  }, [pathname]);
+
   const isAdmin = role === 'owner';
 
   const navItems = useMemo(() => [
@@ -71,13 +75,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     });
   }, [pathname, navItems]);
 
-  if (isInitialLoading) return <LoadingJunina />;
+  if (loading && !user) return <LoadingJunina />;
 
   return (
     <SidebarProvider>
-      <Sidebar collapsible="icon" className="border-r bg-card shadow-xl">
+      <Sidebar collapsible="icon" className="border-r bg-card shadow-xl transition-all duration-150 ease-in-out">
         <SidebarHeader className="p-6 flex flex-row items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary text-white shadow-lg shrink-0">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary text-white shadow-lg shrink-0 gpu-accelerated">
             <OrderTicketIcon className="h-7 w-7" />
           </div>
           <div className="flex flex-col group-data-[collapsible=icon]:hidden overflow-hidden">
@@ -87,7 +91,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Painel Operacional</span>
           </div>
         </SidebarHeader>
-        <SidebarContent>
+        <SidebarContent className="scroll-smooth">
           <SidebarMenu className="px-3 pt-2">
             {navItems.map((item, idx) => {
               const active = idx === activeIndex;
@@ -97,16 +101,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     asChild 
                     isActive={active} 
                     tooltip={item.name} 
+                    onClick={() => {
+                      if (pathname !== item.href) setIsNavigating(true);
+                    }}
                     className={cn(
-                      "h-12 rounded-2xl transition-all duration-200 mb-1 font-black uppercase text-[10px] tracking-widest px-4",
+                      "h-12 rounded-2xl transition-all duration-150 mb-1 font-black uppercase text-[10px] tracking-widest px-4 active:scale-95 gpu-accelerated",
                       active 
-                        ? "!bg-primary !text-white shadow-lg shadow-primary/30" 
+                        ? "!bg-primary !text-white shadow-lg shadow-primary/20" 
                         : "text-primary/60 hover:bg-primary/5 hover:text-primary"
                     )}
                   >
                     <Link href={item.href} className="flex items-center gap-3">
                       <item.icon className={cn(
-                        "h-5 w-5 shrink-0",
+                        "h-5 w-5 shrink-0 transition-colors",
                         active ? "text-white" : "text-primary"
                       )} />
                       <span className="truncate">{item.name}</span>
@@ -131,7 +138,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </div>
               <SidebarMenuButton 
                 onClick={signOut} 
-                className="h-11 rounded-xl text-muted-foreground hover:text-destructive hover:bg-destructive/5 font-black uppercase text-[10px]"
+                className="h-11 rounded-xl text-muted-foreground hover:text-destructive hover:bg-destructive/5 font-black uppercase text-[10px] transition-colors"
               >
                 <LogOut className="h-4 w-4" />
                 <span className="group-data-[collapsible=icon]:hidden">Sair do Flow Events</span>
@@ -140,10 +147,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </SidebarMenu>
         </SidebarFooter>
       </Sidebar>
-      <SidebarInset className="bg-background">
-        <header className="flex h-16 items-center justify-between border-b bg-card/50 backdrop-blur-sm px-4 md:px-6 no-print shadow-sm sticky top-0 z-40">
+      <SidebarInset className="bg-background relative">
+        {isNavigating && (
+          <div className="absolute top-0 left-0 w-full h-1 bg-primary/20 z-50 overflow-hidden no-print">
+            <div className="h-full bg-primary animate-progress-fast w-1/3" />
+          </div>
+        )}
+        <header className="flex h-16 items-center justify-between border-b bg-card/50 backdrop-blur-sm px-4 md:px-6 no-print shadow-sm sticky top-0 z-40 gpu-accelerated">
           <div className="flex items-center gap-4">
-            <SidebarTrigger className="text-primary" />
+            <SidebarTrigger className="text-primary hover:bg-primary/10 rounded-xl transition-colors" />
             <h1 className="text-base md:text-lg font-black text-primary uppercase tracking-tighter truncate">
               {navItems[activeIndex]?.name || 'Menu'}
             </h1>
@@ -151,20 +163,32 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           
           <div className="flex items-center gap-2">
             {!isOnline ? (
-              <Badge variant="destructive" className="font-black uppercase text-[9px] tracking-widest flex items-center gap-1.5 px-3 py-1 animate-pulse">
+              <Badge variant="destructive" className="font-black uppercase text-[9px] tracking-widest flex items-center gap-1.5 px-3 py-1 animate-pulse border-none">
                 <WifiOff className="h-3 w-3" /> Modo Offline
               </Badge>
             ) : (
-              <Badge variant="outline" className="font-black uppercase text-[9px] tracking-widest flex items-center gap-1.5 px-3 py-1 border-primary/20 text-primary/40">
+              <Badge variant="outline" className="font-black uppercase text-[9px] tracking-widest flex items-center gap-1.5 px-3 py-1 border-primary/20 text-primary/40 bg-white/50">
                 <Wifi className="h-3 w-3" /> Online
               </Badge>
             )}
           </div>
         </header>
-        <main className="flex-1 p-4 md:p-10">
+        <main className={cn(
+          "flex-1 p-4 md:p-10 transition-all duration-150 ease-out",
+          isNavigating ? "opacity-50 grayscale-[0.5] scale-[0.99]" : "opacity-100 scale-100"
+        )}>
           {children}
         </main>
       </SidebarInset>
+      <style jsx global>{`
+        @keyframes progress-fast {
+          0% { transform: translateX(-100%); }
+          100% { transform: translateX(300%); }
+        }
+        .animate-progress-fast {
+          animation: progress-fast 1s infinite linear;
+        }
+      `}</style>
     </SidebarProvider>
   );
 }
