@@ -75,30 +75,46 @@
 
 @media print {
   @page {
-    margin: 0;
-    size: 80mm auto;
+    margin: 0 !important;
+    size: 80mm auto !important;
   }
-  body {
-    margin: 0;
-    padding: 0;
-    background: white;
+
+  html, body {
+    width: 80mm !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
+
   body * {
-    visibility: hidden;
+    visibility: hidden !important;
   }
+
   #print-area, #print-area * {
-    visibility: visible;
+    visibility: visible !important;
   }
+
   #print-area {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 80mm;
-    margin: 0;
-    padding: 0;
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 80mm !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    display: block !important;
   }
+
   .no-print {
     display: none !important;
+  }
+
+  /* Remove quebras de página indesejadas */
+  .ticket {
+    break-inside: avoid !important;
+    page-break-after: always !important;
+    overflow: hidden !important;
   }
 }
 
