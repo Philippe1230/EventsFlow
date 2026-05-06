@@ -3,7 +3,7 @@
 
 import { AppShell } from '@/components/layout/AppShell';
 import { useAuth } from '@/hooks/use-auth-context';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { collection, query, orderBy, Timestamp, limit, where } from 'firebase/firestore';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -36,9 +36,16 @@ export default function OrdersPage() {
   const db = useFirestore();
   const [printableTickets, setPrintableTickets] = useState<any[]>([]);
   const [ordersLimit, setOrdersLimit] = useState<string>("20");
-  const [selectedCashier, setSelectedCashier] = useState<string>(user?.uid || "all");
+  const [selectedCashier, setSelectedCashier] = useState<string>("all");
 
   const isAdminView = role === 'owner' || isSuperAdmin;
+
+  // Ajusta o filtro inicial baseado no papel do usuário
+  useEffect(() => {
+    if (role === 'cashier' && user?.uid) {
+      setSelectedCashier(user.uid);
+    }
+  }, [role, user]);
 
   const ordersQuery = useMemoFirebase(() => {
     if (!tenantId || !user) return null;
@@ -68,7 +75,7 @@ export default function OrdersPage() {
     if (!tenantMembers) return [];
     return Object.entries(tenantMembers).map(([uid, info]: [string, any]) => ({
       id: uid,
-      name: typeof info === 'object' ? info.name : `Operador ${uid.substring(0, 4)}`,
+      name: typeof info === 'object' ? (info.name || info.displayName || 'Operador') : `Operador ${uid.substring(0, 4)}`,
     })).sort((a, b) => a.name.localeCompare(b.name));
   }, [tenantMembers]);
 
@@ -135,7 +142,7 @@ export default function OrdersPage() {
             <Button 
               onClick={exportCSV} 
               variant="outline" 
-              className="flex-1 sm:flex-none font-black uppercase rounded-2xl h-14 px-8 shadow-xl shadow-primary/5 border-primary/10 transition-all hover:scale-[1.02] active:scale-95 bg-card" 
+              className="flex-1 sm:flex-none font-black uppercase rounded-2xl h-14 px-8 shadow-xl shadow-primary/5 border-primary/20 transition-all hover:scale-[1.02] active:scale-95 bg-card" 
               disabled={!orders || orders.length === 0}
             >
               <Download className="mr-3 h-5 w-5 text-primary" /> Exportar CSV
@@ -143,15 +150,15 @@ export default function OrdersPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 bg-card p-6 rounded-[2rem] border border-primary/5 shadow-xl shadow-primary/5">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-card p-8 rounded-[2rem] border-2 border-primary/5 shadow-2xl shadow-primary/5">
           {isAdminView && (
-            <div className="space-y-2">
-              <span className="text-[10px] font-black uppercase text-primary tracking-widest ml-1 flex items-center gap-2">
-                <Users className="h-3 w-3" /> Filtrar por Operador
+            <div className="space-y-3">
+              <span className="text-[10px] font-black uppercase text-primary tracking-[0.2em] ml-1 flex items-center gap-2">
+                <Users className="h-3.5 w-3.5" /> Filtrar por Operador
               </span>
               <Select value={selectedCashier} onValueChange={setSelectedCashier}>
-                <SelectTrigger className="h-12 rounded-xl border-primary/10 font-bold bg-muted/20 shadow-none hover:border-primary/40 transition-all px-4">
-                  <SelectValue placeholder="Selecione o caixa" />
+                <SelectTrigger className="h-14 rounded-2xl border-2 border-primary/10 font-bold bg-background shadow-none hover:border-primary/40 transition-all px-6">
+                  <SelectValue placeholder="Selecione o operador" />
                 </SelectTrigger>
                 <SelectContent className="rounded-2xl border-none shadow-2xl">
                   <SelectItem value="all" className="font-bold uppercase text-xs">Todos os Operadores</SelectItem>
@@ -165,12 +172,12 @@ export default function OrdersPage() {
             </div>
           )}
 
-          <div className="space-y-2">
-            <span className="text-[10px] font-black uppercase text-primary tracking-widest ml-1 flex items-center gap-2">
-              <Filter className="h-3 w-3" /> Exibir Quantidade
+          <div className="space-y-3">
+            <span className="text-[10px] font-black uppercase text-primary tracking-[0.2em] ml-1 flex items-center gap-2">
+              <Filter className="h-3.5 w-3.5" /> Exibir Quantidade
             </span>
             <Select value={ordersLimit} onValueChange={setOrdersLimit}>
-              <SelectTrigger className="h-12 rounded-xl border-primary/10 font-bold bg-muted/20 shadow-none hover:border-primary/40 transition-all px-4">
+              <SelectTrigger className="h-14 rounded-2xl border-2 border-primary/10 font-bold bg-background shadow-none hover:border-primary/40 transition-all px-6">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="rounded-2xl border-none shadow-2xl">
@@ -184,7 +191,7 @@ export default function OrdersPage() {
         </div>
       </div>
 
-      <div className="rounded-[2rem] md:rounded-[2.5rem] border border-primary/5 bg-card shadow-2xl overflow-hidden max-w-7xl mx-auto">
+      <div className="rounded-[2rem] md:rounded-[2.5rem] border border-primary/5 bg-card shadow-2xl overflow-hidden max-w-7xl mx-auto mb-10">
         <div className="overflow-x-auto">
           <Table className="min-w-[900px]">
             <TableHeader className="bg-muted/30">
@@ -239,7 +246,7 @@ export default function OrdersPage() {
                          <div className="flex items-center gap-2">
                            <UserIcon className="h-3.5 w-3.5 text-primary/40" />
                            <span className="font-black uppercase text-[10px] text-muted-foreground">
-                             {tenantMembers?.[o.userId]?.name || "Desconhecido"}
+                             {tenantMembers?.[o.userId]?.name || tenantMembers?.[o.userId]?.displayName || "Operador"}
                            </span>
                          </div>
                       </TableCell>
