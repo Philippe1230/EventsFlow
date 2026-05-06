@@ -4,7 +4,7 @@
 import { AppShell } from '@/components/layout/AppShell';
 import { useAuth } from '@/hooks/use-auth-context';
 import { useState, useEffect, use } from 'react';
-import { collection, query, orderBy, addDoc, doc, updateDoc, deleteDoc, getDoc } from 'firebase/firestore';
+import { collection, query, orderBy, addDoc, doc, updateDoc, deleteDoc, getDocs, writeBatch } from 'firebase/firestore';
 import { useFirestore, useCollection, useDoc, useMemoFirebase } from '@/firebase';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -14,11 +14,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Loader2, Edit3, Trash2, Store, Package, Users, ChevronLeft, UserPlus, UserMinus, ShieldCheck } from 'lucide-react';
+import { Plus, Loader2, Edit3, Trash2, Store, Package, Users, ChevronLeft, UserPlus, UserMinus, ShieldCheck, Flag, TrendingUp, DollarSign, AlertTriangle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 
 interface Supplier {
   id: string;
@@ -26,6 +25,9 @@ interface Supplier {
   responsibleName?: string;
   phone?: string;
   notes?: string;
+  totalActualRevenue?: number;
+  totalActualCost?: number;
+  totalActualProfit?: number;
 }
 
 interface Product {
@@ -37,6 +39,7 @@ interface Product {
   supplierUnitCost?: number;
   plannedQuantity?: number;
   active: boolean;
+  soldQuantity?: number;
 }
 
 export default function EventConfigPage({ params }: { params: Promise<{ eventId: string }> }) {
@@ -76,7 +79,12 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
       if (currentSupplier.id) {
         await updateDoc(doc(colRef, currentSupplier.id), { ...currentSupplier });
       } else {
-        await addDoc(colRef, { ...currentSupplier });
+        await addDoc(colRef, { 
+          ...currentSupplier,
+          totalActualRevenue: 0,
+          totalActualCost: 0,
+          totalActualProfit: 0
+        });
       }
       setShowSupplierForm(false);
       setCurrentSupplier({});
@@ -108,6 +116,53 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
     }
   };
 
+  const handleFinalizeEvent = async () => {
+    if (!tenantId || !event || !confirm("Deseja finalizar o evento? Isso calculará automaticamente todos os lucros e custos de barracas.")) return;
+    setSubmitting(true);
+
+    try {
+      const batch = writeBatch(db);
+      
+      // 1. Calcular para cada fornecedor
+      const supplierStats: Record<string, { revenue: number, cost: number, profit: number }> = {};
+      
+      products.forEach(p => {
+        const sold = p.soldQuantity || 0;
+        const revenue = sold * p.price;
+        const cost = p.type === 'supplier' ? sold * (p.supplierUnitCost || 0) : 0;
+        const profit = revenue - cost;
+
+        if (p.supplierId) {
+          if (!supplierStats[p.supplierId]) supplierStats[p.supplierId] = { revenue: 0, cost: 0, profit: 0 };
+          supplierStats[p.supplierId].revenue += revenue;
+          supplierStats[p.supplierId].cost += cost;
+          supplierStats[p.supplierId].profit += profit;
+        }
+      });
+
+      // 2. Atualizar documentos dos fornecedores
+      Object.entries(supplierStats).forEach(([id, stats]) => {
+        const sRef = doc(db, 'tenants', tenantId, 'events', eventId, 'suppliers', id);
+        batch.update(sRef, {
+          totalActualRevenue: stats.revenue,
+          totalActualCost: stats.cost,
+          totalActualProfit: stats.profit
+        });
+      });
+
+      // 3. Finalizar o evento
+      batch.update(eventRef!, { status: 'finalizado' });
+
+      await batch.commit();
+      toast({ title: "Evento Finalizado", description: "Todos os cálculos foram processados com sucesso." });
+    } catch (e) {
+      console.error(e);
+      toast({ title: "Erro ao finalizar", variant: "destructive" });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const toggleMemberInEvent = async (userId: string, memberInfo: any) => {
     if (!tenantId || !event) return;
     const currentMembers = event.members || {};
@@ -115,14 +170,12 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
 
     if (newMembers[userId]) {
       delete newMembers[userId];
-      toast({ title: "Acesso Removido", description: "O caixa não verá mais este evento." });
     } else {
       newMembers[userId] = {
         role: memberInfo.role || 'cashier',
         name: memberInfo.name || 'Operador',
         email: memberInfo.email || ''
       };
-      toast({ title: "Acesso Concedido", description: "O caixa agora pode operar neste evento." });
     }
 
     await updateDoc(eventRef!, { members: newMembers });
@@ -132,7 +185,6 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
     if (!confirm("Excluir este fornecedor?")) return;
     try {
       await deleteDoc(doc(db, 'tenants', tenantId!, 'events', eventId, 'suppliers', id));
-      toast({ title: "Removido" });
     } catch (e) {
       toast({ title: "Erro", variant: "destructive" });
     }
@@ -142,7 +194,6 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
     if (!confirm("Excluir este produto do evento?")) return;
     try {
       await deleteDoc(doc(db, 'tenants', tenantId!, 'events', eventId, 'products', id));
-      toast({ title: "Removido" });
     } catch (e) {
       toast({ title: "Erro", variant: "destructive" });
     }
@@ -162,16 +213,35 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
               <h2 className="text-3xl font-black text-primary uppercase tracking-tighter italic leading-none">
                 {eventLoading ? "Carregando..." : event?.name}
               </h2>
-              <p className="text-muted-foreground font-medium italic text-sm">Configuração de barracas, cardápio e equipe do evento.</p>
+              <p className="text-muted-foreground font-medium italic text-sm">Painel de controle e fechamento.</p>
             </div>
           </div>
-          <Badge className="h-10 px-6 rounded-xl font-black uppercase text-[10px] tracking-widest bg-primary/10 text-primary border-none">
-            {event?.status}
-          </Badge>
+          <div className="flex items-center gap-3">
+             <Badge className={cn(
+                "h-10 px-6 rounded-xl font-black uppercase text-[10px] tracking-widest border-none shadow-sm",
+                event?.status === 'ativo' ? "bg-green-500 text-white" : 
+                event?.status === 'finalizado' ? "bg-primary text-white" : "bg-muted text-muted-foreground"
+              )}>
+              {event?.status}
+            </Badge>
+            {event?.status === 'ativo' && (
+              <Button onClick={handleFinalizeEvent} disabled={submitting} variant="destructive" className="h-10 rounded-xl font-black uppercase text-[10px] tracking-widest shadow-lg shadow-destructive/20">
+                {submitting ? <Loader2 className="animate-spin h-4 w-4" /> : <><Flag className="mr-2 h-4 w-4" /> Finalizar Evento</>}
+              </Button>
+            )}
+          </div>
         </div>
 
+        {event?.status === 'finalizado' && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-in fade-in slide-in-from-top-4">
+            <SummaryCard title="Arrecadação Bruta" value={`R$ ${products.reduce((acc, p) => acc + (p.soldQuantity || 0) * p.price, 0).toFixed(2)}`} icon={<TrendingUp className="h-5 w-5" />} />
+            <SummaryCard title="Custo de Terceiros" value={`R$ ${products.reduce((acc, p) => acc + (p.type === 'supplier' ? (p.soldQuantity || 0) * (p.supplierUnitCost || 0) : 0), 0).toFixed(2)}`} icon={<DollarSign className="h-5 w-5" />} color="text-secondary" />
+            <SummaryCard title="Lucro Líquido" value={`R$ ${products.reduce((acc, p) => acc + ((p.soldQuantity || 0) * p.price) - (p.type === 'supplier' ? (p.soldQuantity || 0) * (p.supplierUnitCost || 0) : 0), 0).toFixed(2)}`} icon={<ShieldCheck className="h-5 w-5" />} color="text-green-500" />
+          </div>
+        )}
+
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
-          <TabsList className="bg-muted/50 p-1.5 rounded-[1.5rem] h-16 w-full lg:w-auto grid grid-cols-3 gap-2">
+          <TabsList className="bg-muted/50 p-1.5 rounded-[1.5rem] h-16 w-full lg:w-auto grid grid-cols-3 gap-2 shadow-inner">
             <TabsTrigger value="suppliers" className="rounded-2xl font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-xl transition-all h-full">
               <Store className="mr-2 h-4 w-4" /> Barracas
             </TabsTrigger>
@@ -186,9 +256,11 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
           <TabsContent value="suppliers" className="space-y-6">
             <div className="flex justify-between items-center">
               <h3 className="text-xl font-black text-primary uppercase tracking-tight">Fornecedores & Barracas</h3>
-              <Button onClick={() => { setCurrentSupplier({}); setShowSupplierForm(true); }} className="rounded-xl h-12 font-black uppercase text-[10px] tracking-widest">
-                <Plus className="mr-2 h-4 w-4" /> Nova Barraca
-              </Button>
+              {event?.status !== 'finalizado' && (
+                <Button onClick={() => { setCurrentSupplier({}); setShowSupplierForm(true); }} className="rounded-xl h-12 font-black uppercase text-[10px] tracking-widest">
+                  <Plus className="mr-2 h-4 w-4" /> Nova Barraca
+                </Button>
+              )}
             </div>
 
             {showSupplierForm && (
@@ -250,30 +322,37 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
                 <TableHeader className="bg-muted/30">
                   <TableRow className="hover:bg-transparent border-primary/5">
                     <TableHead className="font-black uppercase text-[10px] py-6 pl-8">Nome</TableHead>
-                    <TableHead className="font-black uppercase text-[10px]">Responsável</TableHead>
-                    <TableHead className="font-black uppercase text-[10px]">Telefone</TableHead>
+                    <TableHead className="font-black uppercase text-[10px]">Faturamento</TableHead>
+                    <TableHead className="font-black uppercase text-[10px]">Custo Repasse</TableHead>
+                    <TableHead className="font-black uppercase text-[10px]">Lucro Organização</TableHead>
                     <TableHead className="text-right font-black uppercase text-[10px] pr-8">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {suppliersLoading ? (
-                    <TableRow><TableCell colSpan={4} className="text-center py-20"><Loader2 className="animate-spin h-10 w-10 mx-auto text-primary opacity-20" /></TableCell></TableRow>
+                    <TableRow><TableCell colSpan={5} className="text-center py-20"><Loader2 className="animate-spin h-10 w-10 mx-auto text-primary opacity-20" /></TableCell></TableRow>
                   ) : suppliers.length === 0 ? (
-                    <TableRow><TableCell colSpan={4} className="text-center py-20 text-muted-foreground font-black uppercase text-[10px] tracking-widest opacity-40">Nenhum fornecedor cadastrado</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={5} className="text-center py-20 text-muted-foreground font-black uppercase text-[10px] tracking-widest opacity-40">Nenhuma barraca cadastrada</TableCell></TableRow>
                   ) : (
                     suppliers.map((s) => (
                       <TableRow key={s.id} className="border-primary/5 hover:bg-primary/5 transition-all">
-                        <TableCell className="font-black text-primary py-6 pl-8 uppercase text-sm">{s.name}</TableCell>
-                        <TableCell className="font-bold text-muted-foreground text-xs">{s.responsibleName || '---'}</TableCell>
-                        <TableCell className="font-bold text-muted-foreground text-xs">{s.phone || '---'}</TableCell>
+                        <TableCell className="font-black text-primary py-6 pl-8 uppercase text-sm">
+                          {s.name}
+                          <p className="text-[9px] text-muted-foreground font-bold">{s.responsibleName || 'Sem responsável'}</p>
+                        </TableCell>
+                        <TableCell className="font-black text-primary">R$ {s.totalActualRevenue?.toFixed(2) || '0.00'}</TableCell>
+                        <TableCell className="font-bold text-secondary">R$ {s.totalActualCost?.toFixed(2) || '0.00'}</TableCell>
+                        <TableCell className="font-black text-green-600">R$ {s.totalActualProfit?.toFixed(2) || '0.00'}</TableCell>
                         <TableCell className="text-right pr-8">
                           <div className="flex justify-end gap-2">
                             <Button variant="ghost" size="icon" onClick={() => { setCurrentSupplier(s); setShowSupplierForm(true); }} className="h-10 w-10 rounded-xl text-primary/40 hover:text-primary hover:bg-primary/10">
                               <Edit3 className="h-4 w-4" />
                             </Button>
-                            <Button variant="ghost" size="icon" onClick={() => deleteSupplier(s.id)} className="h-10 w-10 rounded-xl text-destructive/40 hover:text-destructive hover:bg-destructive/10">
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                            {event?.status !== 'finalizado' && (
+                              <Button variant="ghost" size="icon" onClick={() => deleteSupplier(s.id)} className="h-10 w-10 rounded-xl text-destructive/40 hover:text-destructive hover:bg-destructive/10">
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            )}
                           </div>
                         </TableCell>
                       </TableRow>
@@ -286,10 +365,12 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
 
           <TabsContent value="products" className="space-y-6">
             <div className="flex justify-between items-center">
-              <h3 className="text-xl font-black text-primary uppercase tracking-tight">Cardápio do Evento</h3>
-              <Button onClick={() => { setCurrentProduct({ type: 'own', active: true }); setShowProductForm(true); }} className="rounded-xl h-12 font-black uppercase text-[10px] tracking-widest">
-                <Plus className="mr-2 h-4 w-4" /> Novo Produto
-              </Button>
+              <h3 className="text-xl font-black text-primary uppercase tracking-tight">Análise de Performance</h3>
+              {event?.status !== 'finalizado' && (
+                <Button onClick={() => { setCurrentProduct({ type: 'own', active: true }); setShowProductForm(true); }} className="rounded-xl h-12 font-black uppercase text-[10px] tracking-widest">
+                  <Plus className="mr-2 h-4 w-4" /> Novo Produto
+                </Button>
+              )}
             </div>
 
             {showProductForm && (
@@ -331,6 +412,17 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
                       </Select>
                     </div>
 
+                    <div className="space-y-2">
+                      <Label className="font-black uppercase text-[10px] ml-1">Meta de Venda (Un)</Label>
+                      <Input 
+                        type="number"
+                        placeholder="300"
+                        className="h-14 rounded-2xl border-primary/10 font-bold bg-muted/20 px-6"
+                        value={currentProduct.plannedQuantity || ''} 
+                        onChange={(e) => setCurrentProduct({ ...currentProduct, plannedQuantity: parseInt(e.target.value) })} 
+                      />
+                    </div>
+
                     {currentProduct.type === 'supplier' && (
                       <>
                         <div className="space-y-2">
@@ -347,23 +439,13 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
                           </Select>
                         </div>
                         <div className="space-y-2">
-                          <Label className="font-black uppercase text-[10px] ml-1">Custo Unitário (R$)</Label>
+                          <Label className="font-black uppercase text-[10px] ml-1">Custo Repasse (R$)</Label>
                           <Input 
                             type="number"
                             placeholder="7.00"
                             className="h-14 rounded-2xl border-primary/10 font-bold bg-muted/20 px-6"
                             value={currentProduct.supplierUnitCost || ''} 
                             onChange={(e) => setCurrentProduct({ ...currentProduct, supplierUnitCost: parseFloat(e.target.value) })} 
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label className="font-black uppercase text-[10px] ml-1">Meta de Venda (Un)</Label>
-                          <Input 
-                            type="number"
-                            placeholder="300"
-                            className="h-14 rounded-2xl border-primary/10 font-bold bg-muted/20 px-6"
-                            value={currentProduct.plannedQuantity || ''} 
-                            onChange={(e) => setCurrentProduct({ ...currentProduct, plannedQuantity: parseInt(e.target.value) })} 
                           />
                         </div>
                       </>
@@ -384,9 +466,9 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
                 <TableHeader className="bg-muted/30">
                   <TableRow className="hover:bg-transparent border-primary/5">
                     <TableHead className="font-black uppercase text-[10px] py-6 pl-8">Produto</TableHead>
-                    <TableHead className="font-black uppercase text-[10px]">Origem</TableHead>
-                    <TableHead className="font-black uppercase text-[10px]">Barraca</TableHead>
-                    <TableHead className="font-black uppercase text-[10px]">Preço</TableHead>
+                    <TableHead className="font-black uppercase text-[10px]">Vendido</TableHead>
+                    <TableHead className="font-black uppercase text-[10px]">Faltou (Meta)</TableHead>
+                    <TableHead className="font-black uppercase text-[10px]">Arrecadado</TableHead>
                     <TableHead className="text-right font-black uppercase text-[10px] pr-8">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -394,32 +476,36 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
                   {productsLoading ? (
                     <TableRow><TableCell colSpan={5} className="text-center py-20"><Loader2 className="animate-spin h-10 w-10 mx-auto text-primary opacity-20" /></TableCell></TableRow>
                   ) : products.length === 0 ? (
-                    <TableRow><TableCell colSpan={5} className="text-center py-20 text-muted-foreground font-black uppercase text-[10px] tracking-widest opacity-40">Nenhum produto cadastrado para este evento</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={5} className="text-center py-20 text-muted-foreground font-black uppercase text-[10px] tracking-widest opacity-40">Nenhum produto cadastrado</TableCell></TableRow>
                   ) : (
-                    products.map((p) => (
-                      <TableRow key={p.id} className="border-primary/5 hover:bg-primary/5 transition-all">
-                        <TableCell className="font-black text-primary py-6 pl-8 uppercase text-sm">{p.name}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className="font-black uppercase text-[8px] tracking-widest px-2 py-0.5 border-primary/20 text-primary/60">
-                            {p.type === 'own' ? 'Próprio' : 'Terceiro'}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="font-bold text-muted-foreground text-xs">
-                          {p.supplierId ? suppliers.find(s => s.id === p.supplierId)?.name || 'Desconhecido' : '---'}
-                        </TableCell>
-                        <TableCell className="font-black text-primary text-base tracking-tighter">R$ {p.price.toFixed(2)}</TableCell>
-                        <TableCell className="text-right pr-8">
-                          <div className="flex justify-end gap-2">
-                            <Button variant="ghost" size="icon" onClick={() => { setCurrentProduct(p); setShowProductForm(true); }} className="h-10 w-10 rounded-xl text-primary/40 hover:text-primary hover:bg-primary/10">
-                              <Edit3 className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="icon" onClick={() => deleteProduct(p.id)} className="h-10 w-10 rounded-xl text-destructive/40 hover:text-destructive hover:bg-destructive/10">
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))
+                    products.map((p) => {
+                      const missed = Math.max(0, (p.plannedQuantity || 0) - (p.soldQuantity || 0));
+                      return (
+                        <TableRow key={p.id} className="border-primary/5 hover:bg-primary/5 transition-all">
+                          <TableCell className="font-black text-primary py-6 pl-8 uppercase text-sm">
+                            {p.name}
+                            <Badge variant="outline" className="ml-2 text-[7px] border-primary/20 uppercase px-1 h-3">{p.type === 'own' ? 'Prop' : 'Fornec'}</Badge>
+                          </TableCell>
+                          <TableCell className="font-black text-xl tracking-tighter">{p.soldQuantity || 0} un</TableCell>
+                          <TableCell className={cn("font-bold text-xs", missed > 0 ? "text-secondary" : "text-green-600")}>
+                            {missed > 0 ? `${missed} pendentes` : 'Meta batida!'}
+                          </TableCell>
+                          <TableCell className="font-black text-primary text-base">R$ {((p.soldQuantity || 0) * p.price).toFixed(2)}</TableCell>
+                          <TableCell className="text-right pr-8">
+                            <div className="flex justify-end gap-2">
+                              <Button variant="ghost" size="icon" onClick={() => { setCurrentProduct(p); setShowProductForm(true); }} className="h-10 w-10 rounded-xl text-primary/40 hover:text-primary hover:bg-primary/10">
+                                <Edit3 className="h-4 w-4" />
+                              </Button>
+                              {event?.status !== 'finalizado' && (
+                                <Button variant="ghost" size="icon" onClick={() => deleteProduct(p.id)} className="h-10 w-10 rounded-xl text-destructive/40 hover:text-destructive hover:bg-destructive/10">
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              )}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })
                   )}
                 </TableBody>
               </Table>
@@ -429,7 +515,6 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
           <TabsContent value="team" className="space-y-6">
             <div className="flex justify-between items-center">
               <h3 className="text-xl font-black text-primary uppercase tracking-tight">Equipe Vinculada</h3>
-              <p className="text-xs text-muted-foreground font-medium italic">Selecione quais operadores podem trabalhar neste evento.</p>
             </div>
 
             <div className="rounded-[2.5rem] border border-primary/5 bg-card shadow-2xl overflow-hidden">
@@ -460,14 +545,16 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
                           )}
                         </TableCell>
                         <TableCell className="text-right pr-8">
-                          <Button 
-                            variant={isLinked ? "ghost" : "default"} 
-                            size="sm" 
-                            onClick={() => toggleMemberInEvent(uid, info)}
-                            className={cn("font-black uppercase text-[9px] rounded-lg h-10 px-4", isLinked ? "text-destructive hover:bg-destructive/5" : "shadow-lg shadow-primary/10")}
-                          >
-                            {isLinked ? <><UserMinus className="mr-1.5 h-3 w-3" /> Remover</> : <><UserPlus className="mr-1.5 h-3 w-3" /> Vincular</>}
-                          </Button>
+                          {event?.status !== 'finalizado' && (
+                            <Button 
+                              variant={isLinked ? "ghost" : "default"} 
+                              size="sm" 
+                              onClick={() => toggleMemberInEvent(uid, info)}
+                              className={cn("font-black uppercase text-[9px] rounded-lg h-10 px-4", isLinked ? "text-destructive hover:bg-destructive/5" : "shadow-lg shadow-primary/10")}
+                            >
+                              {isLinked ? <><UserMinus className="mr-1.5 h-3 w-3" /> Remover</> : <><UserPlus className="mr-1.5 h-3 w-3" /> Vincular</>}
+                            </Button>
+                          )}
                         </TableCell>
                       </TableRow>
                     );
@@ -479,5 +566,19 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
         </Tabs>
       </div>
     </AppShell>
+  );
+}
+
+function SummaryCard({ title, value, icon, color = "text-primary" }: { title: string, value: string, icon: React.ReactNode, color?: string }) {
+  return (
+    <Card className="border-none shadow-xl rounded-3xl bg-card overflow-hidden group">
+      <CardHeader className="flex flex-row items-center justify-between pb-2">
+        <CardTitle className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{title}</CardTitle>
+        <div className={cn("p-2 rounded-lg bg-muted", color)}>{icon}</div>
+      </CardHeader>
+      <CardContent>
+        <div className={cn("text-2xl font-black tracking-tighter", color)}>{value}</div>
+      </CardContent>
+    </Card>
   );
 }
