@@ -4,7 +4,7 @@
 import { AppShell } from '@/components/layout/AppShell';
 import { useAuth } from '@/hooks/use-auth-context';
 import { useState, useEffect } from 'react';
-import { collection, query, orderBy, addDoc, doc, updateDoc, Timestamp } from 'firebase/firestore';
+import { collection, query, orderBy, addDoc, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -53,24 +53,39 @@ export default function EventsPage() {
   const events = eventsData || [];
 
   const handleSave = async () => {
-    if (!currentEvent.name || !tenantId) return;
+    if (!tenantId) {
+      toast({ title: 'Erro de Sistema', description: 'ID da organização não encontrado. Tente recarregar.', variant: 'destructive' });
+      return;
+    }
+
+    if (!currentEvent.name?.trim()) {
+      toast({ title: 'Campo Obrigatório', description: 'Por favor, dê um nome ao seu evento.', variant: 'destructive' });
+      return;
+    }
+
     setSubmitting(true);
     try {
       if (isEditing && currentEvent.id) {
         const eventRef = doc(db, 'tenants', tenantId, 'events', currentEvent.id);
-        await updateDoc(eventRef, { ...currentEvent });
+        await updateDoc(eventRef, { 
+          ...currentEvent,
+          updatedAt: serverTimestamp()
+        });
+        toast({ title: 'Evento Atualizado!', description: 'As alterações foram salvas.' });
       } else {
         await addDoc(collection(db, 'tenants', tenantId, 'events'), {
           ...currentEvent,
           tenantId,
-          createdAt: Timestamp.now(),
-          members: {} // Inicialmente vazio
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+          members: {} 
         });
+        toast({ title: 'Sucesso!', description: 'Seu novo evento foi criado.' });
       }
       setIsDialogOpen(false);
-      toast({ title: 'Sucesso!', description: 'Evento salvo com sucesso.' });
-    } catch (e) {
-      toast({ title: 'Erro', description: 'Erro ao salvar evento.', variant: 'destructive' });
+    } catch (e: any) {
+      console.error("Erro ao salvar evento:", e);
+      toast({ title: 'Erro ao Salvar', description: e.message || 'Verifique sua conexão e tente novamente.', variant: 'destructive' });
     } finally {
       setSubmitting(false);
     }
@@ -81,13 +96,18 @@ export default function EventsPage() {
       setCurrentEvent(event);
       setIsEditing(true);
     } else {
-      setCurrentEvent({ name: '', date: format(new Date(), 'yyyy-MM-dd'), location: '', status: 'rascunho' });
+      setCurrentEvent({ 
+        name: '', 
+        date: format(new Date(), 'yyyy-MM-dd'), 
+        location: '', 
+        status: 'rascunho' 
+      });
       setIsEditing(false);
     }
     setIsDialogOpen(true);
   };
 
-  if (role !== 'owner') return null;
+  if (role !== 'owner' && role !== 'super-admin') return null;
 
   return (
     <AppShell>
@@ -136,7 +156,9 @@ export default function EventsPage() {
                   <div className="space-y-3">
                     <div className="flex items-center gap-3 text-muted-foreground">
                       <CalendarIcon className="h-4 w-4 text-primary" />
-                      <span className="text-xs font-bold uppercase">{format(new Date(event.date + 'T00:00:00'), "dd 'de' MMMM", { locale: ptBR })}</span>
+                      <span className="text-xs font-bold uppercase">
+                        {event.date ? format(new Date(event.date + 'T00:00:00'), "dd 'de' MMMM", { locale: ptBR }) : 'Data não definida'}
+                      </span>
                     </div>
                     <div className="flex items-center gap-3 text-muted-foreground">
                       <MapPin className="h-4 w-4 text-primary" />
@@ -159,7 +181,7 @@ export default function EventsPage() {
       </div>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="rounded-[2.5rem] border-none shadow-3xl p-0 overflow-hidden sm:max-w-md w-[95vw]">
+        <DialogContent className="rounded-[2.5rem] border-none shadow-3xl p-0 overflow-hidden sm:max-w-md w-[95vw] !top-[50%] !translate-y-[-50%]">
           <DialogHeader className="bg-primary p-8 text-white">
             <DialogTitle className="text-3xl font-black uppercase tracking-tighter italic">
               {isEditing ? 'Editar Evento' : 'Novo Evento'}
@@ -213,8 +235,12 @@ export default function EventsPage() {
             </div>
           </div>
           <DialogFooter className="bg-muted/30 p-8 pt-4">
-            <Button onClick={handleSave} className="w-full h-16 font-black uppercase text-xl rounded-2xl shadow-xl shadow-primary/20" disabled={submitting}>
-              {submitting ? <Loader2 className="animate-spin h-6 w-6" /> : 'Confirmar Evento'}
+            <Button 
+              onClick={handleSave} 
+              className="w-full h-16 font-black uppercase text-xl rounded-2xl shadow-xl shadow-primary/20" 
+              disabled={submitting}
+            >
+              {submitting ? <Loader2 className="animate-spin h-6 w-6" /> : (isEditing ? 'Salvar Alterações' : 'Confirmar Evento')}
             </Button>
           </DialogFooter>
         </DialogContent>
