@@ -13,7 +13,7 @@ import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Calendar as CalendarIcon, MapPin, Plus, Loader2, Edit3, ArrowRight, Settings, LayoutDashboard, Clock } from 'lucide-react';
+import { Calendar as CalendarIcon, MapPin, Plus, Loader2, Edit3, ArrowRight, Settings, LayoutDashboard, Clock, TrendingUp } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
@@ -192,8 +192,14 @@ export default function EventsPage() {
                     </Button>
                     
                     <div className="grid grid-cols-2 gap-3">
+                      {isAdmin && (
+                        <Button asChild variant="secondary" className="font-black uppercase text-[9px] h-11 rounded-xl bg-secondary hover:bg-secondary/90 text-white border-none">
+                          <Link href={`/events/${event.id}/config?tab=lucros`} onClick={() => setSelectedEventId(event.id)}><TrendingUp className="mr-1.5 h-3.5 w-3.5" /> Lucros</Link>
+                        </Button>
+                      )}
+                      
                       {isAdmin ? (
-                        <Button asChild variant="secondary" className="font-black uppercase text-[9px] h-11 rounded-xl">
+                        <Button asChild variant="secondary" className="font-black uppercase text-[9px] h-11 rounded-xl bg-primary/10 text-primary border-none">
                           <Link href={`/events/${event.id}/config`}><Settings className="mr-1.5 h-3.5 w-3.5" /> Configurar</Link>
                         </Button>
                       ) : (
@@ -201,13 +207,13 @@ export default function EventsPage() {
                           <Link href={`/orders?eventId=${event.id}`} onClick={() => setSelectedEventId(event.id)}><Clock className="mr-1.5 h-3.5 w-3.5" /> Histórico</Link>
                         </Button>
                       )}
-
-                      {isAdmin && (
-                        <Button asChild variant="outline" className="font-black uppercase text-[9px] h-11 rounded-xl border-primary/20 text-primary">
-                          <Link href={`/dashboards?eventId=${event.id}`} onClick={() => setSelectedEventId(event.id)}><LayoutDashboard className="mr-1.5 h-3.5 w-3.5" /> Dashboard</Link>
-                        </Button>
-                      )}
                     </div>
+
+                    {isAdmin && (
+                      <Button asChild variant="outline" className="w-full font-black uppercase text-[9px] h-11 rounded-xl border-primary/20 text-primary">
+                        <Link href={`/dashboards?eventId=${event.id}`} onClick={() => setSelectedEventId(event.id)}><LayoutDashboard className="mr-1.5 h-3.5 w-3.5" /> Ver Dashboard</Link>
+                      </Button>
+                    )}
                   </div>
                 </CardContent>
               </Card>

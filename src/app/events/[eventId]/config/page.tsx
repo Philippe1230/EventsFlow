@@ -3,10 +3,10 @@
 
 import { AppShell } from '@/components/layout/AppShell';
 import { useAuth } from '@/hooks/use-auth-context';
-import { useState, useEffect, use } from 'react';
-import { collection, query, orderBy, addDoc, doc, updateDoc, deleteDoc, getDocs, writeBatch } from 'firebase/firestore';
+import { useState, useEffect, use, useMemo } from 'react';
+import { collection, query, orderBy, addDoc, doc, updateDoc, deleteDoc, writeBatch } from 'firebase/firestore';
 import { useFirestore, useCollection, useDoc, useMemoFirebase } from '@/firebase';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -14,10 +14,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Loader2, Edit3, Trash2, Store, Package, Users, ChevronLeft, UserPlus, UserMinus, ShieldCheck, Flag, TrendingUp, DollarSign, AlertTriangle } from 'lucide-react';
+import { Plus, Loader2, Edit3, Trash2, Store, Package, Users, ChevronLeft, UserPlus, UserMinus, ShieldCheck, Flag, TrendingUp, DollarSign, Target, Calculator } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 
 interface Supplier {
   id: string;
@@ -47,8 +48,9 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
   const { tenantId, role, tenantMembers } = useAuth();
   const db = useFirestore();
   const { toast } = useToast();
+  const searchParams = useSearchParams();
 
-  const [activeTab, setActiveTab] = useState("suppliers");
+  const [activeTab, setActiveTab] = useState(searchParams.get('tab') || "suppliers");
 
   // Event Data
   const eventRef = useMemoFirebase(() => tenantId ? doc(db, 'tenants', tenantId, 'events', eventId) : null, [tenantId, db, eventId]);
@@ -63,6 +65,40 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
   const productsQuery = useMemoFirebase(() => tenantId ? query(collection(db, 'tenants', tenantId, 'events', eventId, 'products'), orderBy('name')) : null, [tenantId, db, eventId]);
   const { data: productsData, isLoading: productsLoading } = useCollection<Product>(productsQuery);
   const products = productsData || [];
+
+  // Projections Calculation
+  const projections = useMemo(() => {
+    let plannedRevenue = 0;
+    let plannedCost = 0;
+    let actualRevenue = 0;
+    let actualCost = 0;
+
+    products.forEach(p => {
+      const pPlanned = p.plannedQuantity || 0;
+      const pSold = p.soldQuantity || 0;
+      
+      plannedRevenue += pPlanned * p.price;
+      actualRevenue += pSold * p.price;
+
+      if (p.type === 'supplier') {
+        plannedCost += pPlanned * (p.supplierUnitCost || 0);
+        actualCost += pSold * (p.supplierUnitCost || 0);
+      }
+    });
+
+    const plannedProfit = plannedRevenue - plannedCost;
+    const actualProfit = actualRevenue - actualCost;
+
+    return {
+      plannedRevenue,
+      plannedCost,
+      plannedProfit,
+      actualRevenue,
+      actualCost,
+      actualProfit,
+      efficiency: plannedProfit > 0 ? (actualProfit / plannedProfit) * 100 : 0
+    };
+  }, [products]);
 
   // Forms State
   const [submitting, setSubmitting] = useState(false);
@@ -122,8 +158,6 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
 
     try {
       const batch = writeBatch(db);
-      
-      // 1. Calcular para cada fornecedor
       const supplierStats: Record<string, { revenue: number, cost: number, profit: number }> = {};
       
       products.forEach(p => {
@@ -140,7 +174,6 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
         }
       });
 
-      // 2. Atualizar documentos dos fornecedores
       Object.entries(supplierStats).forEach(([id, stats]) => {
         const sRef = doc(db, 'tenants', tenantId, 'events', eventId, 'suppliers', id);
         batch.update(sRef, {
@@ -150,9 +183,7 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
         });
       });
 
-      // 3. Finalizar o evento
       batch.update(eventRef!, { status: 'finalizado' });
-
       await batch.commit();
       toast({ title: "Evento Finalizado", description: "Todos os cálculos foram processados com sucesso." });
     } catch (e) {
@@ -213,7 +244,7 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
               <h2 className="text-3xl font-black text-primary uppercase tracking-tighter italic leading-none">
                 {eventLoading ? "Carregando..." : event?.name}
               </h2>
-              <p className="text-muted-foreground font-medium italic text-sm">Painel de controle e fechamento.</p>
+              <p className="text-muted-foreground font-medium italic text-sm">Painel de controle e análise de lucros.</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
@@ -232,26 +263,73 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
           </div>
         </div>
 
-        {event?.status === 'finalizado' && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-in fade-in slide-in-from-top-4">
-            <SummaryCard title="Arrecadação Bruta" value={`R$ ${products.reduce((acc, p) => acc + (p.soldQuantity || 0) * p.price, 0).toFixed(2)}`} icon={<TrendingUp className="h-5 w-5" />} />
-            <SummaryCard title="Custo de Terceiros" value={`R$ ${products.reduce((acc, p) => acc + (p.type === 'supplier' ? (p.soldQuantity || 0) * (p.supplierUnitCost || 0) : 0), 0).toFixed(2)}`} icon={<DollarSign className="h-5 w-5" />} color="text-secondary" />
-            <SummaryCard title="Lucro Líquido" value={`R$ ${products.reduce((acc, p) => acc + ((p.soldQuantity || 0) * p.price) - (p.type === 'supplier' ? (p.soldQuantity || 0) * (p.supplierUnitCost || 0) : 0), 0).toFixed(2)}`} icon={<ShieldCheck className="h-5 w-5" />} color="text-green-500" />
-          </div>
-        )}
-
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
-          <TabsList className="bg-muted/50 p-1.5 rounded-[1.5rem] h-16 w-full lg:w-auto grid grid-cols-3 gap-2 shadow-inner">
+          <TabsList className="bg-muted/50 p-1.5 rounded-[1.5rem] h-16 w-full lg:w-auto grid grid-cols-4 gap-2 shadow-inner">
             <TabsTrigger value="suppliers" className="rounded-2xl font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-xl transition-all h-full">
               <Store className="mr-2 h-4 w-4" /> Barracas
             </TabsTrigger>
             <TabsTrigger value="products" className="rounded-2xl font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-xl transition-all h-full">
               <Package className="mr-2 h-4 w-4" /> Cardápio
             </TabsTrigger>
+            <TabsTrigger value="lucros" className="rounded-2xl font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-secondary data-[state=active]:text-white data-[state=active]:shadow-xl transition-all h-full">
+              <Calculator className="mr-2 h-4 w-4" /> Lucros
+            </TabsTrigger>
             <TabsTrigger value="team" className="rounded-2xl font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-xl transition-all h-full">
               <Users className="mr-2 h-4 w-4" /> Equipe
             </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="lucros" className="space-y-8">
+             <div className="grid grid-cols-1 md:grid-cols-4 gap-6 animate-in fade-in slide-in-from-top-4">
+                <SummaryCard title="Arrecadação Projetada" value={`R$ ${projections.plannedRevenue.toFixed(2)}`} icon={<Target className="h-5 w-5" />} description="Baseado nas metas" />
+                <SummaryCard title="Lucro Projetado" value={`R$ ${projections.plannedProfit.toFixed(2)}`} icon={<TrendingUp className="h-5 w-5" />} color="text-green-500" description="Margem esperada" />
+                <SummaryCard title="Lucro Atual (Real)" value={`R$ ${projections.actualProfit.toFixed(2)}`} icon={<ShieldCheck className="h-5 w-5" />} color="text-primary" description="Vendas realizadas" />
+                <SummaryCard title="Eficiência do Evento" value={`${projections.efficiency.toFixed(1)}%`} icon={<Flag className="h-5 w-5" />} color="text-secondary" description="Atingimento da meta" />
+             </div>
+
+             <Card className="border-none shadow-2xl rounded-[2.5rem] overflow-hidden bg-card">
+                <CardHeader className="bg-muted/10 p-8">
+                  <CardTitle className="text-xl font-black uppercase text-primary">Detalhamento de Projeções</CardTitle>
+                </CardHeader>
+                <CardContent className="p-0">
+                   <Table>
+                      <TableHeader className="bg-muted/50">
+                        <TableRow className="hover:bg-transparent border-primary/5">
+                          <TableHead className="font-black uppercase text-[10px] py-6 pl-8">Produto</TableHead>
+                          <TableHead className="font-black uppercase text-[10px]">Preço</TableHead>
+                          <TableHead className="font-black uppercase text-[10px]">Lucro Unit. Org.</TableHead>
+                          <TableHead className="font-black uppercase text-[10px]">Lucro Total Projetado</TableHead>
+                          <TableHead className="font-black uppercase text-[10px] text-right pr-8">Status Meta</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {products.map((p) => {
+                          const profitPerUnit = p.price - (p.type === 'supplier' ? (p.supplierUnitCost || 0) : 0);
+                          const totalPlannedProfit = (p.plannedQuantity || 0) * profitPerUnit;
+                          const progress = p.plannedQuantity ? ((p.soldQuantity || 0) / p.plannedQuantity) * 100 : 0;
+                          
+                          return (
+                            <TableRow key={p.id} className="border-primary/5 hover:bg-primary/5 transition-all">
+                              <TableCell className="font-black text-primary py-6 pl-8 uppercase text-sm">{p.name}</TableCell>
+                              <TableCell className="font-bold">R$ {p.price.toFixed(2)}</TableCell>
+                              <TableCell className="font-black text-green-600">R$ {profitPerUnit.toFixed(2)}</TableCell>
+                              <TableCell className="font-black text-primary">R$ {totalPlannedProfit.toFixed(2)}</TableCell>
+                              <TableCell className="text-right pr-8">
+                                <div className="flex flex-col items-end gap-1">
+                                  <span className="font-black text-[10px] uppercase text-muted-foreground">{p.soldQuantity || 0} / {p.plannedQuantity || 0}</span>
+                                  <div className="w-24 h-1.5 bg-muted rounded-full overflow-hidden">
+                                    <div className="h-full bg-primary" style={{ width: `${Math.min(100, progress)}%` }} />
+                                  </div>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                   </Table>
+                </CardContent>
+             </Card>
+          </TabsContent>
 
           <TabsContent value="suppliers" className="space-y-6">
             <div className="flex justify-between items-center">
@@ -365,7 +443,7 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
 
           <TabsContent value="products" className="space-y-6">
             <div className="flex justify-between items-center">
-              <h3 className="text-xl font-black text-primary uppercase tracking-tight">Análise de Performance</h3>
+              <h3 className="text-xl font-black text-primary uppercase tracking-tight">Gestão do Cardápio</h3>
               {event?.status !== 'finalizado' && (
                 <Button onClick={() => { setCurrentProduct({ type: 'own', active: true }); setShowProductForm(true); }} className="rounded-xl h-12 font-black uppercase text-[10px] tracking-widest">
                   <Plus className="mr-2 h-4 w-4" /> Novo Produto
@@ -569,7 +647,7 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
   );
 }
 
-function SummaryCard({ title, value, icon, color = "text-primary" }: { title: string, value: string, icon: React.ReactNode, color?: string }) {
+function SummaryCard({ title, value, icon, color = "text-primary", description }: { title: string, value: string, icon: React.ReactNode, color?: string, description?: string }) {
   return (
     <Card className="border-none shadow-xl rounded-3xl bg-card overflow-hidden group">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -578,6 +656,7 @@ function SummaryCard({ title, value, icon, color = "text-primary" }: { title: st
       </CardHeader>
       <CardContent>
         <div className={cn("text-2xl font-black tracking-tighter", color)}>{value}</div>
+        {description && <p className="text-[9px] font-bold text-muted-foreground mt-1 uppercase">{description}</p>}
       </CardContent>
     </Card>
   );
