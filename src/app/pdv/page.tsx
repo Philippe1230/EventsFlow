@@ -8,6 +8,7 @@ import { collection, doc, getDoc, serverTimestamp, addDoc, increment } from 'fir
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { ShoppingCart, Banknote, QrCode, CreditCard, RefreshCcw, Loader2, Plus, Minus, ArrowRight, Calendar, ChevronRight, ChevronLeft } from 'lucide-react';
 import { PrintTickets } from '@/components/pdv/PrintTickets';
