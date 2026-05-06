@@ -97,7 +97,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const membershipsRef = collection(db, 'userProfiles', firebaseUser.uid, 'memberships');
         const membershipsSnap = await getDocs(query(membershipsRef, limit(1)));
         
-        if (!membersSnap.empty) {
+        if (!membershipsSnap.empty) {
           const mData = membershipsSnap.docs[0].data();
           const tId = mData.tenantId;
           setTenantId(tId);
@@ -123,9 +123,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               if (myEvents.length === 1) {
                 const eventId = myEvents[0].id;
                 setSelectedEventId(eventId);
-              } else if (myEvents.length > 1) {
-                // Se múltiplos eventos, o PDV forçará a escolha
-                router.push('/pdv');
               }
             }
           }

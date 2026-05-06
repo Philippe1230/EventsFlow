@@ -13,7 +13,7 @@ import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Calendar as CalendarIcon, MapPin, Plus, Loader2, Edit3, ArrowRight, CheckCircle2, Clock } from 'lucide-react';
+import { Calendar as CalendarIcon, MapPin, Plus, Loader2, Edit3, ArrowRight, CheckCircle2, Clock, Settings } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
@@ -49,7 +49,8 @@ export default function EventsPage() {
     return query(collection(db, 'tenants', tenantId, 'events'), orderBy('createdAt', 'desc'));
   }, [tenantId, db]);
 
-  const { data: events = [], isLoading } = useCollection<Event>(eventsQuery);
+  const { data: eventsData, isLoading } = useCollection<Event>(eventsQuery);
+  const events = eventsData || [];
 
   const handleSave = async () => {
     if (!currentEvent.name || !tenantId) return;
@@ -144,7 +145,7 @@ export default function EventsPage() {
                   </div>
                   <div className="pt-4 grid grid-cols-2 gap-3">
                     <Button asChild variant="secondary" className="font-black uppercase text-[10px] h-12 rounded-xl">
-                      <Link href={`/events/${event.id}/config`}>Configurar</Link>
+                      <Link href={`/events/${event.id}/config`}><Settings className="mr-1.5 h-3.5 w-3.5" /> Configurar</Link>
                     </Button>
                     <Button asChild className="font-black uppercase text-[10px] h-12 rounded-xl shadow-lg shadow-primary/10">
                       <Link href={`/pdv?eventId=${event.id}`}>Ir para o PDV <ArrowRight className="ml-1 h-3.5 w-3.5" /></Link>
