@@ -9,9 +9,10 @@ import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { ShoppingCart, Trash2, Printer, CreditCard, Banknote, QrCode, RefreshCcw, Loader2, Plus, Minus, ArrowDown } from 'lucide-react';
+import { ShoppingCart, Trash2, Printer, CreditCard, Banknote, QrCode, RefreshCcw, Loader2, Plus, Minus, ArrowRight } from 'lucide-react';
 import { PrintTickets } from '@/components/pdv/PrintTickets';
 import { SuccessModal } from '@/components/pdv/SuccessModal';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
@@ -40,8 +41,8 @@ export default function PDVPage() {
   const [printableTickets, setPrintableTickets] = useState<any[]>([]);
   const [lastOrderNumber, setLastOrderNumber] = useState<number | null>(null);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
 
-  // Carregar carrinho salvo ao iniciar (proteção contra refresh)
   useEffect(() => {
     if (tenantId) {
       const savedCart = localStorage.getItem(`current_cart_${tenantId}`);
@@ -55,7 +56,6 @@ export default function PDVPage() {
     }
   }, [tenantId]);
 
-  // Salvar carrinho sempre que mudar
   useEffect(() => {
     if (tenantId) {
       localStorage.setItem(`current_cart_${tenantId}`, JSON.stringify(cart));
@@ -102,6 +102,12 @@ export default function PDVPage() {
 
   const total = cart.reduce((acc, item) => acc + item.price * item.quantity, 0);
 
+  const handleOpenPayment = () => {
+    if (cart.length > 0) {
+      setShowPaymentModal(true);
+    }
+  };
+
   const finalizeOrder = async () => {
     if (cart.length === 0) return;
     if (!tenantId || !user || !tenantMembers) return;
@@ -110,7 +116,6 @@ export default function PDVPage() {
 
     try {
       const counterRef = doc(db, 'tenant_counters', tenantId);
-      // Tentamos pegar o contador. Se estiver offline, pegará o cache.
       const counterSnap = await getDoc(counterRef);
       let nextNumber = 1;
       
@@ -155,6 +160,7 @@ export default function PDVPage() {
 
         setPrintableTickets(tickets);
         setLastOrderNumber(nextNumber);
+        setShowPaymentModal(false);
         setShowSuccessModal(true);
         
         setTimeout(() => {
@@ -246,43 +252,43 @@ export default function PDVPage() {
 
         <div id="cart-section" className="lg:col-span-5 xl:col-span-4 flex flex-col gap-6 lg:h-[calc(100vh-140px)] lg:sticky lg:top-0">
           <Card className="flex flex-col flex-1 shadow-2xl border-none overflow-hidden rounded-[2.5rem] bg-card hover:shadow-primary/5 transition-shadow">
-            <CardHeader className="bg-primary text-white py-4 lg:py-6 shrink-0 relative overflow-hidden">
+            <CardHeader className="bg-primary text-white py-4 shrink-0 relative overflow-hidden">
               <div className="absolute top-0 right-0 p-4 opacity-20">
-                 <OrderTicketIcon className="h-12 w-12 lg:h-20 lg:w-20 rotate-12" />
+                 <OrderTicketIcon className="h-12 w-12 lg:h-16 lg:w-16 rotate-12" />
               </div>
               <CardTitle className="flex items-center justify-between text-base uppercase font-black relative z-10">
                 <div className="flex items-center gap-3">
-                  <ShoppingCart className="h-5 w-5 lg:h-6 lg:w-6" /> Carrinho
+                  <ShoppingCart className="h-5 w-5" /> Carrinho
                 </div>
               </CardTitle>
             </CardHeader>
             
             <CardContent className="flex-1 flex flex-col p-0 overflow-hidden bg-muted/10">
-              <div className="flex-1 overflow-y-auto p-4 lg:p-6 space-y-3 lg:space-y-4 max-h-[40vh] lg:max-h-none">
+              <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-[200px]">
                 {cart.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-10 lg:py-20 opacity-10">
-                    <OrderTicketIcon className="h-16 w-16 lg:h-24 lg:w-24 text-primary mb-6" />
+                  <div className="flex flex-col items-center justify-center py-20 opacity-10">
+                    <OrderTicketIcon className="h-16 w-16 text-primary mb-6" />
                     <p className="text-center font-black uppercase text-xs tracking-widest">Carrinho Vazio</p>
                   </div>
                 ) : (
                   cart.map(item => (
-                    <div key={item.id} className="flex flex-col bg-card border border-primary/5 p-3 lg:p-4 rounded-2xl shadow-sm hover:border-primary/20 hover:shadow-md transition-all">
-                      <div className="flex justify-between items-start mb-2 lg:mb-3">
-                        <span className="font-black uppercase text-[11px] lg:text-xs leading-tight flex-1 pr-2">{item.name}</span>
-                        <span className="font-black text-primary text-xs lg:text-sm whitespace-nowrap">R$ {(item.price * item.quantity).toFixed(2)}</span>
+                    <div key={item.id} className="flex flex-col bg-card border border-primary/5 p-3 rounded-2xl shadow-sm hover:border-primary/20 transition-all">
+                      <div className="flex justify-between items-start mb-2">
+                        <span className="font-black uppercase text-[11px] leading-tight flex-1 pr-2">{item.name}</span>
+                        <span className="font-black text-primary text-xs whitespace-nowrap">R$ {(item.price * item.quantity).toFixed(2)}</span>
                       </div>
                       <div className="flex justify-between items-center">
-                        <div className="flex items-center bg-muted/50 rounded-xl p-0.5 lg:p-1">
-                          <Button variant="ghost" size="icon" className="h-8 w-8 lg:h-10 lg:w-10 rounded-lg hover:bg-primary/10" onClick={() => updateQuantity(item.id, -1)}>
-                            <Minus className="h-3 w-3 lg:h-4 lg:w-4" />
+                        <div className="flex items-center bg-muted/50 rounded-xl p-0.5">
+                          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-primary/10" onClick={() => updateQuantity(item.id, -1)}>
+                            <Minus className="h-3 w-3" />
                           </Button>
-                          <span className="w-8 lg:w-10 text-center font-black text-xs lg:text-sm">{item.quantity}</span>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 lg:h-10 lg:w-10 rounded-lg hover:bg-primary/10" onClick={() => updateQuantity(item.id, 1)}>
-                            <Plus className="h-3 w-3 lg:h-4 lg:w-4" />
+                          <span className="w-8 text-center font-black text-xs">{item.quantity}</span>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-primary/10" onClick={() => updateQuantity(item.id, 1)}>
+                            <Plus className="h-3 w-3" />
                           </Button>
                         </div>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 lg:h-10 lg:w-10 text-destructive/40 hover:text-destructive hover:bg-destructive/5 rounded-xl" onClick={() => removeFromCart(item.id)}>
-                          <Trash2 className="h-4 w-4 lg:h-5 lg:w-5" />
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive/40 hover:text-destructive hover:bg-destructive/5 rounded-xl" onClick={() => removeFromCart(item.id)}>
+                          <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
                     </div>
@@ -290,44 +296,23 @@ export default function PDVPage() {
                 )}
               </div>
 
-              <div className="bg-card border-t border-primary/5 p-4 lg:p-6 space-y-4 lg:space-y-6 shadow-[0_-10px_30px_rgba(0,0,0,0.03)] mt-auto">
-                <div className="flex justify-between items-center lg:items-end px-2">
-                  <span className="text-[9px] lg:text-[10px] font-black uppercase text-muted-foreground tracking-widest">Total</span>
-                  <span className="text-2xl lg:text-4xl font-black text-primary tracking-tighter">R$ {total.toFixed(2)}</span>
-                </div>
-
-                <div className="grid grid-cols-3 gap-2">
-                  <PaymentButton 
-                    active={paymentMethod === 'dinheiro'} 
-                    onClick={() => setPaymentMethod('dinheiro')}
-                    icon={<Banknote className="h-5 w-5 lg:h-6 lg:w-6" />}
-                    label="Dinheiro"
-                  />
-                  <PaymentButton 
-                    active={paymentMethod === 'pix'} 
-                    onClick={() => setPaymentMethod('pix')}
-                    icon={<QrCode className="h-5 w-5 lg:h-6 lg:w-6" />}
-                    label="Pix"
-                  />
-                  <PaymentButton 
-                    active={paymentMethod === 'cartao'} 
-                    onClick={() => setPaymentMethod('cartao')}
-                    icon={<CreditCard className="h-5 w-5 lg:h-6 lg:w-6" />}
-                    label="Cartão"
-                  />
+              <div className="bg-card border-t border-primary/5 p-6 space-y-4 shadow-[0_-10px_30px_rgba(0,0,0,0.03)] mt-auto">
+                <div className="flex justify-between items-center px-2">
+                  <span className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Total</span>
+                  <span className="text-3xl font-black text-primary tracking-tighter">R$ {total.toFixed(2)}</span>
                 </div>
 
                 <Button 
-                  className="w-full h-14 lg:h-20 text-lg lg:text-2xl font-black uppercase shadow-2xl shadow-primary/30 rounded-xl lg:rounded-[1.5rem] hover:scale-[1.02] active:scale-95 transition-all" 
+                  className="w-full h-16 text-xl font-black uppercase shadow-2xl shadow-primary/30 rounded-2xl hover:scale-[1.02] active:scale-95 transition-all" 
                   size="lg"
-                  disabled={cart.length === 0 || submitting}
-                  onClick={finalizeOrder}
+                  disabled={cart.length === 0}
+                  onClick={handleOpenPayment}
                 >
-                  {submitting ? <Loader2 className="animate-spin h-6 w-6 lg:h-8 lg:w-8" /> : <><Printer className="mr-2 lg:mr-3 h-6 w-6 lg:h-8 lg:w-8" /> Finalizar</>}
+                  <ArrowRight className="mr-2 h-6 w-6" /> Fechar Pedido
                 </Button>
                 
                 {cart.length > 0 && (
-                  <button className="w-full text-[9px] lg:text-[10px] font-black uppercase text-muted-foreground/40 hover:text-destructive transition-colors tracking-widest py-1" onClick={clearCart}>
+                  <button className="w-full text-[9px] font-black uppercase text-muted-foreground/40 hover:text-destructive transition-colors tracking-widest py-1" onClick={clearCart}>
                     Limpar Carrinho
                   </button>
                 )}
@@ -353,6 +338,61 @@ export default function PDVPage() {
         </div>
       )}
 
+      {/* Modal de Pagamento */}
+      <Dialog open={showPaymentModal} onOpenChange={setShowPaymentModal}>
+        <DialogContent className="rounded-[2.5rem] border-none shadow-3xl p-0 overflow-hidden sm:max-w-md w-[95vw]">
+          <DialogHeader className="bg-primary p-8 text-white relative">
+            <div className="absolute top-0 right-0 p-4 opacity-10">
+               <Banknote className="h-20 w-20 rotate-12" />
+            </div>
+            <DialogTitle className="text-3xl font-black uppercase tracking-tighter italic z-10">
+              Pagamento
+            </DialogTitle>
+            <p className="text-white/70 font-black uppercase text-[10px] tracking-widest z-10">
+              Escolha como o cliente vai pagar
+            </p>
+          </DialogHeader>
+          
+          <div className="p-8 space-y-8 bg-card">
+            <div className="text-center space-y-1">
+              <span className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.3em]">Total a Receber</span>
+              <div className="text-5xl font-black text-primary tracking-tighter">R$ {total.toFixed(2)}</div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-3">
+              <PaymentButton 
+                active={paymentMethod === 'dinheiro'} 
+                onClick={() => setPaymentMethod('dinheiro')}
+                icon={<Banknote className="h-8 w-8" />}
+                label="Dinheiro"
+              />
+              <PaymentButton 
+                active={paymentMethod === 'pix'} 
+                onClick={() => setPaymentMethod('pix')}
+                icon={<QrCode className="h-8 w-8" />}
+                label="Pix"
+              />
+              <PaymentButton 
+                active={paymentMethod === 'cartao'} 
+                onClick={() => setPaymentMethod('cartao')}
+                icon={<CreditCard className="h-8 w-8" />}
+                label="Cartão"
+              />
+            </div>
+          </div>
+
+          <DialogFooter className="bg-muted/30 p-8 pt-4">
+            <Button 
+              className="w-full h-20 text-2xl font-black uppercase shadow-2xl shadow-primary/30 rounded-2xl hover:scale-[1.02] active:scale-95 transition-all" 
+              onClick={finalizeOrder}
+              disabled={submitting}
+            >
+              {submitting ? <Loader2 className="animate-spin h-8 w-8" /> : <><Printer className="mr-3 h-8 w-8" /> Finalizar e Imprimir</>}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <PrintTickets tickets={printableTickets} />
       <SuccessModal 
         isOpen={showSuccessModal} 
@@ -368,13 +408,13 @@ function PaymentButton({ active, onClick, icon, label }: { active: boolean, onCl
     <Button 
       variant={active ? 'default' : 'outline'} 
       className={cn(
-        "flex flex-col h-14 lg:h-20 gap-1 lg:gap-2 border-2 transition-all rounded-xl lg:rounded-2xl flex-1",
+        "flex flex-col h-24 gap-3 border-2 transition-all rounded-2xl flex-1",
         active ? "border-primary shadow-lg scale-105" : "border-primary/5 opacity-50 hover:opacity-100 hover:border-primary/20"
       )}
       onClick={onClick}
     >
       {icon}
-      <span className="text-[7px] lg:text-[9px] font-black uppercase tracking-widest leading-none">{label}</span>
+      <span className="text-[10px] font-black uppercase tracking-widest leading-none">{label}</span>
     </Button>
   );
 }
