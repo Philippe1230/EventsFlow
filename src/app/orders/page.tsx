@@ -65,13 +65,9 @@ export default function OrdersPage() {
   const ordersQuery = useMemoFirebase(() => {
     if (!tenantId || !user) return null;
     
-    // Se o filtro de evento estiver em "all", teríamos que usar uma query collectionGroup
-    // mas por simplicidade e performance (visto que as vendas são agora POR evento),
-    // vamos focar no evento selecionado ou no primeiro ativo.
-    
     const eventToQuery = activeEventFilter === "all" ? selectedEventId : activeEventFilter;
     
-    if (!eventToQuery) return null;
+    if (!eventToQuery || eventToQuery === "all") return null;
 
     const ordersCol = collection(db, 'tenants', tenantId, 'events', eventToQuery, 'orders');
     const effectiveCashier = role === 'cashier' ? user.uid : selectedCashier;
@@ -92,7 +88,8 @@ export default function OrdersPage() {
     }
   }, [db, tenantId, user, role, ordersLimit, selectedCashier, activeEventFilter, selectedEventId]);
 
-  const { data: orders = [], isLoading: loading } = useCollection<Order>(ordersQuery);
+  const { data: ordersData, isLoading: loading } = useCollection<Order>(ordersQuery);
+  const orders = ordersData || [];
 
   const cashierList = useMemo(() => {
     if (!tenantMembers) return [];
@@ -166,10 +163,10 @@ export default function OrdersPage() {
             <Button 
               onClick={exportCSV} 
               variant="outline" 
-              className="flex-1 sm:flex-none font-black uppercase rounded-2xl h-14 px-8 shadow-xl shadow-primary/5 border-primary/20 bg-card" 
+              className="flex-1 sm:flex-none font-black uppercase rounded-2xl h-14 px-8 shadow-xl shadow-primary/5 border-2 border-primary bg-white text-primary" 
               disabled={!orders || orders.length === 0}
             >
-              <Download className="mr-3 h-5 w-5 text-primary" /> CSV
+              <Download className="mr-3 h-5 w-5" /> Exportar CSV
             </Button>
           </div>
         </div>
@@ -215,7 +212,7 @@ export default function OrdersPage() {
 
           <div className="space-y-2">
             <span className="text-[9px] font-black uppercase text-primary tracking-widest ml-1 flex items-center gap-2">
-              <Filter className="h-3 w-3" /> Limite
+              <Filter className="h-3 w-3" /> Limite de Registros
             </span>
             <Select value={ordersLimit} onValueChange={setOrdersLimit}>
               <SelectTrigger className="h-12 rounded-xl border-2 border-primary font-bold bg-white text-primary px-4">

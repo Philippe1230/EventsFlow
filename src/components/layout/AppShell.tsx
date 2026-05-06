@@ -29,7 +29,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const navItems = useMemo(() => [
     { name: 'Início', href: '/', icon: LayoutDashboard, visible: isAdmin && !isSuperAdmin },
     { name: 'Controle Global', href: '/super-admin', icon: Settings2, visible: isSuperAdmin },
-    { name: 'Eventos', href: '/events', icon: Calendar, visible: isAdmin && !isSuperAdmin },
+    { name: 'Eventos', href: '/events', icon: Calendar, visible: !isSuperAdmin },
     { name: 'Dashboards', href: '/dashboards', icon: BarChart3, visible: isAdmin && !isSuperAdmin },
     { name: 'Fazer Pedidos', href: '/pdv', icon: ShoppingCart, visible: !isSuperAdmin },
     { name: 'Produtos', href: '/products', icon: Package, visible: isAdmin && !isSuperAdmin },
