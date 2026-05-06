@@ -1,3 +1,4 @@
+
 "use client";
 
 import { AppShell, OrderTicketIcon } from '@/components/layout/AppShell';
@@ -44,7 +45,6 @@ export default function PDVPage() {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   
-  // Troco states
   const [receivedAmount, setReceivedAmount] = useState<string>('');
   const [changeAmount, setChangeAmount] = useState<number>(0);
 
@@ -350,11 +350,10 @@ export default function PDVPage() {
         </div>
       )}
 
-      {/* Modal de Pagamento Centralizado */}
       <Dialog open={showPaymentModal} onOpenChange={setShowPaymentModal}>
         <DialogContent className="rounded-[2rem] border-none shadow-3xl p-0 overflow-hidden sm:max-w-md w-[95vw] !top-[50%] !translate-y-[-50%] animate-snappy gpu-accelerated">
           <DialogHeader className="bg-primary p-6 text-white relative">
-            <DialogTitle className="text-2xl font-black uppercase tracking-tighter italic z-10">
+            <DialogTitle className="text-2xl font-black uppercase tracking-tighter italic z-10 text-center">
               Pagamento
             </DialogTitle>
           </DialogHeader>
@@ -443,7 +442,7 @@ function PaymentButton({ active, onClick, icon, label }: { active: boolean, onCl
       onClick={onClick}
     >
       {icon}
-      <span className="text-[9px] font-black uppercase tracking-widest leading-none">{label}</span>
+      <span className="text-[9px] font-black uppercase tracking-widest leading-none text-center">{label}</span>
     </Button>
   );
 }

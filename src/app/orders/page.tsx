@@ -9,20 +9,17 @@ import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/status/select";
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from "@/components/ui/select";
 import { Download, Loader2, Printer, Filter, User as UserIcon, Users } from 'lucide-react';
 import { format } from 'date-fns';
 import { PrintTickets } from '@/components/pdv/PrintTickets';
 import { cn } from '@/lib/utils';
-
-// Import local components instead of radix directly for consistency
-import { 
-  Select as UISelect, 
-  SelectContent as UISelectContent, 
-  SelectItem as UISelectItem, 
-  SelectTrigger as UISelectTrigger, 
-  SelectValue as UISelectValue 
-} from "@/components/ui/select";
 
 interface Order {
   id: string;
@@ -43,7 +40,6 @@ export default function OrdersPage() {
 
   const isAdminView = role === 'owner' || isSuperAdmin;
 
-  // Query em tempo real para suportar modo offline e atualizações imediatas
   const ordersQuery = useMemoFirebase(() => {
     if (!tenantId || !user) return null;
     
@@ -153,19 +149,19 @@ export default function OrdersPage() {
               <span className="text-[10px] font-black uppercase text-primary tracking-widest ml-1 flex items-center gap-2">
                 <Users className="h-3 w-3" /> Filtrar por Operador
               </span>
-              <UISelect value={selectedCashier} onValueChange={setSelectedCashier}>
-                <UISelectTrigger className="h-12 rounded-xl border-primary/10 font-bold bg-muted/20 shadow-none hover:border-primary/40 transition-all px-4">
-                  <UISelectValue placeholder="Selecione o caixa" />
-                </UISelectTrigger>
-                <UISelectContent className="rounded-2xl border-none shadow-2xl">
-                  <UISelectItem value="all" className="font-bold uppercase text-xs">Todos os Operadores</UISelectItem>
+              <Select value={selectedCashier} onValueChange={setSelectedCashier}>
+                <SelectTrigger className="h-12 rounded-xl border-primary/10 font-bold bg-muted/20 shadow-none hover:border-primary/40 transition-all px-4">
+                  <SelectValue placeholder="Selecione o caixa" />
+                </SelectTrigger>
+                <SelectContent className="rounded-2xl border-none shadow-2xl">
+                  <SelectItem value="all" className="font-bold uppercase text-xs">Todos os Operadores</SelectItem>
                   {cashierList.map((c) => (
-                    <UISelectItem key={c.id} value={c.id} className="font-bold uppercase text-xs">
+                    <SelectItem key={c.id} value={c.id} className="font-bold uppercase text-xs">
                       {c.name} {c.id === user?.uid ? "(Você)" : ""}
-                    </UISelectItem>
+                    </SelectItem>
                   ))}
-                </UISelectContent>
-              </UISelect>
+                </SelectContent>
+              </Select>
             </div>
           )}
 
@@ -173,17 +169,17 @@ export default function OrdersPage() {
             <span className="text-[10px] font-black uppercase text-primary tracking-widest ml-1 flex items-center gap-2">
               <Filter className="h-3 w-3" /> Exibir Quantidade
             </span>
-            <UISelect value={ordersLimit} onValueChange={setOrdersLimit}>
-              <UISelectTrigger className="h-12 rounded-xl border-primary/10 font-bold bg-muted/20 shadow-none hover:border-primary/40 transition-all px-4">
-                <UISelectValue />
-              </UISelectTrigger>
-              <UISelectContent className="rounded-2xl border-none shadow-2xl">
-                <UISelectItem value="5" className="font-bold uppercase text-xs">Últimos 5 Pedidos</UISelectItem>
-                <UISelectItem value="20" className="font-bold uppercase text-xs">Últimos 20 Pedidos</UISelectItem>
-                <UISelectItem value="30" className="font-bold uppercase text-xs">Últimos 30 Pedidos</UISelectItem>
-                <UISelectItem value="100" className="font-bold uppercase text-xs">Últimos 100 Pedidos</UISelectItem>
-              </UISelectContent>
-            </UISelect>
+            <Select value={ordersLimit} onValueChange={setOrdersLimit}>
+              <SelectTrigger className="h-12 rounded-xl border-primary/10 font-bold bg-muted/20 shadow-none hover:border-primary/40 transition-all px-4">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="rounded-2xl border-none shadow-2xl">
+                <SelectItem value="5" className="font-bold uppercase text-xs">Últimos 5 Pedidos</SelectItem>
+                <SelectItem value="20" className="font-bold uppercase text-xs">Últimos 20 Pedidos</SelectItem>
+                <SelectItem value="30" className="font-bold uppercase text-xs">Últimos 30 Pedidos</SelectItem>
+                <SelectItem value="100" className="font-bold uppercase text-xs">Últimos 100 Pedidos</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
       </div>
