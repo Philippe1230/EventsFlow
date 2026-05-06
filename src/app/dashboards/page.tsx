@@ -1,4 +1,3 @@
-
 "use client";
 
 import { AppShell } from '@/components/layout/AppShell';
@@ -115,7 +114,7 @@ export default function DashboardsDetailedPage() {
               <UserIcon className="h-4 w-4" /> FILTRO DE OPERADOR
             </span>
             <Select value={selectedCashier} onValueChange={setSelectedCashier}>
-              <SelectTrigger className="h-14 rounded-2xl border-2 border-primary font-bold bg-white shadow-md hover:bg-primary/5 transition-all px-6 text-primary ring-offset-background">
+              <SelectTrigger className="h-14 rounded-2xl border-2 border-primary font-bold bg-white shadow-md hover:bg-primary/5 transition-all px-6 text-primary ring-offset-background flex items-center justify-between opacity-100 visible">
                 <SelectValue placeholder="Todos os caixas" />
               </SelectTrigger>
               <SelectContent className="rounded-2xl border-none shadow-2xl">
@@ -138,7 +137,7 @@ export default function DashboardsDetailedPage() {
                 <Button
                   variant={"outline"}
                   className={cn(
-                    "w-full justify-start text-left font-bold h-14 rounded-2xl border-2 border-primary font-bold bg-white shadow-md hover:bg-primary/5 transition-all px-6 text-primary",
+                    "w-full justify-start text-left font-bold h-14 rounded-2xl border-2 border-primary bg-white shadow-md hover:bg-primary/5 transition-all px-6 text-primary flex opacity-100 visible",
                     !date && "text-muted-foreground"
                   )}
                 >
@@ -146,7 +145,7 @@ export default function DashboardsDetailedPage() {
                   {date ? format(date, "PPP", { locale: ptBR }) : <span>Escolha um dia</span>}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0 border-none shadow-3xl rounded-[2.5rem] overflow-hidden" align="end">
+              <PopoverContent className="w-auto p-0 border-none shadow-3xl rounded-[2.5rem] overflow-hidden popover-content" align="end">
                 <Calendar
                   mode="single"
                   selected={date}

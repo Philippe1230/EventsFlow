@@ -1,4 +1,3 @@
-
 "use client";
 
 import { AppShell } from '@/components/layout/AppShell';
@@ -156,7 +155,7 @@ export default function OrdersPage() {
                 <Users className="h-4 w-4" /> FILTRAR POR OPERADOR
               </span>
               <Select value={selectedCashier} onValueChange={setSelectedCashier}>
-                <SelectTrigger className="h-14 rounded-2xl border-2 border-primary font-bold bg-white shadow-md hover:bg-primary/5 transition-all px-6 text-primary ring-offset-background">
+                <SelectTrigger className="h-14 rounded-2xl border-2 border-primary font-bold bg-white shadow-md hover:bg-primary/5 transition-all px-6 text-primary ring-offset-background flex items-center justify-between opacity-100 visible">
                   <SelectValue placeholder="Selecione o operador" />
                 </SelectTrigger>
                 <SelectContent className="rounded-2xl border-none shadow-2xl">
@@ -176,7 +175,7 @@ export default function OrdersPage() {
               <Filter className="h-4 w-4" /> EXIBIR QUANTIDADE
             </span>
             <Select value={ordersLimit} onValueChange={setOrdersLimit}>
-              <SelectTrigger className="h-14 rounded-2xl border-2 border-primary font-bold bg-white shadow-md hover:bg-primary/5 transition-all px-6 text-primary ring-offset-background">
+              <SelectTrigger className="h-14 rounded-2xl border-2 border-primary font-bold bg-white shadow-md hover:bg-primary/5 transition-all px-6 text-primary ring-offset-background flex items-center justify-between opacity-100 visible">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="rounded-2xl border-none shadow-2xl">

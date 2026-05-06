@@ -55,7 +55,6 @@
     @apply bg-background text-foreground font-body antialiased selection:bg-primary/20 selection:text-primary;
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
-    /* Bloqueia o "swipe to go back" e o "pull to refresh" no mobile */
     overscroll-behavior: none;
   }
 }
@@ -126,12 +125,10 @@
   @apply bg-primary/10 rounded-full hover:bg-primary/30;
 }
 
-/* Snappy Animations for Dialogs/Modals */
-[data-state="open"] {
+/* Scoped Animations only for Dialog/Popover to avoid hiding SelectTriggers */
+.dialog-content[data-state="open"], 
+.popover-content[data-state="open"] {
   animation: enter 150ms ease-out forwards;
-}
-[data-state="closed"] {
-  animation: exit 100ms ease-in forwards;
 }
 
 @keyframes enter {
