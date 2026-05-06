@@ -1,4 +1,3 @@
-
 "use client";
 
 import { AppShell, OrderTicketIcon } from '@/components/layout/AppShell';
@@ -13,6 +12,8 @@ import { ShoppingCart, Trash2, Printer, CreditCard, Banknote, QrCode, RefreshCcw
 import { PrintTickets } from '@/components/pdv/PrintTickets';
 import { SuccessModal } from '@/components/pdv/SuccessModal';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
@@ -42,6 +43,10 @@ export default function PDVPage() {
   const [lastOrderNumber, setLastOrderNumber] = useState<number | null>(null);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  
+  // Troco states
+  const [receivedAmount, setReceivedAmount] = useState<string>('');
+  const [changeAmount, setChangeAmount] = useState<number>(0);
 
   useEffect(() => {
     if (tenantId) {
@@ -61,6 +66,17 @@ export default function PDVPage() {
       localStorage.setItem(`current_cart_${tenantId}`, JSON.stringify(cart));
     }
   }, [cart, tenantId]);
+
+  const total = cart.reduce((acc, item) => acc + item.price * item.quantity, 0);
+
+  useEffect(() => {
+    const received = parseFloat(receivedAmount.replace(',', '.')) || 0;
+    if (received > total) {
+      setChangeAmount(received - total);
+    } else {
+      setChangeAmount(0);
+    }
+  }, [receivedAmount, total]);
 
   const productsQuery = useMemoFirebase(() => {
     if (!tenantId || authLoading) return null;
@@ -100,10 +116,10 @@ export default function PDVPage() {
     if (tenantId) localStorage.removeItem(`current_cart_${tenantId}`);
   };
 
-  const total = cart.reduce((acc, item) => acc + item.price * item.quantity, 0);
-
   const handleOpenPayment = () => {
     if (cart.length > 0) {
+      setReceivedAmount('');
+      setChangeAmount(0);
       setShowPaymentModal(true);
     }
   };
@@ -353,7 +369,7 @@ export default function PDVPage() {
             </p>
           </DialogHeader>
           
-          <div className="p-8 space-y-8 bg-card">
+          <div className="p-8 space-y-6 bg-card">
             <div className="text-center space-y-1">
               <span className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.3em]">Total a Receber</span>
               <div className="text-5xl font-black text-primary tracking-tighter">R$ {total.toFixed(2)}</div>
@@ -379,6 +395,29 @@ export default function PDVPage() {
                 label="Cartão"
               />
             </div>
+
+            {paymentMethod === 'dinheiro' && (
+              <div className="space-y-4 animate-in fade-in slide-in-from-top-4 duration-300">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest ml-1">Valor Recebido (R$)</Label>
+                  <Input 
+                    type="text" 
+                    inputMode="decimal"
+                    placeholder="0,00" 
+                    className="h-16 text-2xl font-black rounded-2xl border-primary/20 bg-muted/30 px-6 text-primary focus:border-primary transition-all"
+                    value={receivedAmount}
+                    onChange={(e) => setReceivedAmount(e.target.value)}
+                    autoFocus
+                  />
+                </div>
+                {changeAmount > 0 && (
+                  <div className="bg-primary/5 border border-primary/20 rounded-2xl p-6 text-center animate-in zoom-in-95 duration-500">
+                    <span className="text-[10px] font-black uppercase text-primary tracking-widest block mb-1">Troco a Devolver</span>
+                    <div className="text-4xl font-black text-primary tracking-tighter">R$ {changeAmount.toFixed(2)}</div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           <DialogFooter className="bg-muted/30 p-8 pt-4">
