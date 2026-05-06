@@ -1,8 +1,9 @@
+
 "use client";
 
 import { AppShell, OrderTicketIcon } from '@/components/layout/AppShell';
 import { useAuth } from '@/hooks/use-auth-context';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { collection, doc, getDoc, serverTimestamp, addDoc } from 'firebase/firestore';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { Button } from '@/components/ui/button';
@@ -40,6 +41,27 @@ export default function PDVPage() {
   const [lastOrderNumber, setLastOrderNumber] = useState<number | null>(null);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
 
+  // Carregar carrinho salvo ao iniciar (proteção contra refresh)
+  useEffect(() => {
+    if (tenantId) {
+      const savedCart = localStorage.getItem(`current_cart_${tenantId}`);
+      if (savedCart) {
+        try {
+          setCart(JSON.parse(savedCart));
+        } catch (e) {
+          console.error("Erro ao carregar carrinho salvo", e);
+        }
+      }
+    }
+  }, [tenantId]);
+
+  // Salvar carrinho sempre que mudar
+  useEffect(() => {
+    if (tenantId) {
+      localStorage.setItem(`current_cart_${tenantId}`, JSON.stringify(cart));
+    }
+  }, [cart, tenantId]);
+
   const productsQuery = useMemoFirebase(() => {
     if (!tenantId || authLoading) return null;
     return collection(db, 'tenants', tenantId, 'products');
@@ -73,7 +95,10 @@ export default function PDVPage() {
     setCart(prev => prev.filter(i => i.id !== id));
   };
 
-  const clearCart = () => setCart([]);
+  const clearCart = () => {
+    setCart([]);
+    if (tenantId) localStorage.removeItem(`current_cart_${tenantId}`);
+  };
 
   const total = cart.reduce((acc, item) => acc + item.price * item.quantity, 0);
 
@@ -85,6 +110,7 @@ export default function PDVPage() {
 
     try {
       const counterRef = doc(db, 'tenant_counters', tenantId);
+      // Tentamos pegar o contador. Se estiver offline, pegará o cache.
       const counterSnap = await getDoc(counterRef);
       let nextNumber = 1;
       
