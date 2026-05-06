@@ -109,11 +109,13 @@ export default function DashboardsDetailedPage() {
           <p className="text-muted-foreground font-medium italic">Análise de desempenho do Flow Events.</p>
         </div>
 
-        <div className="flex flex-col lg:flex-row gap-6 bg-card p-6 rounded-[2rem] border border-primary/5 shadow-xl shadow-primary/5">
-          <div className="flex-1 space-y-2">
-            <span className="text-[10px] font-black uppercase text-primary tracking-widest ml-1">Filtro de Operador</span>
+        <div className="flex flex-col lg:flex-row gap-6 bg-card p-6 rounded-[2rem] border-2 border-primary/10 shadow-xl shadow-primary/5">
+          <div className="flex-1 space-y-3">
+            <span className="text-[11px] font-black uppercase text-primary tracking-[0.2em] ml-1 flex items-center gap-2">
+              <UserIcon className="h-4 w-4" /> FILTRO DE OPERADOR
+            </span>
             <Select value={selectedCashier} onValueChange={setSelectedCashier}>
-              <SelectTrigger className="h-14 rounded-2xl border-2 border-primary font-bold bg-primary/5 shadow-none hover:bg-primary/10 transition-all px-6 text-primary">
+              <SelectTrigger className="h-14 rounded-2xl border-2 border-primary font-bold bg-white shadow-md hover:bg-primary/5 transition-all px-6 text-primary ring-offset-background">
                 <SelectValue placeholder="Todos os caixas" />
               </SelectTrigger>
               <SelectContent className="rounded-2xl border-none shadow-2xl">
@@ -127,14 +129,16 @@ export default function DashboardsDetailedPage() {
             </Select>
           </div>
 
-          <div className="flex-1 space-y-2">
-            <span className="text-[10px] font-black uppercase text-primary tracking-widest ml-1">Filtro de Data</span>
+          <div className="flex-1 space-y-3">
+            <span className="text-[11px] font-black uppercase text-primary tracking-[0.2em] ml-1 flex items-center gap-2">
+              <CalendarIcon className="h-4 w-4" /> FILTRO DE DATA
+            </span>
             <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
               <PopoverTrigger asChild>
                 <Button
                   variant={"outline"}
                   className={cn(
-                    "w-full justify-start text-left font-bold h-14 rounded-2xl border-2 border-primary font-bold bg-primary/5 shadow-none hover:bg-primary/10 transition-all px-6 text-primary",
+                    "w-full justify-start text-left font-bold h-14 rounded-2xl border-2 border-primary font-bold bg-white shadow-md hover:bg-primary/5 transition-all px-6 text-primary",
                     !date && "text-muted-foreground"
                   )}
                 >
