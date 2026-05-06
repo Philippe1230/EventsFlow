@@ -55,7 +55,8 @@
     @apply bg-background text-foreground font-body antialiased selection:bg-primary/20 selection:text-primary;
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
-    overscroll-behavior-y: none;
+    /* Bloqueia o "swipe to go back" e o "pull to refresh" no mobile */
+    overscroll-behavior: none;
   }
 }
 
