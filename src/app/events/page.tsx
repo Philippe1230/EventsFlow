@@ -4,16 +4,16 @@
 import { AppShell } from '@/components/layout/AppShell';
 import { useAuth } from '@/hooks/use-auth-context';
 import { useState, useEffect } from 'react';
-import { collection, query, orderBy, addDoc, doc, updateDoc, serverTimestamp, where } from 'firebase/firestore';
+import { collection, query, orderBy, addDoc, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Calendar as CalendarIcon, MapPin, Plus, Loader2, Edit3, ArrowRight, CheckCircle2, Clock, Settings, LayoutDashboard } from 'lucide-react';
+import { Calendar as CalendarIcon, MapPin, Plus, Loader2, Edit3, ArrowRight, Settings, LayoutDashboard, Clock } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
@@ -45,7 +45,7 @@ export default function EventsPage() {
     status: 'rascunho'
   });
 
-  const isAdmin = role === 'owner' || role === 'super-admin';
+  const isAdmin = role === 'owner';
 
   const eventsQuery = useMemoFirebase(() => {
     if (!tenantId) return null;
@@ -54,7 +54,6 @@ export default function EventsPage() {
 
   const { data: allEventsData, isLoading } = useCollection<Event>(eventsQuery);
   
-  // Filter events based on role
   const events = (allEventsData || []).filter(e => {
     if (isAdmin) return true;
     return e.members?.[user?.uid || ''] != null;
@@ -62,12 +61,12 @@ export default function EventsPage() {
 
   const handleSave = async () => {
     if (!tenantId) {
-      toast({ title: 'Erro de Sistema', description: 'ID da organização não encontrado.', variant: 'destructive' });
+      toast({ title: 'Erro', description: 'ID da organização não encontrado.', variant: 'destructive' });
       return;
     }
 
     if (!currentEvent.name?.trim()) {
-      toast({ title: 'Campo Obrigatório', description: 'Por favor, dê um nome ao seu evento.', variant: 'destructive' });
+      toast({ title: 'Campo Obrigatório', description: 'Dê um nome ao evento.', variant: 'destructive' });
       return;
     }
 
@@ -125,12 +124,12 @@ export default function EventsPage() {
       <div className="flex flex-col gap-10 max-w-7xl mx-auto mb-20">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
           <div className="space-y-1">
-            <h2 className="text-4xl font-black text-primary uppercase tracking-tighter italic leading-none">Eventos</h2>
-            <p className="text-muted-foreground font-medium italic">Selecione um evento para operar ou gerenciar.</p>
+            <h2 className="text-4xl font-black text-primary uppercase tracking-tighter italic leading-none">Meus Eventos</h2>
+            <p className="text-muted-foreground font-medium italic">Escolha o evento para operar ou gerenciar.</p>
           </div>
           {isAdmin && (
             <Button onClick={() => openDialog()} className="h-16 px-10 rounded-2xl font-black uppercase text-lg shadow-2xl shadow-primary/20 hover:scale-105 active:scale-95 transition-all">
-              <Plus className="mr-2 h-6 w-6" /> Criar Novo Evento
+              <Plus className="mr-2 h-6 w-6" /> Novo Evento
             </Button>
           )}
         </div>
@@ -180,30 +179,35 @@ export default function EventsPage() {
                       <span className="text-xs font-bold uppercase truncate">{event.location || 'Local não definido'}</span>
                     </div>
                   </div>
-                  <div className="pt-4 grid grid-cols-2 gap-3">
+                  
+                  <div className="pt-4 flex flex-col gap-3">
                     <Button 
                       onClick={() => setSelectedEventId(event.id)}
                       asChild 
-                      className="font-black uppercase text-[10px] h-12 rounded-xl shadow-lg shadow-primary/10 col-span-2 sm:col-span-1"
+                      className="w-full font-black uppercase text-xs h-14 rounded-2xl shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all"
                     >
-                      <Link href={`/pdv?eventId=${event.id}`}>Ir para o PDV <ArrowRight className="ml-1 h-3.5 w-3.5" /></Link>
+                      <Link href={`/pdv?eventId=${event.id}`}>
+                        Entrar no PDV do Evento <ArrowRight className="ml-2 h-4 w-4" />
+                      </Link>
                     </Button>
                     
-                    {isAdmin ? (
-                      <Button asChild variant="secondary" className="font-black uppercase text-[10px] h-12 rounded-xl">
-                        <Link href={`/events/${event.id}/config`}><Settings className="mr-1.5 h-3.5 w-3.5" /> Configurar</Link>
-                      </Button>
-                    ) : (
-                      <Button asChild variant="secondary" className="font-black uppercase text-[10px] h-12 rounded-xl">
-                        <Link href={`/orders?eventId=${event.id}`} onClick={() => setSelectedEventId(event.id)}>Histórico <Clock className="ml-1.5 h-3.5 w-3.5" /></Link>
-                      </Button>
-                    )}
+                    <div className="grid grid-cols-2 gap-3">
+                      {isAdmin ? (
+                        <Button asChild variant="secondary" className="font-black uppercase text-[9px] h-11 rounded-xl">
+                          <Link href={`/events/${event.id}/config`}><Settings className="mr-1.5 h-3.5 w-3.5" /> Configurar</Link>
+                        </Button>
+                      ) : (
+                        <Button asChild variant="secondary" className="font-black uppercase text-[9px] h-11 rounded-xl">
+                          <Link href={`/orders?eventId=${event.id}`} onClick={() => setSelectedEventId(event.id)}><Clock className="mr-1.5 h-3.5 w-3.5" /> Histórico</Link>
+                        </Button>
+                      )}
 
-                    {isAdmin && (
-                      <Button asChild variant="outline" className="font-black uppercase text-[10px] h-12 rounded-xl border-primary/20 text-primary col-span-2 mt-1">
-                        <Link href={`/dashboards?eventId=${event.id}`} onClick={() => setSelectedEventId(event.id)}>Dashboards <LayoutDashboard className="ml-1.5 h-3.5 w-3.5" /></Link>
-                      </Button>
-                    )}
+                      {isAdmin && (
+                        <Button asChild variant="outline" className="font-black uppercase text-[9px] h-11 rounded-xl border-primary/20 text-primary">
+                          <Link href={`/dashboards?eventId=${event.id}`} onClick={() => setSelectedEventId(event.id)}><LayoutDashboard className="mr-1.5 h-3.5 w-3.5" /> Dashboard</Link>
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </CardContent>
               </Card>

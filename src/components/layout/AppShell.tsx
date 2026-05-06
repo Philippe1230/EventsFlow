@@ -32,10 +32,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     return [
       { name: 'Início', href: '/', icon: LayoutDashboard, visible: isAdmin && !isSuperAdmin },
       { name: 'Controle Global', href: '/super-admin', icon: Settings2, visible: isSuperAdmin },
-      { name: 'Eventos', href: '/events', icon: Calendar, visible: !isSuperAdmin },
-      { name: 'Dashboards', href: `/dashboards${eventQuery}`, icon: BarChart3, visible: isAdmin && !isSuperAdmin },
-      { name: 'Fazer Pedidos', href: `/pdv${eventQuery}`, icon: ShoppingCart, visible: !isSuperAdmin },
-      { name: 'Histórico', href: `/orders${eventQuery}`, icon: ListOrdered, visible: !isSuperAdmin },
+      { name: 'Meus Eventos', href: '/events', icon: Calendar, visible: !isSuperAdmin },
+      { name: 'Dashboards', href: `/dashboards${eventQuery}`, icon: BarChart3, visible: isAdmin && !isSuperAdmin && !!selectedEventId },
+      { name: 'Fazer Pedidos', href: `/pdv${eventQuery}`, icon: ShoppingCart, visible: !isSuperAdmin && !!selectedEventId },
+      { name: 'Histórico', href: `/orders${eventQuery}`, icon: ListOrdered, visible: !isSuperAdmin && !!selectedEventId },
       { name: 'Equipe', href: '/team', icon: Users, visible: isAdmin && !isSuperAdmin },
     ].filter(item => item.visible);
   }, [isAdmin, isSuperAdmin, selectedEventId]);
@@ -44,7 +44,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     return navItems.findIndex(item => item.href.split('?')[0] === '/' ? pathname === '/' : pathname.startsWith(item.href.split('?')[0]));
   }, [pathname, navItems]);
 
-  if (loading && !user) return <div className="h-screen w-screen flex items-center justify-center bg-background"><OrderTicketIcon className="h-12 w-12 animate-bounce text-primary" /></div>;
+  if (loading && !user) return (
+    <div className="h-screen w-screen flex items-center justify-center bg-background">
+      <div className="flex flex-col items-center gap-4">
+        <OrderTicketIcon className="h-12 w-12 animate-bounce text-primary" />
+        <span className="font-black uppercase text-[10px] tracking-[0.3em] text-primary/40 italic">Iniciando Flow...</span>
+      </div>
+    </div>
+  );
 
   return (
     <SidebarProvider>
@@ -98,7 +105,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <div className="flex items-center gap-4">
             <SidebarTrigger className="text-primary hover:bg-primary/10 rounded-xl md:hidden" />
             <h1 className="text-base md:text-lg font-black text-primary uppercase tracking-tighter truncate">
-              {navItems[activeIndex]?.name || 'Menu'}
+              {navItems[activeIndex]?.name || 'Hub de Eventos'}
             </h1>
           </div>
           <div className="flex items-center gap-2">
