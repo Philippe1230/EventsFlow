@@ -4,7 +4,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { SidebarProvider, Sidebar, SidebarContent, SidebarHeader, SidebarFooter, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import { useAuth } from '@/hooks/use-auth-context';
-import { LayoutDashboard, ShoppingCart, Package, ListOrdered, LogOut, Users, BarChart3, ShieldCheck, Settings2, WifiOff, Wifi, Calendar, MapPin } from 'lucide-react';
+import { LayoutDashboard, ShoppingCart, ListOrdered, LogOut, Users, BarChart3, ShieldCheck, Settings2, WifiOff, Wifi, Calendar } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
@@ -26,19 +26,22 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   const isAdmin = role === 'owner';
 
-  const navItems = useMemo(() => [
-    { name: 'Início', href: '/', icon: LayoutDashboard, visible: isAdmin && !isSuperAdmin },
-    { name: 'Controle Global', href: '/super-admin', icon: Settings2, visible: isSuperAdmin },
-    { name: 'Eventos', href: '/events', icon: Calendar, visible: !isSuperAdmin },
-    { name: 'Dashboards', href: '/dashboards', icon: BarChart3, visible: isAdmin && !isSuperAdmin },
-    { name: 'Fazer Pedidos', href: '/pdv', icon: ShoppingCart, visible: !isSuperAdmin },
-    { name: 'Produtos', href: '/products', icon: Package, visible: isAdmin && !isSuperAdmin },
-    { name: 'Histórico', href: '/orders', icon: ListOrdered, visible: !isSuperAdmin },
-    { name: 'Equipe', href: '/team', icon: Users, visible: isAdmin && !isSuperAdmin },
-  ].filter(item => item.visible), [isAdmin, isSuperAdmin]);
+  const navItems = useMemo(() => {
+    const eventQuery = selectedEventId ? `?eventId=${selectedEventId}` : '';
+    
+    return [
+      { name: 'Início', href: '/', icon: LayoutDashboard, visible: isAdmin && !isSuperAdmin },
+      { name: 'Controle Global', href: '/super-admin', icon: Settings2, visible: isSuperAdmin },
+      { name: 'Eventos', href: '/events', icon: Calendar, visible: !isSuperAdmin },
+      { name: 'Dashboards', href: `/dashboards${eventQuery}`, icon: BarChart3, visible: isAdmin && !isSuperAdmin },
+      { name: 'Fazer Pedidos', href: `/pdv${eventQuery}`, icon: ShoppingCart, visible: !isSuperAdmin },
+      { name: 'Histórico', href: `/orders${eventQuery}`, icon: ListOrdered, visible: !isSuperAdmin },
+      { name: 'Equipe', href: '/team', icon: Users, visible: isAdmin && !isSuperAdmin },
+    ].filter(item => item.visible);
+  }, [isAdmin, isSuperAdmin, selectedEventId]);
 
   const activeIndex = useMemo(() => {
-    return navItems.findIndex(item => item.href === '/' ? pathname === '/' : pathname.startsWith(item.href));
+    return navItems.findIndex(item => item.href.split('?')[0] === '/' ? pathname === '/' : pathname.startsWith(item.href.split('?')[0]));
   }, [pathname, navItems]);
 
   if (loading && !user) return <div className="h-screen w-screen flex items-center justify-center bg-background"><OrderTicketIcon className="h-12 w-12 animate-bounce text-primary" /></div>;

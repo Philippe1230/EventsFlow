@@ -82,7 +82,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (cachedTenantId && cachedRole) {
         setTenantId(cachedTenantId);
         setRole(cachedRole);
-        setSelectedEventIdState(cachedEventId);
+        if (cachedEventId) setSelectedEventIdState(cachedEventId);
       }
 
       try {
@@ -113,12 +113,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setRole(userRole);
             localStorage.setItem(`role_${firebaseUser.uid}`, userRole);
 
-            // Redirecionamento Inteligente para Caixas sem evento selecionado
+            // Se for caixa e não tiver evento, tenta auto-selecionar
             if (userRole === 'cashier' && !cachedEventId) {
               const eventsRef = collection(db, 'tenants', tId, 'events');
               const eventsSnap = await getDocs(query(eventsRef, where('status', '==', 'ativo')));
               
-              // Find events where this cashier is a member
               const myEvents = eventsSnap.docs.filter(d => d.data().members?.[firebaseUser.uid] != null);
 
               if (myEvents.length === 1) {
