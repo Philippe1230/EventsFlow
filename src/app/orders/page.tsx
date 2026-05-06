@@ -1,9 +1,10 @@
+
 "use client";
 
 import { AppShell } from '@/components/layout/AppShell';
 import { useAuth } from '@/hooks/use-auth-context';
 import { useState, useMemo, useEffect } from 'react';
-import { collection, query, orderBy, Timestamp, limit, where } from 'firebase/firestore';
+import { collection, query, orderBy, Timestamp, limit, where, getDocs } from 'firebase/firestore';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
@@ -15,7 +16,7 @@ import {
   SelectTrigger, 
   SelectValue 
 } from "@/components/ui/select";
-import { Download, Loader2, Printer, Filter, User as UserIcon, Users } from 'lucide-react';
+import { Download, Loader2, Printer, Filter, User as UserIcon, Users, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
 import { PrintTickets } from '@/components/pdv/PrintTickets';
 import { cn } from '@/lib/utils';
@@ -28,14 +29,17 @@ interface Order {
   createdAt: Timestamp | Date;
   items: any[];
   userId: string;
+  eventId?: string;
 }
 
 export default function OrdersPage() {
-  const { tenantId, user, role, tenantMembers, isSuperAdmin, loading: authLoading } = useAuth();
+  const { tenantId, user, role, tenantMembers, isSuperAdmin, loading: authLoading, selectedEventId } = useAuth();
   const db = useFirestore();
   const [printableTickets, setPrintableTickets] = useState<any[]>([]);
   const [ordersLimit, setOrdersLimit] = useState<string>("20");
   const [selectedCashier, setSelectedCashier] = useState<string>("all");
+  const [activeEventFilter, setActiveEventFilter] = useState<string>(selectedEventId || "all");
+  const [events, setEvents] = useState<any[]>([]);
 
   const isAdminView = role === 'owner' || isSuperAdmin;
 
@@ -45,10 +49,31 @@ export default function OrdersPage() {
     }
   }, [role, user]);
 
+  useEffect(() => {
+    if (selectedEventId) setActiveEventFilter(selectedEventId);
+  }, [selectedEventId]);
+
+  useEffect(() => {
+    async function loadEvents() {
+      if (!tenantId) return;
+      const snap = await getDocs(collection(db, 'tenants', tenantId, 'events'));
+      setEvents(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    }
+    loadEvents();
+  }, [tenantId, db]);
+
   const ordersQuery = useMemoFirebase(() => {
     if (!tenantId || !user) return null;
     
-    const ordersCol = collection(db, 'tenants', tenantId, 'orders');
+    // Se o filtro de evento estiver em "all", teríamos que usar uma query collectionGroup
+    // mas por simplicidade e performance (visto que as vendas são agora POR evento),
+    // vamos focar no evento selecionado ou no primeiro ativo.
+    
+    const eventToQuery = activeEventFilter === "all" ? selectedEventId : activeEventFilter;
+    
+    if (!eventToQuery) return null;
+
+    const ordersCol = collection(db, 'tenants', tenantId, 'events', eventToQuery, 'orders');
     const effectiveCashier = role === 'cashier' ? user.uid : selectedCashier;
 
     if (effectiveCashier === "all") {
@@ -65,7 +90,7 @@ export default function OrdersPage() {
         limit(parseInt(ordersLimit))
       );
     }
-  }, [db, tenantId, user, role, ordersLimit, selectedCashier]);
+  }, [db, tenantId, user, role, ordersLimit, selectedCashier, activeEventFilter, selectedEventId]);
 
   const { data: orders = [], isLoading: loading } = useCollection<Order>(ordersQuery);
 
@@ -81,22 +106,23 @@ export default function OrdersPage() {
     if (!orders || orders.length === 0) return;
 
     let csvContent = "data:text/csv;charset=utf-8,";
-    csvContent += "Data,Pedido #,Produto,Quantidade,Valor,Pagamento,Operador\n";
+    csvContent += "Data,Pedido #,Produto,Quantidade,Valor,Pagamento,Operador,Evento\n";
 
     orders.forEach(order => {
       const date = order.createdAt instanceof Timestamp ? order.createdAt.toDate() : new Date(order.createdAt || new Date());
       const dateStr = format(date, 'dd/MM/yyyy HH:mm');
       const cashierName = tenantMembers?.[order.userId]?.name || order.userId;
+      const eventName = events.find(e => e.id === (activeEventFilter === "all" ? selectedEventId : activeEventFilter))?.name || 'Evento';
       
       order.items.forEach(item => {
-        csvContent += `${dateStr},${order.orderNumber},"${item.name}",${item.quantity},"${item.price.toFixed(2)}","${order.paymentMethod}","${cashierName}"\n`;
+        csvContent += `${dateStr},${order.orderNumber},"${item.name}",${item.quantity},"${item.price.toFixed(2)}","${order.paymentMethod}","${cashierName}","${eventName}"\n`;
       });
     });
 
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `pedidos_flow_${format(new Date(), 'yyyyMMdd_HHmm')}.csv`);
+    link.setAttribute("download", `vendas_flow_${format(new Date(), 'yyyyMMdd_HHmm')}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -129,10 +155,10 @@ export default function OrdersPage() {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
           <div className="space-y-1">
             <h2 className="text-3xl md:text-4xl font-black text-primary uppercase tracking-tighter italic leading-none">
-              {role === 'cashier' ? 'Minhas Vendas' : 'Histórico de Vendas'}
+              {role === 'cashier' ? 'Minhas Fichas' : 'Histórico'}
             </h2>
             <p className="text-sm md:text-base text-muted-foreground font-medium italic">
-              {role === 'cashier' ? 'Gerencie seus pedidos realizados.' : 'Filtre e visualize a performance da equipe.'}
+              {role === 'cashier' ? 'Gerencie as fichas emitidas por você.' : 'Filtragem por evento e operador.'}
             </p>
           </div>
           
@@ -140,66 +166,81 @@ export default function OrdersPage() {
             <Button 
               onClick={exportCSV} 
               variant="outline" 
-              className="flex-1 sm:flex-none font-black uppercase rounded-2xl h-14 px-8 shadow-xl shadow-primary/5 border-primary/20 transition-all hover:scale-[1.02] active:scale-95 bg-card" 
+              className="flex-1 sm:flex-none font-black uppercase rounded-2xl h-14 px-8 shadow-xl shadow-primary/5 border-primary/20 bg-card" 
               disabled={!orders || orders.length === 0}
             >
-              <Download className="mr-3 h-5 w-5 text-primary" /> Exportar CSV
+              <Download className="mr-3 h-5 w-5 text-primary" /> CSV
             </Button>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-card p-8 rounded-[2rem] border-2 border-primary/10 shadow-2xl shadow-primary/5">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-card p-6 rounded-[2rem] border-2 border-primary/10 shadow-2xl">
           {isAdminView && (
-            <div className="space-y-3">
-              <span className="text-[11px] font-black uppercase text-primary tracking-[0.2em] ml-1 flex items-center gap-2">
-                <Users className="h-4 w-4" /> FILTRAR POR OPERADOR
+            <div className="space-y-2">
+              <span className="text-[9px] font-black uppercase text-primary tracking-widest ml-1 flex items-center gap-2">
+                <Calendar className="h-3 w-3" /> Evento
+              </span>
+              <Select value={activeEventFilter} onValueChange={setActiveEventFilter}>
+                <SelectTrigger className="h-12 rounded-xl border-2 border-primary font-bold bg-white text-primary px-4">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl">
+                  {events.map(e => (
+                    <SelectItem key={e.id} value={e.id} className="font-bold uppercase text-xs">{e.name}</SelectItem>
+                  ))}
+                  {events.length === 0 && <SelectItem value="all">Carregando...</SelectItem>}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {isAdminView && (
+            <div className="space-y-2">
+              <span className="text-[9px] font-black uppercase text-primary tracking-widest ml-1 flex items-center gap-2">
+                <UserIcon className="h-3 w-3" /> Operador
               </span>
               <Select value={selectedCashier} onValueChange={setSelectedCashier}>
-                <SelectTrigger className="h-14 rounded-2xl border-2 border-primary font-bold bg-white shadow-md hover:bg-primary/5 transition-all px-6 text-primary ring-offset-background flex items-center justify-between opacity-100 visible">
-                  <SelectValue placeholder="Selecione o operador" />
+                <SelectTrigger className="h-12 rounded-xl border-2 border-primary font-bold bg-white text-primary px-4">
+                  <SelectValue placeholder="Selecione" />
                 </SelectTrigger>
-                <SelectContent className="rounded-2xl border-none shadow-2xl">
-                  <SelectItem value="all" className="font-bold uppercase text-xs">Todos os Operadores</SelectItem>
+                <SelectContent className="rounded-xl">
+                  <SelectItem value="all" className="font-bold uppercase text-xs">Todos</SelectItem>
                   {cashierList.map((c) => (
-                    <SelectItem key={c.id} value={c.id} className="font-bold uppercase text-xs">
-                      {c.name} {c.id === user?.uid ? "(Você)" : ""}
-                    </SelectItem>
+                    <SelectItem key={c.id} value={c.id} className="font-bold uppercase text-xs">{c.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
           )}
 
-          <div className="space-y-3">
-            <span className="text-[11px] font-black uppercase text-primary tracking-[0.2em] ml-1 flex items-center gap-2">
-              <Filter className="h-4 w-4" /> EXIBIR QUANTIDADE
+          <div className="space-y-2">
+            <span className="text-[9px] font-black uppercase text-primary tracking-widest ml-1 flex items-center gap-2">
+              <Filter className="h-3 w-3" /> Limite
             </span>
             <Select value={ordersLimit} onValueChange={setOrdersLimit}>
-              <SelectTrigger className="h-14 rounded-2xl border-2 border-primary font-bold bg-white shadow-md hover:bg-primary/5 transition-all px-6 text-primary ring-offset-background flex items-center justify-between opacity-100 visible">
+              <SelectTrigger className="h-12 rounded-xl border-2 border-primary font-bold bg-white text-primary px-4">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className="rounded-2xl border-none shadow-2xl">
-                <SelectItem value="5" className="font-bold uppercase text-xs">Últimos 5 Pedidos</SelectItem>
-                <SelectItem value="20" className="font-bold uppercase text-xs">Últimos 20 Pedidos</SelectItem>
-                <SelectItem value="30" className="font-bold uppercase text-xs">Últimos 30 Pedidos</SelectItem>
-                <SelectItem value="100" className="font-bold uppercase text-xs">Últimos 100 Pedidos</SelectItem>
+              <SelectContent className="rounded-xl">
+                <SelectItem value="20" className="font-bold uppercase text-xs">Últimos 20</SelectItem>
+                <SelectItem value="100" className="font-bold uppercase text-xs">Últimos 100</SelectItem>
               </SelectContent>
             </Select>
           </div>
         </div>
       </div>
 
-      <div className="rounded-[2rem] md:rounded-[2.5rem] border border-primary/5 bg-card shadow-2xl overflow-hidden max-w-7xl mx-auto mb-10">
+      <div className="rounded-[2rem] border border-primary/5 bg-card shadow-2xl overflow-hidden max-w-7xl mx-auto mb-10">
         <div className="overflow-x-auto">
           <Table className="min-w-[900px]">
             <TableHeader className="bg-muted/30">
               <TableRow className="hover:bg-transparent border-primary/5">
-                <TableHead className="font-black uppercase text-[10px] py-6 pl-8 tracking-widest w-[120px]">Ticket</TableHead>
-                <TableHead className="font-black uppercase text-[10px] tracking-widest w-[150px]">Data & Hora</TableHead>
+                <TableHead className="font-black uppercase text-[10px] py-6 pl-8 tracking-widest w-[120px]">Ficha</TableHead>
+                <TableHead className="font-black uppercase text-[10px] tracking-widest w-[150px]">Data</TableHead>
                 {isAdminView && <TableHead className="font-black uppercase text-[10px] tracking-widest w-[150px]">Operador</TableHead>}
-                <TableHead className="font-black uppercase text-[10px] tracking-widest">Produtos Vendidos</TableHead>
-                <TableHead className="font-black uppercase text-[10px] tracking-widest w-[120px]">Pagamento</TableHead>
-                <TableHead className="text-right font-black uppercase text-[10px] tracking-widest w-[140px]">Faturado</TableHead>
+                <TableHead className="font-black uppercase text-[10px] tracking-widest">Itens</TableHead>
+                <TableHead className="font-black uppercase text-[10px] tracking-widest w-[120px]">Pgto</TableHead>
+                <TableHead className="text-right font-black uppercase text-[10px] tracking-widest w-[140px]">Valor</TableHead>
                 <TableHead className="text-right font-black uppercase text-[10px] tracking-widest pr-8 w-[100px]">Ações</TableHead>
               </TableRow>
             </TableHeader>
@@ -207,74 +248,45 @@ export default function OrdersPage() {
               {loading ? (
                 <TableRow>
                   <TableCell colSpan={isAdminView ? 7 : 6} className="text-center py-24">
-                    <div className="flex flex-col items-center gap-4">
-                      <Loader2 className="h-12 w-12 animate-spin text-primary opacity-20" />
-                      <span className="font-black uppercase text-[10px] tracking-[0.3em] text-primary/40">Sincronizando Histórico...</span>
-                    </div>
+                    <Loader2 className="h-10 w-10 animate-spin text-primary opacity-20 mx-auto" />
                   </TableCell>
                 </TableRow>
-              ) : !orders || orders.length === 0 ? (
+              ) : orders.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={isAdminView ? 7 : 6} className="text-center py-24 text-muted-foreground">
-                    <div className="flex flex-col items-center gap-4">
-                      <div className="bg-primary/5 p-6 rounded-[2rem]">
-                        <Printer className="h-12 w-12 text-primary/20" />
-                      </div>
-                      <div className="space-y-1">
-                        <span className="font-black uppercase text-sm block">Vazio por enquanto</span>
-                        <span className="text-[10px] uppercase font-bold tracking-widest opacity-40">Nenhuma venda encontrada</span>
-                      </div>
-                    </div>
-                  </TableCell>
+                  <TableCell colSpan={isAdminView ? 7 : 6} className="text-center py-24 text-muted-foreground font-black uppercase text-xs opacity-40">Nenhuma venda encontrada para este evento.</TableCell>
                 </TableRow>
               ) : (
                 orders.map((o) => (
-                  <TableRow key={o.id} className="border-primary/5 hover:bg-primary/5 transition-all duration-300 group">
-                    <TableCell className="py-6 pl-8">
-                      <div className="flex flex-col">
-                        <span className="font-black text-primary text-base">#{o.orderNumber}</span>
-                        <span className="text-[9px] font-bold text-muted-foreground uppercase">Ref: {o.id.substring(0, 5)}</span>
-                      </div>
-                    </TableCell>
+                  <TableRow key={o.id} className="border-primary/5 hover:bg-primary/5 transition-all group">
+                    <TableCell className="py-6 pl-8 font-black text-primary text-base">#{o.orderNumber}</TableCell>
                     <TableCell className="font-bold text-muted-foreground text-xs whitespace-nowrap">
-                      {o.createdAt ? format(o.createdAt instanceof Timestamp ? o.createdAt.toDate() : new Date(o.createdAt), 'dd/MM/yyyy HH:mm') : 'Pendente...'}
+                      {o.createdAt ? format(o.createdAt instanceof Timestamp ? o.createdAt.toDate() : new Date(o.createdAt), 'dd/MM/yyyy HH:mm') : '---'}
                     </TableCell>
                     {isAdminView && (
-                      <TableCell>
-                         <div className="flex items-center gap-2">
-                           <UserIcon className="h-3.5 w-3.5 text-primary/40" />
-                           <span className="font-black uppercase text-[10px] text-muted-foreground">
-                             {tenantMembers?.[o.userId]?.name || tenantMembers?.[o.userId]?.displayName || "Operador"}
-                           </span>
-                         </div>
+                      <TableCell className="font-black uppercase text-[10px] text-muted-foreground">
+                        {tenantMembers?.[o.userId]?.name || "Operador"}
                       </TableCell>
                     )}
                     <TableCell>
-                      <div className="flex flex-wrap gap-1.5 max-w-[350px]">
+                      <div className="flex flex-wrap gap-1">
                         {o.items?.map((item: any, idx: number) => (
-                          <Badge key={idx} variant="secondary" className="text-[9px] font-black uppercase bg-primary/5 text-primary border-none py-1 px-2.5 rounded-lg shadow-sm whitespace-nowrap">
+                          <Badge key={idx} variant="secondary" className="text-[9px] font-black uppercase bg-primary/5 text-primary border-none">
                             {item.quantity}x {item.name}
                           </Badge>
                         ))}
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline" className="uppercase text-[9px] font-black tracking-widest border-primary/10 text-muted-foreground bg-muted/20 px-3 py-1.5 whitespace-nowrap">
+                      <Badge variant="outline" className="uppercase text-[9px] font-black border-primary/10 text-muted-foreground bg-muted/20">
                         {o.paymentMethod}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-right font-black text-xl text-primary tracking-tighter whitespace-nowrap">
-                      R$ {o.total?.toFixed(2) || '0.00'}
+                    <TableCell className="text-right font-black text-xl text-primary tracking-tighter">
+                      R$ {o.total?.toFixed(2)}
                     </TableCell>
                     <TableCell className="text-right pr-8">
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        onClick={() => handleReprint(o)}
-                        className="h-12 w-12 rounded-2xl text-primary/40 hover:text-primary hover:bg-primary/10 transition-all hover:scale-110 shadow-sm"
-                        title="Reimprimir Fichas"
-                      >
-                        <Printer className="h-6 w-6" />
+                      <Button variant="ghost" size="icon" onClick={() => handleReprint(o)} className="h-10 w-10 rounded-xl text-primary/40 hover:text-primary hover:bg-primary/10">
+                        <Printer className="h-5 w-5" />
                       </Button>
                     </TableCell>
                   </TableRow>
