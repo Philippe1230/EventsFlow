@@ -31,6 +31,7 @@ interface Product {
   active: boolean;
   type?: 'own' | 'supplier';
   supplierId?: string;
+  supplierUnitCost?: number;
 }
 
 interface CartItem extends Product {
@@ -179,7 +180,8 @@ function PDVContent() {
           quantity: i.quantity,
           subtotal: i.price * i.quantity,
           type: i.type || 'own',
-          supplierId: i.supplierId || null
+          supplierId: i.supplierId || null,
+          supplierUnitCost: i.supplierUnitCost || 0
         })),
         createdAt: serverTimestamp(),
         status: 'completed'
