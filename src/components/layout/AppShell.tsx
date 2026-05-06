@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useMemo, useState, useEffect } from 'react';
@@ -51,7 +52,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [isNavigating, setIsNavigating] = useState(false);
 
-  // Prefetching logic is handled by Next.js Link, but we add a visual hint
   useEffect(() => {
     setIsNavigating(false);
   }, [pathname]);
@@ -79,20 +79,20 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <SidebarProvider>
-      <Sidebar collapsible="icon" className="border-r bg-card shadow-xl transition-all duration-150 ease-in-out">
+      <Sidebar className="border-r bg-card shadow-xl">
         <SidebarHeader className="p-6 flex flex-row items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary text-white shadow-lg shrink-0 gpu-accelerated">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary text-white shadow-lg shrink-0">
             <OrderTicketIcon className="h-7 w-7" />
           </div>
-          <div className="flex flex-col group-data-[collapsible=icon]:hidden overflow-hidden">
+          <div className="flex flex-col overflow-hidden">
             <span className="font-black text-lg leading-none text-primary uppercase tracking-tighter truncate">
               {organizationName || 'Flow Events'}
             </span>
             <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Painel Operacional</span>
           </div>
         </SidebarHeader>
-        <SidebarContent className="scroll-smooth">
-          <SidebarMenu className="px-3 pt-2">
+        <SidebarContent className="px-3 pt-2">
+          <SidebarMenu>
             {navItems.map((item, idx) => {
               const active = idx === activeIndex;
               return (
@@ -100,23 +100,22 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   <SidebarMenuButton 
                     asChild 
                     isActive={active} 
-                    tooltip={item.name} 
                     onClick={() => {
                       if (pathname !== item.href) setIsNavigating(true);
                     }}
                     className={cn(
-                      "h-12 rounded-2xl transition-all duration-150 mb-1 font-black uppercase text-[10px] tracking-widest px-4 active:scale-95 gpu-accelerated",
+                      "h-12 rounded-2xl transition-all duration-150 mb-1 font-black uppercase text-[10px] tracking-widest px-4 active:scale-95",
                       active 
-                        ? "!bg-primary !text-white shadow-lg shadow-primary/20" 
-                        : "text-primary/60 hover:bg-primary/5 hover:text-primary"
+                        ? "!bg-primary !text-white shadow-lg shadow-primary/20 opacity-100" 
+                        : "text-primary/60 hover:bg-primary/5 hover:text-primary opacity-100"
                     )}
                   >
-                    <Link href={item.href} className="flex items-center gap-3">
+                    <Link href={item.href} className="flex items-center gap-3 w-full">
                       <item.icon className={cn(
-                        "h-5 w-5 shrink-0 transition-colors",
+                        "h-5 w-5 shrink-0",
                         active ? "text-white" : "text-primary"
                       )} />
-                      <span className="truncate">{item.name}</span>
+                      <span className="truncate block">{item.name}</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -127,7 +126,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <SidebarFooter className="p-4">
           <SidebarMenu>
             <SidebarMenuItem>
-              <div className="px-4 py-2 mb-3 bg-muted rounded-xl text-[9px] font-black uppercase text-muted-foreground border border-primary/5 group-data-[collapsible=icon]:hidden">
+              <div className="px-4 py-2 mb-3 bg-muted rounded-xl text-[9px] font-black uppercase text-muted-foreground border border-primary/5">
                 <span className={cn(
                   "flex items-center gap-2",
                   (isAdmin || isSuperAdmin) ? "text-primary" : "text-secondary"
@@ -141,7 +140,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 className="h-11 rounded-xl text-muted-foreground hover:text-destructive hover:bg-destructive/5 font-black uppercase text-[10px] transition-colors"
               >
                 <LogOut className="h-4 w-4" />
-                <span className="group-data-[collapsible=icon]:hidden">Sair do Flow Events</span>
+                <span>Sair do Flow Events</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
@@ -153,9 +152,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <div className="h-full bg-primary animate-progress-fast w-1/3" />
           </div>
         )}
-        <header className="flex h-16 items-center justify-between border-b bg-card/50 backdrop-blur-sm px-4 md:px-6 no-print shadow-sm sticky top-0 z-40 gpu-accelerated">
+        <header className="flex h-16 items-center justify-between border-b bg-card/50 backdrop-blur-sm px-4 md:px-6 no-print shadow-sm sticky top-0 z-40">
           <div className="flex items-center gap-4">
-            <SidebarTrigger className="text-primary hover:bg-primary/10 rounded-xl transition-colors" />
+            <SidebarTrigger className="text-primary hover:bg-primary/10 rounded-xl transition-colors md:hidden" />
             <h1 className="text-base md:text-lg font-black text-primary uppercase tracking-tighter truncate">
               {navItems[activeIndex]?.name || 'Menu'}
             </h1>
