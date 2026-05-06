@@ -40,7 +40,6 @@ export default function OrdersPage() {
 
   const isAdminView = role === 'owner' || isSuperAdmin;
 
-  // Ajusta o filtro inicial baseado no papel do usuário
   useEffect(() => {
     if (role === 'cashier' && user?.uid) {
       setSelectedCashier(user.uid);
@@ -150,14 +149,14 @@ export default function OrdersPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-card p-8 rounded-[2rem] border-2 border-primary/5 shadow-2xl shadow-primary/5">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-card p-8 rounded-[2rem] border-2 border-primary/10 shadow-2xl shadow-primary/5">
           {isAdminView && (
             <div className="space-y-3">
               <span className="text-[10px] font-black uppercase text-primary tracking-[0.2em] ml-1 flex items-center gap-2">
                 <Users className="h-3.5 w-3.5" /> Filtrar por Operador
               </span>
               <Select value={selectedCashier} onValueChange={setSelectedCashier}>
-                <SelectTrigger className="h-14 rounded-2xl border-2 border-primary/10 font-bold bg-background shadow-none hover:border-primary/40 transition-all px-6">
+                <SelectTrigger className="h-14 rounded-2xl border-2 border-primary font-bold bg-primary/5 shadow-none hover:bg-primary/10 transition-all px-6 text-primary">
                   <SelectValue placeholder="Selecione o operador" />
                 </SelectTrigger>
                 <SelectContent className="rounded-2xl border-none shadow-2xl">
@@ -177,7 +176,7 @@ export default function OrdersPage() {
               <Filter className="h-3.5 w-3.5" /> Exibir Quantidade
             </span>
             <Select value={ordersLimit} onValueChange={setOrdersLimit}>
-              <SelectTrigger className="h-14 rounded-2xl border-2 border-primary/10 font-bold bg-background shadow-none hover:border-primary/40 transition-all px-6">
+              <SelectTrigger className="h-14 rounded-2xl border-2 border-primary font-bold bg-primary/5 shadow-none hover:bg-primary/10 transition-all px-6 text-primary">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="rounded-2xl border-none shadow-2xl">

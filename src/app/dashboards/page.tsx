@@ -1,3 +1,4 @@
+
 "use client";
 
 import { AppShell } from '@/components/layout/AppShell';
@@ -112,7 +113,7 @@ export default function DashboardsDetailedPage() {
           <div className="flex-1 space-y-2">
             <span className="text-[10px] font-black uppercase text-primary tracking-widest ml-1">Filtro de Operador</span>
             <Select value={selectedCashier} onValueChange={setSelectedCashier}>
-              <SelectTrigger className="h-14 rounded-2xl border-primary/10 font-bold bg-muted/20 shadow-none hover:border-primary/40 transition-all px-6">
+              <SelectTrigger className="h-14 rounded-2xl border-2 border-primary font-bold bg-primary/5 shadow-none hover:bg-primary/10 transition-all px-6 text-primary">
                 <SelectValue placeholder="Todos os caixas" />
               </SelectTrigger>
               <SelectContent className="rounded-2xl border-none shadow-2xl">
@@ -133,7 +134,7 @@ export default function DashboardsDetailedPage() {
                 <Button
                   variant={"outline"}
                   className={cn(
-                    "w-full justify-start text-left font-bold h-14 rounded-2xl border-primary/10 bg-muted/20 shadow-none hover:border-primary/40 transition-all px-6",
+                    "w-full justify-start text-left font-bold h-14 rounded-2xl border-2 border-primary font-bold bg-primary/5 shadow-none hover:bg-primary/10 transition-all px-6 text-primary",
                     !date && "text-muted-foreground"
                   )}
                 >

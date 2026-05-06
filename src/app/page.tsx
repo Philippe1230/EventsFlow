@@ -1,3 +1,4 @@
+
 "use client";
 
 import { AppShell } from '@/components/layout/AppShell';
@@ -30,7 +31,7 @@ export default function GuidePage() {
 
   // Enquanto carrega ou se for caixa, não mostra nada além de um carregamento limpo
   // Isso evita que o caixa veja a interface de "Guia" por um segundo antes de ir para o PDV
-  if (loading || role === 'cashier') {
+  if (loading || role === 'cashier' || role === null) {
     return (
       <div className="flex h-screen w-screen items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">
