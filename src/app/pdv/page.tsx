@@ -10,12 +10,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { ShoppingCart, Banknote, QrCode, CreditCard, RefreshCcw, Loader2, Plus, Minus, ArrowRight, Calendar, ChevronRight, ChevronLeft } from 'lucide-react';
+import { ShoppingCart, Banknote, QrCode, CreditCard, RefreshCcw, Loader2, Plus, Minus, ArrowRight, Calendar, ChevronRight, ChevronLeft, ArrowLeftRight } from 'lucide-react';
 import { PrintTickets } from '@/components/pdv/PrintTickets';
 import { SuccessModal } from '@/components/pdv/SuccessModal';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { setDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
@@ -37,7 +38,7 @@ interface CartItem extends Product {
 }
 
 function PDVContent() {
-  const { tenantId, user, loading: authLoading, selectedEventId, setSelectedEventId } = useAuth();
+  const { tenantId, user, role, loading: authLoading, selectedEventId, setSelectedEventId } = useAuth();
   const db = useFirestore();
   const { toast } = useToast();
   const searchParams = useSearchParams();
@@ -57,14 +58,27 @@ function PDVContent() {
   const [receivedAmount, setReceivedAmount] = useState<string>('');
   const [changeAmount, setChangeAmount] = useState<number>(0);
 
+  // Controle de Troca de Evento
+  const [showSwitchDialog, setShowSwitchDialog] = useState(false);
+  const [pendingEventId, setPendingEventId] = useState<string | null>(null);
+
   useEffect(() => {
     if (urlEventId && urlEventId !== selectedEventId) {
       setSelectedEventId(urlEventId);
     }
   }, [urlEventId, selectedEventId, setSelectedEventId]);
 
-  const eventsQuery = useMemoFirebase(() => tenantId ? collection(db, 'tenants', tenantId, 'events') : null, [tenantId, db]);
-  const { data: events } = useCollection(eventsQuery);
+  const eventsQuery = useMemoFirebase(() => {
+    if (!tenantId || !user) return null;
+    return collection(db, 'tenants', tenantId, 'events');
+  }, [tenantId, db, user]);
+  
+  const { data: rawEvents } = useCollection(eventsQuery);
+  const events = useMemo(() => (rawEvents || []).filter(e => {
+    if (role === 'owner' || user?.email === 'flowevents@gmail.com') return true;
+    return e.members?.[user?.uid || ''] != null;
+  }), [rawEvents, role, user]);
+
   const currentEvent = events?.find(e => e.id === activeEventId);
 
   const productsQuery = useMemoFirebase(() => {
@@ -121,6 +135,22 @@ function PDVContent() {
   const clearCart = () => {
     setCart([]);
     if (activeEventId) localStorage.removeItem(`current_cart_${activeEventId}`);
+  };
+
+  const handleSwitchEventRequest = (id: string) => {
+    if (id === activeEventId) return;
+    setPendingEventId(id);
+    setShowSwitchDialog(true);
+  };
+
+  const confirmSwitchEvent = () => {
+    if (pendingEventId) {
+      setSelectedEventId(pendingEventId);
+      router.push(`/pdv?eventId=${pendingEventId}`);
+      setShowSwitchDialog(false);
+      setPendingEventId(null);
+      setCart([]);
+    }
   };
 
   const finalizeOrder = async () => {
@@ -200,36 +230,64 @@ function PDVContent() {
           <h3 className="text-xl font-black uppercase text-primary tracking-tighter">Selecione um Evento</h3>
           <p className="text-xs text-muted-foreground mt-2 font-medium">Você precisa escolher um evento para operar o PDV.</p>
         </div>
-        <Button asChild className="w-full h-16 rounded-2xl font-black uppercase text-lg shadow-xl shadow-primary/20">
-          <Link href="/events">Ir para Meus Eventos <ArrowRight className="ml-2 h-5 w-5" /></Link>
-        </Button>
+        <div className="w-full space-y-4">
+          <Select onValueChange={(v) => handleSwitchEventRequest(v)}>
+            <SelectTrigger className="h-16 rounded-2xl border-2 border-primary font-bold bg-white text-primary px-6 shadow-xl">
+              <SelectValue placeholder="Escolher Evento Ativo" />
+            </SelectTrigger>
+            <SelectContent className="rounded-2xl">
+              {events.map(e => (
+                <SelectItem key={e.id} value={e.id} className="font-bold uppercase text-xs">{e.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button asChild variant="outline" className="w-full h-14 rounded-2xl font-black uppercase text-xs border-primary text-primary">
+            <Link href="/events">Ir para Meus Eventos</Link>
+          </Button>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="flex flex-col lg:grid lg:grid-cols-12 gap-6 pb-24 lg:pb-0 gpu-accelerated">
-      <div className="lg:col-span-7 xl:col-span-8 flex flex-col gap-4">
-        <div className="flex justify-between items-center bg-card p-4 rounded-2xl border-2 border-primary/10 shadow-sm">
-          <div className="flex items-center gap-4">
-             <Button asChild variant="ghost" size="icon" className="h-10 w-10 rounded-xl text-primary hover:bg-primary/10">
-                <Link href="/events"><ChevronLeft className="h-6 w-6" /></Link>
-             </Button>
-            <div className="flex flex-col">
-              <h2 className="text-[10px] font-black text-primary uppercase flex items-center gap-2 tracking-[0.2em]">
-                {currentEvent?.name || 'Carregando...'}
-              </h2>
-              <span className="text-[8px] font-bold text-muted-foreground uppercase">Caixa Operacional</span>
-            </div>
+      {/* Header Contextual do PDV */}
+      <div className="lg:col-span-12 flex flex-col md:flex-row justify-between items-center gap-4 bg-card p-4 rounded-2xl border-2 border-primary shadow-lg">
+        <div className="flex items-center gap-4">
+          <div className="bg-primary/10 p-3 rounded-xl">
+             <Calendar className="h-6 w-6 text-primary" />
           </div>
-          <Button variant="outline" size="sm" onClick={() => {
-            const last = localStorage.getItem(`last_order_${activeEventId}`);
-            if (last) setCart(JSON.parse(last));
-          }} className="font-bold text-[10px] uppercase h-9 border-2 border-primary/20 rounded-xl">
-            <RefreshCcw className="mr-1 h-3 w-3" /> Repetir Último
-          </Button>
+          <div>
+            <h2 className="text-xl font-black text-primary uppercase leading-none tracking-tighter">
+              {currentEvent?.name || '---'}
+            </h2>
+            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mt-1">PDV OPERACIONAL</p>
+          </div>
         </div>
         
+        <div className="flex items-center gap-3 w-full md:w-auto">
+          <Select value={activeEventId || ''} onValueChange={(v) => handleSwitchEventRequest(v)}>
+            <SelectTrigger className="h-12 rounded-xl border-2 border-primary font-black bg-white text-primary px-4 shadow-sm min-w-[200px] uppercase text-[10px]">
+              <ArrowLeftRight className="mr-2 h-4 w-4" />
+              <SelectValue placeholder="Trocar Evento" />
+            </SelectTrigger>
+            <SelectContent className="rounded-xl">
+              {events.map(e => (
+                <SelectItem key={e.id} value={e.id} className="font-bold uppercase text-xs">{e.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          
+          <Button variant="outline" onClick={() => {
+            const last = localStorage.getItem(`last_order_${activeEventId}`);
+            if (last) setCart(JSON.parse(last));
+          }} className="font-black text-[10px] uppercase h-12 border-2 border-primary/20 rounded-xl px-6">
+            <RefreshCcw className="mr-2 h-4 w-4" /> Repetir Último
+          </Button>
+        </div>
+      </div>
+
+      <div className="lg:col-span-7 xl:col-span-8 flex flex-col gap-4">
         <div className="flex-1">
           {productsLoading ? (
             <div className="flex flex-col items-center justify-center py-20 gap-4 opacity-40">
@@ -238,9 +296,9 @@ function PDVContent() {
             </div>
           ) : products.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 bg-muted/20 rounded-[2.5rem] border-2 border-dashed border-primary/5">
-               <span className="font-black uppercase text-[10px] text-muted-foreground tracking-widest opacity-40">Nenhum produto cadastrado neste evento</span>
+               <span className="font-black uppercase text-[10px] text-muted-foreground tracking-widest opacity-40">Nenhum produto neste evento</span>
                <Button asChild variant="link" className="text-primary font-black uppercase text-[9px] mt-4">
-                  <Link href={`/events/${activeEventId}/config`}>Ir para Configuração</Link>
+                  <Link href={`/events/${activeEventId}/config`}>Configurar Cardápio</Link>
                </Button>
             </div>
           ) : (
@@ -301,6 +359,32 @@ function PDVContent() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Pop-up de Confirmação de Troca de Evento */}
+      <Dialog open={showSwitchDialog} onOpenChange={setShowSwitchDialog}>
+        <DialogContent className="rounded-[2.5rem] border-none p-0 overflow-hidden sm:max-w-md w-[95vw] !top-[50%] !translate-y-[-50%]">
+          <DialogHeader className="bg-primary p-6 text-white text-center">
+            <DialogTitle className="text-2xl font-black uppercase italic tracking-tighter">Trocar de Evento?</DialogTitle>
+          </DialogHeader>
+          <div className="p-8 text-center space-y-6">
+            <div className="bg-primary/5 p-6 rounded-2xl border-2 border-primary/10">
+              <p className="text-sm font-bold text-muted-foreground leading-relaxed uppercase">
+                Você quer mudar para o PDV do evento:
+              </p>
+              <div className="text-xl font-black text-primary mt-2 uppercase tracking-tight">
+                {events.find(e => e.id === pendingEventId)?.name}
+              </div>
+            </div>
+            <p className="text-[10px] font-black text-destructive uppercase tracking-widest">
+              Atenção: O carrinho atual será esvaziado.
+            </p>
+          </div>
+          <DialogFooter className="p-8 pt-0 grid grid-cols-2 gap-4">
+            <Button variant="ghost" onClick={() => setShowSwitchDialog(false)} className="h-14 font-black uppercase text-xs rounded-xl">Cancelar</Button>
+            <Button onClick={confirmSwitchEvent} className="h-14 font-black uppercase text-xs rounded-xl shadow-lg">Confirmar Troca</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={showPaymentModal} onOpenChange={setShowPaymentModal}>
         <DialogContent className="rounded-[2.5rem] border-none p-0 overflow-hidden sm:max-w-md w-[95vw] !top-[50%] !translate-y-[-50%]">
