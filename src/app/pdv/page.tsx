@@ -246,43 +246,43 @@ export default function PDVPage() {
 
         <div id="cart-section" className="lg:col-span-5 xl:col-span-4 flex flex-col gap-6 lg:h-[calc(100vh-140px)] lg:sticky lg:top-0">
           <Card className="flex flex-col flex-1 shadow-2xl border-none overflow-hidden rounded-[2.5rem] bg-card hover:shadow-primary/5 transition-shadow">
-            <CardHeader className="bg-primary text-white py-6 shrink-0 relative overflow-hidden">
+            <CardHeader className="bg-primary text-white py-4 lg:py-6 shrink-0 relative overflow-hidden">
               <div className="absolute top-0 right-0 p-4 opacity-20">
-                 <OrderTicketIcon className="h-20 w-20 rotate-12" />
+                 <OrderTicketIcon className="h-12 w-12 lg:h-20 lg:w-20 rotate-12" />
               </div>
               <CardTitle className="flex items-center justify-between text-base uppercase font-black relative z-10">
                 <div className="flex items-center gap-3">
-                  <ShoppingCart className="h-6 w-6" /> Carrinho
+                  <ShoppingCart className="h-5 w-5 lg:h-6 lg:w-6" /> Carrinho
                 </div>
               </CardTitle>
             </CardHeader>
             
             <CardContent className="flex-1 flex flex-col p-0 overflow-hidden bg-muted/10">
-              <div className="flex-1 overflow-y-auto p-4 lg:p-6 space-y-4 max-h-[500px] lg:max-h-none">
+              <div className="flex-1 overflow-y-auto p-4 lg:p-6 space-y-3 lg:space-y-4 max-h-[40vh] lg:max-h-none">
                 {cart.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-20 opacity-10">
-                    <OrderTicketIcon className="h-24 w-24 text-primary mb-6" />
+                  <div className="flex flex-col items-center justify-center py-10 lg:py-20 opacity-10">
+                    <OrderTicketIcon className="h-16 w-16 lg:h-24 lg:w-24 text-primary mb-6" />
                     <p className="text-center font-black uppercase text-xs tracking-widest">Carrinho Vazio</p>
                   </div>
                 ) : (
                   cart.map(item => (
-                    <div key={item.id} className="flex flex-col bg-card border border-primary/5 p-4 rounded-2xl shadow-sm hover:border-primary/20 hover:shadow-md transition-all">
-                      <div className="flex justify-between items-start mb-3">
-                        <span className="font-black uppercase text-xs leading-tight flex-1 pr-2">{item.name}</span>
-                        <span className="font-black text-primary text-sm whitespace-nowrap">R$ {(item.price * item.quantity).toFixed(2)}</span>
+                    <div key={item.id} className="flex flex-col bg-card border border-primary/5 p-3 lg:p-4 rounded-2xl shadow-sm hover:border-primary/20 hover:shadow-md transition-all">
+                      <div className="flex justify-between items-start mb-2 lg:mb-3">
+                        <span className="font-black uppercase text-[11px] lg:text-xs leading-tight flex-1 pr-2">{item.name}</span>
+                        <span className="font-black text-primary text-xs lg:text-sm whitespace-nowrap">R$ {(item.price * item.quantity).toFixed(2)}</span>
                       </div>
                       <div className="flex justify-between items-center">
-                        <div className="flex items-center bg-muted/50 rounded-xl p-1">
-                          <Button variant="ghost" size="icon" className="h-10 w-10 rounded-lg hover:bg-primary/10" onClick={() => updateQuantity(item.id, -1)}>
-                            <Minus className="h-4 w-4" />
+                        <div className="flex items-center bg-muted/50 rounded-xl p-0.5 lg:p-1">
+                          <Button variant="ghost" size="icon" className="h-8 w-8 lg:h-10 lg:w-10 rounded-lg hover:bg-primary/10" onClick={() => updateQuantity(item.id, -1)}>
+                            <Minus className="h-3 w-3 lg:h-4 lg:w-4" />
                           </Button>
-                          <span className="w-10 text-center font-black text-sm">{item.quantity}</span>
-                          <Button variant="ghost" size="icon" className="h-10 w-10 rounded-lg hover:bg-primary/10" onClick={() => updateQuantity(item.id, 1)}>
-                            <Plus className="h-4 w-4" />
+                          <span className="w-8 lg:w-10 text-center font-black text-xs lg:text-sm">{item.quantity}</span>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 lg:h-10 lg:w-10 rounded-lg hover:bg-primary/10" onClick={() => updateQuantity(item.id, 1)}>
+                            <Plus className="h-3 w-3 lg:h-4 lg:w-4" />
                           </Button>
                         </div>
-                        <Button variant="ghost" size="icon" className="h-10 w-10 text-destructive/40 hover:text-destructive hover:bg-destructive/5 rounded-xl" onClick={() => removeFromCart(item.id)}>
-                          <Trash2 className="h-5 w-5" />
+                        <Button variant="ghost" size="icon" className="h-8 w-8 lg:h-10 lg:w-10 text-destructive/40 hover:text-destructive hover:bg-destructive/5 rounded-xl" onClick={() => removeFromCart(item.id)}>
+                          <Trash2 className="h-4 w-4 lg:h-5 lg:w-5" />
                         </Button>
                       </div>
                     </div>
@@ -290,44 +290,44 @@ export default function PDVPage() {
                 )}
               </div>
 
-              <div className="bg-card border-t border-primary/5 p-6 space-y-6 shadow-[0_-10px_30px_rgba(0,0,0,0.03)] mt-auto">
-                <div className="flex justify-between items-end px-2">
-                  <span className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Total</span>
-                  <span className="text-4xl font-black text-primary tracking-tighter">R$ {total.toFixed(2)}</span>
+              <div className="bg-card border-t border-primary/5 p-4 lg:p-6 space-y-4 lg:space-y-6 shadow-[0_-10px_30px_rgba(0,0,0,0.03)] mt-auto">
+                <div className="flex justify-between items-center lg:items-end px-2">
+                  <span className="text-[9px] lg:text-[10px] font-black uppercase text-muted-foreground tracking-widest">Total</span>
+                  <span className="text-2xl lg:text-4xl font-black text-primary tracking-tighter">R$ {total.toFixed(2)}</span>
                 </div>
 
                 <div className="grid grid-cols-3 gap-2">
                   <PaymentButton 
                     active={paymentMethod === 'dinheiro'} 
                     onClick={() => setPaymentMethod('dinheiro')}
-                    icon={<Banknote className="h-6 w-6" />}
+                    icon={<Banknote className="h-5 w-5 lg:h-6 lg:w-6" />}
                     label="Dinheiro"
                   />
                   <PaymentButton 
                     active={paymentMethod === 'pix'} 
                     onClick={() => setPaymentMethod('pix')}
-                    icon={<QrCode className="h-6 w-6" />}
+                    icon={<QrCode className="h-5 w-5 lg:h-6 lg:w-6" />}
                     label="Pix"
                   />
                   <PaymentButton 
                     active={paymentMethod === 'cartao'} 
                     onClick={() => setPaymentMethod('cartao')}
-                    icon={<CreditCard className="h-6 w-6" />}
+                    icon={<CreditCard className="h-5 w-5 lg:h-6 lg:w-6" />}
                     label="Cartão"
                   />
                 </div>
 
                 <Button 
-                  className="w-full h-20 text-2xl font-black uppercase shadow-2xl shadow-primary/30 rounded-[1.5rem] hover:scale-[1.02] active:scale-95 transition-all" 
+                  className="w-full h-14 lg:h-20 text-lg lg:text-2xl font-black uppercase shadow-2xl shadow-primary/30 rounded-xl lg:rounded-[1.5rem] hover:scale-[1.02] active:scale-95 transition-all" 
                   size="lg"
                   disabled={cart.length === 0 || submitting}
                   onClick={finalizeOrder}
                 >
-                  {submitting ? <Loader2 className="animate-spin h-8 w-8" /> : <><Printer className="mr-3 h-8 w-8" /> Finalizar</>}
+                  {submitting ? <Loader2 className="animate-spin h-6 w-6 lg:h-8 lg:w-8" /> : <><Printer className="mr-2 lg:mr-3 h-6 w-6 lg:h-8 lg:w-8" /> Finalizar</>}
                 </Button>
                 
                 {cart.length > 0 && (
-                  <button className="w-full text-[10px] font-black uppercase text-muted-foreground/40 hover:text-destructive transition-colors tracking-widest py-2" onClick={clearCart}>
+                  <button className="w-full text-[9px] lg:text-[10px] font-black uppercase text-muted-foreground/40 hover:text-destructive transition-colors tracking-widest py-1" onClick={clearCart}>
                     Limpar Carrinho
                   </button>
                 )}
@@ -368,13 +368,13 @@ function PaymentButton({ active, onClick, icon, label }: { active: boolean, onCl
     <Button 
       variant={active ? 'default' : 'outline'} 
       className={cn(
-        "flex flex-col h-16 sm:h-20 gap-1 sm:gap-2 border-2 transition-all rounded-2xl flex-1",
+        "flex flex-col h-14 lg:h-20 gap-1 lg:gap-2 border-2 transition-all rounded-xl lg:rounded-2xl flex-1",
         active ? "border-primary shadow-lg scale-105" : "border-primary/5 opacity-50 hover:opacity-100 hover:border-primary/20"
       )}
       onClick={onClick}
     >
       {icon}
-      <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-widest leading-none">{label}</span>
+      <span className="text-[7px] lg:text-[9px] font-black uppercase tracking-widest leading-none">{label}</span>
     </Button>
   );
 }
