@@ -75,14 +75,17 @@
 
 @media print {
   @page {
-    margin: 0 !important;
-    size: 80mm auto !important;
+    size: 80mm auto;
+    margin: 0;
   }
 
   html, body {
     width: 80mm !important;
+    height: auto !important;
+    min-height: 0 !important;
     margin: 0 !important;
     padding: 0 !important;
+    overflow: hidden !important;
     background: #fff !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
@@ -101,20 +104,30 @@
     left: 0 !important;
     top: 0 !important;
     width: 80mm !important;
+    height: auto !important;
+    min-height: 0 !important;
     margin: 0 !important;
     padding: 0 !important;
     display: block !important;
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+  }
+
+  .ticket {
+    width: 80mm !important;
+    height: auto !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 4mm !important;
+    box-sizing: border-box !important;
+    page-break-after: always !important;
+    break-after: page !important;
+    overflow: hidden !important;
+    border-bottom: 1px dashed #ccc !important;
   }
 
   .no-print {
     display: none !important;
-  }
-
-  /* Remove quebras de página indesejadas */
-  .ticket {
-    break-inside: avoid !important;
-    page-break-after: always !important;
-    overflow: hidden !important;
   }
 }
 

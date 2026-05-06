@@ -18,15 +18,7 @@ export function PrintTickets({ tickets }: { tickets: TicketProps[] }) {
       {tickets.map((ticket, idx) => (
         <div 
           key={`${ticket.orderId}-${idx}`} 
-          className="ticket flex flex-col items-center justify-between text-center" 
-          style={{ 
-            width: '80mm', 
-            minHeight: '60mm', 
-            padding: '5mm',
-            boxSizing: 'border-box',
-            display: 'flex',
-            flexDirection: 'column'
-          }}
+          className="ticket flex flex-col items-center text-center"
         >
           {/* Cabeçalho */}
           <div className="w-full border-b-2 border-black pb-2 mb-2">
@@ -34,18 +26,18 @@ export function PrintTickets({ tickets }: { tickets: TicketProps[] }) {
           </div>
           
           {/* Corpo da Ficha - Nome do Produto em Destaque Absoluto */}
-          <div className="flex-1 flex flex-col items-center justify-center w-full">
+          <div className="flex flex-col items-center justify-center w-full py-2">
             <div className="text-[10px] font-bold uppercase tracking-widest mb-1 opacity-70">Ficha de Consumo</div>
-            <h2 className="text-[28px] font-black uppercase leading-none tracking-tighter mb-2 break-words w-full">
+            <h2 className="text-[26px] font-black uppercase leading-tight tracking-tighter mb-2 break-words w-full">
               {ticket.productName}
             </h2>
-            <div className="bg-black text-white px-4 py-1 text-[24px] font-black tracking-tighter">
+            <div className="bg-black text-white px-5 py-1 text-[24px] font-black tracking-tighter rounded-sm">
               #{ticket.orderNumber}
             </div>
           </div>
           
           {/* Rodapé de Segurança */}
-          <div className="w-full mt-4 pt-2 border-t border-black/20 flex flex-col gap-1">
+          <div className="w-full mt-3 pt-2 border-t border-black/20 flex flex-col gap-1">
             <div className="flex justify-between items-center">
               <span className="text-[9px] font-bold uppercase">Hora: {format(ticket.timestamp, 'HH:mm:ss')}</span>
               <span className="text-[9px] font-bold uppercase">Data: {format(ticket.timestamp, 'dd/MM/yyyy')}</span>
