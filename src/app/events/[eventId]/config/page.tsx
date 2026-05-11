@@ -325,7 +325,7 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
                     <CardTitle className="text-lg md:text-xl font-black uppercase text-primary">Detalhamento por Item</CardTitle>
                     <div className="flex items-center gap-2 bg-primary/5 px-4 py-2 rounded-xl border border-primary/10">
                       <Info className="h-4 w-4 text-primary" />
-                      <span className="text-[10px] font-bold uppercase text-muted-foreground tracking-tight leading-none">Lucro Unit. = Preço - Custo de Repasse</span>
+                      <span className="text-[10px] font-bold uppercase text-muted-foreground tracking-tight leading-none">Seu Ganho = Preço de Venda - Valor do Fornecedor</span>
                     </div>
                   </div>
                 </CardHeader>
@@ -335,9 +335,9 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
                       <TableHeader className="bg-muted/50">
                         <TableRow className="hover:bg-transparent border-primary/5">
                           <TableHead className="font-black uppercase text-[10px] py-6 pl-8">Produto</TableHead>
-                          <TableHead className="font-black uppercase text-[10px]">Lucro/Unid</TableHead>
-                          <TableHead className="font-black uppercase text-[10px]">Meta de Lucro</TableHead>
-                          <TableHead className="font-black uppercase text-[10px]">Lucro Real</TableHead>
+                          <TableHead className="font-black uppercase text-[10px]">Seu Ganho/Unid</TableHead>
+                          <TableHead className="font-black uppercase text-[10px]">Meta de Ganho</TableHead>
+                          <TableHead className="font-black uppercase text-[10px]">Ganho no Caixa</TableHead>
                           <TableHead className="font-black uppercase text-[10px]">Status</TableHead>
                           <TableHead className="font-black uppercase text-[10px] text-right pr-8">Performance</TableHead>
                         </TableRow>
@@ -520,10 +520,10 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
                       />
                     </div>
                     <div className="space-y-1.5">
-                      <Label className="font-black uppercase text-[10px] ml-1">Preço de Venda (R$)</Label>
+                      <Label className="font-black uppercase text-[10px] ml-1">Preço de Venda na Festa (R$)</Label>
                       <Input 
                         type="number"
-                        placeholder="10,00"
+                        placeholder="12,00"
                         className="h-12 md:h-14 rounded-xl md:rounded-2xl border-primary/10 font-bold bg-muted/20 px-6"
                         value={currentProduct.price || ''} 
                         onChange={(e) => setCurrentProduct({ ...currentProduct, price: parseFloat(e.target.value) })} 
@@ -536,7 +536,7 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent className="rounded-2xl border-none shadow-2xl">
-                          <SelectItem value="own" className="font-black uppercase text-xs">Próprio (Lucro 100%)</SelectItem>
+                          <SelectItem value="own" className="font-black uppercase text-xs">Próprio (Ganho 100%)</SelectItem>
                           <SelectItem value="supplier" className="font-black uppercase text-xs">Barraca Parceira</SelectItem>
                         </SelectContent>
                       </Select>
@@ -569,7 +569,7 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
                           </Select>
                         </div>
                         <div className="space-y-1.5">
-                          <Label className="font-black uppercase text-[10px] ml-1">Custo de Repasse (R$)</Label>
+                          <Label className="font-black uppercase text-[10px] ml-1">Custo da Barraca (Valor Fornec.)</Label>
                           <Input 
                             type="number"
                             placeholder="7,00"
@@ -582,14 +582,14 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
                     )}
                   </div>
                   
-                  {/* Prévia de Lucro Unitário */}
+                  {/* Prévia de Ganho do Dono da Festa */}
                   {currentProduct.price !== undefined && (
                     <div className="bg-primary/5 p-4 rounded-xl border border-primary/10 mt-4 flex justify-between items-center">
                       <div className="space-y-0.5">
-                        <span className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Resultado por Venda</span>
+                        <span className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Seu Ganho por Unidade</span>
                         <div className="flex items-center gap-2">
                           <Badge variant="outline" className="text-[9px] uppercase border-primary/20">
-                            {currentProduct.type === 'own' ? '100% Lucro' : 'Comissionado'}
+                            {currentProduct.type === 'own' ? '100% Ganho' : 'Lucro sobre Repasse'}
                           </Badge>
                         </div>
                       </div>
@@ -600,7 +600,7 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
                         )}>
                           R$ {formatCurrency(currentProduct.price - (currentProduct.type === 'supplier' ? (currentProduct.supplierUnitCost || 0) : 0))}
                         </span>
-                        <span className="block text-[9px] font-bold text-muted-foreground uppercase">Saldo Líquido</span>
+                        <span className="block text-[9px] font-bold text-muted-foreground uppercase">Sobra p/ Você</span>
                       </div>
                     </div>
                   )}
