@@ -16,7 +16,7 @@ import {
   SelectTrigger, 
   SelectValue 
 } from "@/components/ui/select";
-import { Download, Loader2, Printer, Filter, User as UserIcon, Users, Calendar } from 'lucide-react';
+import { Download, Loader2, Printer, Filter, User as UserIcon, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
 import { PrintTickets } from '@/components/pdv/PrintTickets';
 import { cn } from '@/lib/utils';
@@ -152,13 +152,13 @@ export default function OrdersPage() {
 
   return (
     <AppShell>
-      <div className="flex flex-col gap-8 mb-10 max-w-7xl mx-auto px-1">
+      <div className="flex flex-col gap-6 md:gap-8 mb-10 max-w-7xl mx-auto px-1">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
           <div className="space-y-1">
             <h2 className="text-3xl md:text-4xl font-black text-primary uppercase tracking-tighter italic leading-none">
               {role === 'cashier' ? 'Minhas Fichas' : 'Histórico'}
             </h2>
-            <p className="text-sm md:text-base text-muted-foreground font-medium italic">
+            <p className="text-xs md:text-base text-muted-foreground font-medium italic">
               {role === 'cashier' ? 'Gerencie as fichas emitidas por você.' : 'Filtragem por evento e operador.'}
             </p>
           </div>
@@ -167,7 +167,7 @@ export default function OrdersPage() {
             <Button 
               onClick={exportCSV} 
               variant="outline" 
-              className="flex-1 sm:flex-none font-black uppercase rounded-2xl h-14 px-8 shadow-xl shadow-primary/5 border-2 border-primary bg-white text-primary" 
+              className="flex-1 sm:flex-none font-black uppercase rounded-2xl h-14 px-8 shadow-xl shadow-primary/5 border-2 border-primary bg-white text-primary text-[10px] tracking-widest" 
               disabled={!orders || orders.length === 0}
             >
               <Download className="mr-3 h-5 w-5" /> Exportar CSV
@@ -175,21 +175,20 @@ export default function OrdersPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-card p-6 rounded-[2rem] border-2 border-primary/10 shadow-2xl">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 bg-card p-4 md:p-6 rounded-[2rem] border-2 border-primary/10 shadow-2xl">
           {isAdminView && (
             <div className="space-y-2">
-              <span className="text-[9px] font-black uppercase text-primary tracking-widest ml-1 flex items-center gap-2">
-                <Calendar className="h-3 w-3" /> Evento
+              <span className="text-[10px] font-black uppercase text-primary tracking-widest ml-1 flex items-center gap-2">
+                <Calendar className="h-3.5 w-3.5" /> Evento
               </span>
               <Select value={activeEventFilter} onValueChange={setActiveEventFilter}>
-                <SelectTrigger className="h-12 rounded-xl border-2 border-primary font-bold bg-white text-primary px-4">
+                <SelectTrigger className="h-12 rounded-xl border-2 border-primary font-bold bg-white text-primary px-4 uppercase text-xs">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="rounded-xl">
+                <SelectContent className="rounded-xl border-none shadow-2xl">
                   {events.map(e => (
                     <SelectItem key={e.id} value={e.id} className="font-bold uppercase text-xs">{e.name}</SelectItem>
                   ))}
-                  {events.length === 0 && <SelectItem value="all">Carregando...</SelectItem>}
                 </SelectContent>
               </Select>
             </div>
@@ -197,14 +196,14 @@ export default function OrdersPage() {
 
           {isAdminView && (
             <div className="space-y-2">
-              <span className="text-[9px] font-black uppercase text-primary tracking-widest ml-1 flex items-center gap-2">
-                <UserIcon className="h-3 w-3" /> Operador
+              <span className="text-[10px] font-black uppercase text-primary tracking-widest ml-1 flex items-center gap-2">
+                <UserIcon className="h-3.5 w-3.5" /> Operador
               </span>
               <Select value={selectedCashier} onValueChange={setSelectedCashier}>
-                <SelectTrigger className="h-12 rounded-xl border-2 border-primary font-bold bg-white text-primary px-4">
+                <SelectTrigger className="h-12 rounded-xl border-2 border-primary font-bold bg-white text-primary px-4 uppercase text-xs">
                   <SelectValue placeholder="Selecione" />
                 </SelectTrigger>
-                <SelectContent className="rounded-xl">
+                <SelectContent className="rounded-xl border-none shadow-2xl">
                   <SelectItem value="all" className="font-bold uppercase text-xs">Todos</SelectItem>
                   {cashierList.map((c) => (
                     <SelectItem key={c.id} value={c.id} className="font-bold uppercase text-xs">{c.name}</SelectItem>
@@ -215,16 +214,16 @@ export default function OrdersPage() {
           )}
 
           <div className="space-y-2">
-            <span className="text-[9px] font-black uppercase text-primary tracking-widest ml-1 flex items-center gap-2">
-              <Filter className="h-3 w-3" /> Limite de Registros
+            <span className="text-[10px] font-black uppercase text-primary tracking-widest ml-1 flex items-center gap-2">
+              <Filter className="h-3.5 w-3.5" /> Ver Últimos
             </span>
             <Select value={ordersLimit} onValueChange={setOrdersLimit}>
-              <SelectTrigger className="h-12 rounded-xl border-2 border-primary font-bold bg-white text-primary px-4">
+              <SelectTrigger className="h-12 rounded-xl border-2 border-primary font-bold bg-white text-primary px-4 uppercase text-xs">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className="rounded-xl">
-                <SelectItem value="20" className="font-bold uppercase text-xs">Últimos 20</SelectItem>
-                <SelectItem value="100" className="font-bold uppercase text-xs">Últimos 100</SelectItem>
+              <SelectContent className="rounded-xl border-none shadow-2xl">
+                <SelectItem value="20" className="font-bold uppercase text-xs">20 Registros</SelectItem>
+                <SelectItem value="100" className="font-bold uppercase text-xs">100 Registros</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -233,16 +232,16 @@ export default function OrdersPage() {
 
       <div className="rounded-[2rem] border border-primary/5 bg-card shadow-2xl overflow-hidden max-w-7xl mx-auto mb-10">
         <div className="overflow-x-auto">
-          <Table className="min-w-[900px]">
+          <Table className="min-w-[800px]">
             <TableHeader className="bg-muted/30">
               <TableRow className="hover:bg-transparent border-primary/5">
-                <TableHead className="font-black uppercase text-[10px] py-6 pl-8 tracking-widest w-[120px]">Ficha</TableHead>
-                <TableHead className="font-black uppercase text-[10px] tracking-widest w-[150px]">Data</TableHead>
-                {isAdminView && <TableHead className="font-black uppercase text-[10px] tracking-widest w-[150px]">Operador</TableHead>}
+                <TableHead className="font-black uppercase text-[10px] py-6 pl-8 tracking-widest w-[110px]">Ficha</TableHead>
+                <TableHead className="font-black uppercase text-[10px] tracking-widest w-[140px]">Data</TableHead>
+                {isAdminView && <TableHead className="font-black uppercase text-[10px] tracking-widest w-[140px]">Operador</TableHead>}
                 <TableHead className="font-black uppercase text-[10px] tracking-widest">Itens</TableHead>
-                <TableHead className="font-black uppercase text-[10px] tracking-widest w-[120px]">Pgto</TableHead>
-                <TableHead className="text-right font-black uppercase text-[10px] tracking-widest w-[140px]">Valor</TableHead>
-                <TableHead className="text-right font-black uppercase text-[10px] tracking-widest pr-8 w-[100px]">Ações</TableHead>
+                <TableHead className="font-black uppercase text-[10px] tracking-widest w-[110px]">Pgto</TableHead>
+                <TableHead className="text-right font-black uppercase text-[10px] tracking-widest w-[130px]">Valor</TableHead>
+                <TableHead className="text-right font-black uppercase text-[10px] tracking-widest pr-8 w-[90px]">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -259,30 +258,30 @@ export default function OrdersPage() {
               ) : (
                 orders.map((o) => (
                   <TableRow key={o.id} className="border-primary/5 hover:bg-primary/5 transition-all group">
-                    <TableCell className="py-6 pl-8 font-black text-primary text-base">#{o.orderNumber}</TableCell>
+                    <TableCell className="py-5 md:py-6 pl-8 font-black text-primary text-base">#{o.orderNumber}</TableCell>
                     <TableCell className="font-bold text-muted-foreground text-xs whitespace-nowrap">
                       {o.createdAt ? format(o.createdAt instanceof Timestamp ? o.createdAt.toDate() : new Date(o.createdAt), 'dd/MM/yyyy HH:mm') : '---'}
                     </TableCell>
                     {isAdminView && (
-                      <TableCell className="font-black uppercase text-[10px] text-muted-foreground">
+                      <TableCell className="font-black uppercase text-[9px] text-muted-foreground leading-tight">
                         {tenantMembers?.[o.userId]?.name || "Operador"}
                       </TableCell>
                     )}
                     <TableCell>
                       <div className="flex flex-wrap gap-1">
                         {o.items?.map((item: any, idx: number) => (
-                          <Badge key={idx} variant="secondary" className="text-[9px] font-black uppercase bg-primary/5 text-primary border-none">
+                          <Badge key={idx} variant="secondary" className="text-[9px] font-black uppercase bg-primary/5 text-primary border-none leading-none px-2 py-0.5">
                             {item.quantity}x {item.name}
                           </Badge>
                         ))}
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline" className="uppercase text-[9px] font-black border-primary/10 text-muted-foreground bg-muted/20">
+                      <Badge variant="outline" className="uppercase text-[9px] font-black border-primary/10 text-muted-foreground bg-muted/20 px-2">
                         {o.paymentMethod}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-right font-black text-xl text-primary tracking-tighter">
+                    <TableCell className="text-right font-black text-lg md:text-xl text-primary tracking-tighter whitespace-nowrap">
                       R$ {formatCurrency(o.total || 0)}
                     </TableCell>
                     <TableCell className="text-right pr-8">

@@ -3,7 +3,7 @@
 
 import { AppShell } from '@/components/layout/AppShell';
 import { useAuth } from '@/hooks/use-auth-context';
-import { useState, useEffect, use, useMemo } from 'react';
+import { useState, useMemo, use } from 'react';
 import { collection, query, orderBy, addDoc, doc, updateDoc, deleteDoc, writeBatch } from 'firebase/firestore';
 import { useFirestore, useCollection, useDoc, useMemoFirebase } from '@/firebase';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,7 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Loader2, Edit3, Trash2, Store, Package, Users, ChevronLeft, UserPlus, UserMinus, ShieldCheck, Flag, TrendingUp, DollarSign, Target, Calculator } from 'lucide-react';
+import { Plus, Loader2, Edit3, Trash2, Store, Package, Users, ChevronLeft, UserPlus, UserMinus, ShieldCheck, Flag, TrendingUp, Target, Calculator } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
@@ -238,72 +238,73 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
 
   return (
     <AppShell>
-      <div className="flex flex-col gap-8 max-w-7xl mx-auto mb-20">
+      <div className="flex flex-col gap-6 md:gap-8 max-w-7xl mx-auto mb-20 px-1">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <div className="flex items-center gap-4">
-            <Button asChild variant="ghost" size="icon" className="rounded-xl h-12 w-12 hover:bg-primary/10 text-primary">
-              <Link href="/events"><ChevronLeft className="h-6 w-6" /></Link>
+          <div className="flex items-center gap-3 md:gap-4">
+            <Button asChild variant="ghost" size="icon" className="rounded-xl h-10 w-10 md:h-12 md:w-12 hover:bg-primary/10 text-primary">
+              <Link href="/events"><ChevronLeft className="h-5 w-5 md:h-6 md:w-6" /></Link>
             </Button>
-            <div className="space-y-1">
-              <h2 className="text-3xl font-black text-primary uppercase tracking-tighter italic leading-none">
+            <div className="space-y-0.5">
+              <h2 className="text-xl md:text-3xl font-black text-primary uppercase tracking-tighter italic leading-none truncate max-w-[200px] md:max-w-none">
                 {eventLoading ? "Carregando..." : event?.name}
               </h2>
-              <p className="text-muted-foreground font-medium italic text-sm">Painel de controle e análise de lucros.</p>
+              <p className="text-muted-foreground font-medium italic text-[10px] md:text-sm uppercase tracking-widest">Configuração do Evento</p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 w-full md:w-auto">
              <Badge className={cn(
-                "h-10 px-6 rounded-xl font-black uppercase text-[10px] tracking-widest border-none shadow-sm",
+                "h-10 flex-1 md:flex-none justify-center px-4 md:px-6 rounded-xl font-black uppercase text-[9px] md:text-[10px] tracking-widest border-none shadow-sm",
                 event?.status === 'ativo' ? "bg-green-500 text-white" : 
                 event?.status === 'finalizado' ? "bg-primary text-white" : "bg-muted text-muted-foreground"
               )}>
               {event?.status}
             </Badge>
             {event?.status === 'ativo' && (
-              <Button onClick={handleFinalizeEvent} disabled={submitting} variant="destructive" className="h-10 rounded-xl font-black uppercase text-[10px] tracking-widest shadow-lg shadow-destructive/20">
-                {submitting ? <Loader2 className="animate-spin h-4 w-4" /> : <><Flag className="mr-2 h-4 w-4" /> Finalizar Evento</>}
+              <Button onClick={handleFinalizeEvent} disabled={submitting} variant="destructive" className="h-10 flex-1 md:flex-none rounded-xl font-black uppercase text-[9px] md:text-[10px] tracking-widest shadow-lg shadow-destructive/20">
+                {submitting ? <Loader2 className="animate-spin h-4 w-4" /> : <><Flag className="mr-2 h-4 w-4" /> Finalizar</>}
               </Button>
             )}
           </div>
         </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
-          <TabsList className="bg-muted/50 p-1.5 rounded-[1.5rem] h-16 w-full lg:w-auto grid grid-cols-4 gap-2 shadow-inner">
-            <TabsTrigger value="suppliers" className="rounded-2xl font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-xl transition-all h-full">
-              <Store className="mr-2 h-4 w-4" /> Barracas
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6 md:space-y-8">
+          <TabsList className="bg-muted/50 p-1 rounded-[1.2rem] h-14 md:h-16 w-full lg:w-auto grid grid-cols-4 gap-1 md:gap-2 shadow-inner">
+            <TabsTrigger value="suppliers" className="rounded-xl md:rounded-2xl font-black uppercase text-[8px] md:text-[10px] tracking-tighter md:tracking-widest data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-xl transition-all h-full px-1">
+              <Store className="mr-1 md:mr-2 h-3 w-3 md:h-4 md:w-4" /> Barracas
             </TabsTrigger>
-            <TabsTrigger value="products" className="rounded-2xl font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-xl transition-all h-full">
-              <Package className="mr-2 h-4 w-4" /> Cardápio
+            <TabsTrigger value="products" className="rounded-xl md:rounded-2xl font-black uppercase text-[8px] md:text-[10px] tracking-tighter md:tracking-widest data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-xl transition-all h-full px-1">
+              <Package className="mr-1 md:mr-2 h-3 w-3 md:h-4 md:w-4" /> Itens
             </TabsTrigger>
-            <TabsTrigger value="lucros" className="rounded-2xl font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-secondary data-[state=active]:text-white data-[state=active]:shadow-xl transition-all h-full">
-              <Calculator className="mr-2 h-4 w-4" /> Lucros
+            <TabsTrigger value="lucros" className="rounded-xl md:rounded-2xl font-black uppercase text-[8px] md:text-[10px] tracking-tighter md:tracking-widest data-[state=active]:bg-secondary data-[state=active]:text-white data-[state=active]:shadow-xl transition-all h-full px-1">
+              <Calculator className="mr-1 md:mr-2 h-3 w-3 md:h-4 md:w-4" /> Lucros
             </TabsTrigger>
-            <TabsTrigger value="team" className="rounded-2xl font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-xl transition-all h-full">
-              <Users className="mr-2 h-4 w-4" /> Equipe
+            <TabsTrigger value="team" className="rounded-xl md:rounded-2xl font-black uppercase text-[8px] md:text-[10px] tracking-tighter md:tracking-widest data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-xl transition-all h-full px-1">
+              <Users className="mr-1 md:mr-2 h-3 w-3 md:h-4 md:w-4" /> Equipe
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="lucros" className="space-y-8">
-             <div className="grid grid-cols-1 md:grid-cols-4 gap-6 animate-in fade-in slide-in-from-top-4">
-                <SummaryCard title="Arrecadação Projetada" value={`R$ ${formatCurrency(projections.plannedRevenue)}`} icon={<Target className="h-5 w-5" />} description="Baseado nas metas" />
-                <SummaryCard title="Lucro Projetado" value={`R$ ${formatCurrency(projections.plannedProfit)}`} icon={<TrendingUp className="h-5 w-5" />} color="text-green-500" description="Margem esperada" />
-                <SummaryCard title="Lucro Atual (Real)" value={`R$ ${formatCurrency(projections.actualProfit)}`} icon={<ShieldCheck className="h-5 w-5" />} color="text-primary" description="Vendas realizadas" />
-                <SummaryCard title="Eficiência do Evento" value={`${projections.efficiency.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`} icon={<Flag className="h-5 w-5" />} color="text-secondary" description="Atingimento da meta" />
+          <TabsContent value="lucros" className="space-y-6 md:space-y-8">
+             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 animate-in fade-in slide-in-from-top-4">
+                <SummaryCard title="Arrecadação Projetada" value={`R$ ${formatCurrency(projections.plannedRevenue)}`} icon={<Target className="h-5 w-5" />} description="Meta de Vendas" />
+                <SummaryCard title="Lucro Projetado" value={`R$ ${formatCurrency(projections.plannedProfit)}`} icon={<TrendingUp className="h-5 w-5" />} color="text-green-500" description="Margem Alvo" />
+                <SummaryCard title="Lucro Atual (Real)" value={`R$ ${formatCurrency(projections.actualProfit)}`} icon={<ShieldCheck className="h-5 w-5" />} color="text-primary" description="Ganhos Reais" />
+                <SummaryCard title="Eficiência" value={`${projections.efficiency.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`} icon={<Flag className="h-5 w-5" />} color="text-secondary" description="Atingimento" />
              </div>
 
              <Card className="border-none shadow-2xl rounded-[2.5rem] overflow-hidden bg-card">
-                <CardHeader className="bg-muted/10 p-8">
-                  <CardTitle className="text-xl font-black uppercase text-primary">Detalhamento de Projeções</CardTitle>
+                <CardHeader className="bg-muted/10 p-6 md:p-8">
+                  <CardTitle className="text-lg md:text-xl font-black uppercase text-primary">Análise por Produto</CardTitle>
                 </CardHeader>
                 <CardContent className="p-0">
-                   <Table>
+                  <div className="overflow-x-auto">
+                   <Table className="min-w-[600px]">
                       <TableHeader className="bg-muted/50">
                         <TableRow className="hover:bg-transparent border-primary/5">
                           <TableHead className="font-black uppercase text-[10px] py-6 pl-8">Produto</TableHead>
                           <TableHead className="font-black uppercase text-[10px]">Preço</TableHead>
-                          <TableHead className="font-black uppercase text-[10px]">Lucro Unit. Org.</TableHead>
-                          <TableHead className="font-black uppercase text-[10px]">Lucro Total Projetado</TableHead>
-                          <TableHead className="font-black uppercase text-[10px] text-right pr-8">Status Meta</TableHead>
+                          <TableHead className="font-black uppercase text-[10px]">Lucro Unit.</TableHead>
+                          <TableHead className="font-black uppercase text-[10px]">Lucro Total Meta</TableHead>
+                          <TableHead className="font-black uppercase text-[10px] text-right pr-8">Atingimento</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -315,13 +316,13 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
                           return (
                             <TableRow key={p.id} className="border-primary/5 hover:bg-primary/5 transition-all">
                               <TableCell className="font-black text-primary py-6 pl-8 uppercase text-sm">{p.name}</TableCell>
-                              <TableCell className="font-bold">R$ {formatCurrency(p.price)}</TableCell>
-                              <TableCell className="font-black text-green-600">R$ {formatCurrency(profitPerUnit)}</TableCell>
-                              <TableCell className="font-black text-primary">R$ {formatCurrency(totalPlannedProfit)}</TableCell>
+                              <TableCell className="font-bold text-xs">R$ {formatCurrency(p.price)}</TableCell>
+                              <TableCell className="font-black text-green-600 text-xs">R$ {formatCurrency(profitPerUnit)}</TableCell>
+                              <TableCell className="font-black text-primary text-xs">R$ {formatCurrency(totalPlannedProfit)}</TableCell>
                               <TableCell className="text-right pr-8">
                                 <div className="flex flex-col items-end gap-1">
-                                  <span className="font-black text-[10px] uppercase text-muted-foreground">{p.soldQuantity || 0} / {p.plannedQuantity || 0}</span>
-                                  <div className="w-24 h-1.5 bg-muted rounded-full overflow-hidden">
+                                  <span className="font-black text-[9px] uppercase text-muted-foreground">{p.soldQuantity || 0} / {p.plannedQuantity || 0}</span>
+                                  <div className="w-20 h-1.5 bg-muted rounded-full overflow-hidden">
                                     <div className="h-full bg-primary" style={{ width: `${Math.min(100, progress)}%` }} />
                                   </div>
                                 </div>
@@ -331,15 +332,16 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
                         })}
                       </TableBody>
                    </Table>
+                  </div>
                 </CardContent>
              </Card>
           </TabsContent>
 
           <TabsContent value="suppliers" className="space-y-6">
-            <div className="flex justify-between items-center">
-              <h3 className="text-xl font-black text-primary uppercase tracking-tight">Fornecedores & Barracas</h3>
+            <div className="flex justify-between items-center px-1">
+              <h3 className="text-lg md:text-xl font-black text-primary uppercase tracking-tight">Fornecedores</h3>
               {event?.status !== 'finalizado' && (
-                <Button onClick={() => { setCurrentSupplier({}); setShowSupplierForm(true); }} className="rounded-xl h-12 font-black uppercase text-[10px] tracking-widest">
+                <Button onClick={() => { setCurrentSupplier({}); setShowSupplierForm(true); }} className="rounded-xl h-11 md:h-12 font-black uppercase text-[9px] md:text-[10px] tracking-widest px-4">
                   <Plus className="mr-2 h-4 w-4" /> Nova Barraca
                 </Button>
               )}
@@ -347,51 +349,42 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
 
             {showSupplierForm && (
               <Card className="border-none shadow-2xl rounded-[2rem] bg-card animate-in fade-in slide-in-from-top-4 duration-300">
-                <CardHeader className="bg-primary/5 p-8 pb-4">
-                  <CardTitle className="text-lg font-black uppercase text-primary">Informações da Barraca</CardTitle>
+                <CardHeader className="bg-primary/5 p-6 md:p-8 pb-4">
+                  <CardTitle className="text-base md:text-lg font-black uppercase text-primary">Informações da Barraca</CardTitle>
                 </CardHeader>
-                <CardContent className="p-8 space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
+                <CardContent className="p-6 md:p-8 space-y-4 md:space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                    <div className="space-y-1.5">
                       <Label className="font-black uppercase text-[10px] ml-1">Nome da Barraca</Label>
                       <Input 
                         placeholder="Ex: Pastel da Dona Maria"
-                        className="h-14 rounded-2xl border-primary/10 font-bold bg-muted/20 px-6"
+                        className="h-12 md:h-14 rounded-xl md:rounded-2xl border-primary/10 font-bold bg-muted/20 px-6"
                         value={currentSupplier.name || ''} 
                         onChange={(e) => setCurrentSupplier({ ...currentSupplier, name: e.target.value })} 
                       />
                     </div>
-                    <div className="space-y-2">
+                    <div className="space-y-1.5">
                       <Label className="font-black uppercase text-[10px] ml-1">Responsável</Label>
                       <Input 
                         placeholder="Ex: Maria Silva"
-                        className="h-14 rounded-2xl border-primary/10 font-bold bg-muted/20 px-6"
+                        className="h-12 md:h-14 rounded-xl md:rounded-2xl border-primary/10 font-bold bg-muted/20 px-6"
                         value={currentSupplier.responsibleName || ''} 
                         onChange={(e) => setCurrentSupplier({ ...currentSupplier, responsibleName: e.target.value })} 
                       />
                     </div>
-                    <div className="space-y-2">
+                    <div className="space-y-1.5">
                       <Label className="font-black uppercase text-[10px] ml-1">Telefone</Label>
                       <Input 
                         placeholder="(11) 99999-9999"
-                        className="h-14 rounded-2xl border-primary/10 font-bold bg-muted/20 px-6"
+                        className="h-12 md:h-14 rounded-xl md:rounded-2xl border-primary/10 font-bold bg-muted/20 px-6"
                         value={currentSupplier.phone || ''} 
                         onChange={(e) => setCurrentSupplier({ ...currentSupplier, phone: e.target.value })} 
                       />
                     </div>
-                    <div className="space-y-2">
-                      <Label className="font-black uppercase text-[10px] ml-1">Notas</Label>
-                      <Input 
-                        placeholder="Observações adicionais"
-                        className="h-14 rounded-2xl border-primary/10 font-bold bg-muted/20 px-6"
-                        value={currentSupplier.notes || ''} 
-                        onChange={(e) => setCurrentSupplier({ ...currentSupplier, notes: e.target.value })} 
-                      />
-                    </div>
                   </div>
                   <div className="flex justify-end gap-3 pt-4">
-                    <Button variant="ghost" onClick={() => setShowSupplierForm(false)} className="rounded-xl font-bold uppercase text-[10px]">Cancelar</Button>
-                    <Button onClick={handleSaveSupplier} disabled={submitting} className="rounded-xl px-10 h-14 font-black uppercase text-[10px] shadow-xl shadow-primary/20">
+                    <Button variant="ghost" onClick={() => setShowSupplierForm(false)} className="rounded-xl font-bold uppercase text-[9px]">Cancelar</Button>
+                    <Button onClick={handleSaveSupplier} disabled={submitting} className="rounded-xl px-8 h-12 md:h-14 font-black uppercase text-[9px] md:text-[10px] shadow-xl shadow-primary/20">
                       {submitting ? <Loader2 className="animate-spin h-4 w-4" /> : "Salvar Fornecedor"}
                     </Button>
                   </div>
@@ -399,15 +392,16 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
               </Card>
             )}
 
-            <div className="rounded-[2.5rem] border border-primary/5 bg-card shadow-2xl overflow-hidden">
-              <Table>
+            <div className="rounded-[2rem] md:rounded-[2.5rem] border border-primary/5 bg-card shadow-2xl overflow-hidden">
+              <div className="overflow-x-auto">
+              <Table className="min-w-[700px]">
                 <TableHeader className="bg-muted/30">
                   <TableRow className="hover:bg-transparent border-primary/5">
                     <TableHead className="font-black uppercase text-[10px] py-6 pl-8">Nome</TableHead>
                     <TableHead className="font-black uppercase text-[10px]">Faturamento</TableHead>
                     <TableHead className="font-black uppercase text-[10px]">Custo Repasse</TableHead>
-                    <TableHead className="font-black uppercase text-[10px]">Lucro Organização</TableHead>
-                    <TableHead className="text-right font-black uppercase text-[10px] pr-8">Ações</TableHead>
+                    <TableHead className="font-black uppercase text-[10px]">Lucro Org.</TableHead>
+                    <TableHead className="text-right font-black uppercase text-[10px] pr-8 w-[100px]">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -420,18 +414,18 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
                       <TableRow key={s.id} className="border-primary/5 hover:bg-primary/5 transition-all">
                         <TableCell className="font-black text-primary py-6 pl-8 uppercase text-sm">
                           {s.name}
-                          <p className="text-[9px] text-muted-foreground font-bold">{s.responsibleName || 'Sem responsável'}</p>
+                          <p className="text-[9px] text-muted-foreground font-bold leading-tight">{s.responsibleName || 'Sem responsável'}</p>
                         </TableCell>
-                        <TableCell className="font-black text-primary">R$ {formatCurrency(s.totalActualRevenue || 0)}</TableCell>
-                        <TableCell className="font-bold text-secondary">R$ {formatCurrency(s.totalActualCost || 0)}</TableCell>
-                        <TableCell className="font-black text-green-600">R$ {formatCurrency(s.totalActualProfit || 0)}</TableCell>
+                        <TableCell className="font-black text-primary text-xs whitespace-nowrap">R$ {formatCurrency(s.totalActualRevenue || 0)}</TableCell>
+                        <TableCell className="font-bold text-secondary text-xs whitespace-nowrap">R$ {formatCurrency(s.totalActualCost || 0)}</TableCell>
+                        <TableCell className="font-black text-green-600 text-xs whitespace-nowrap">R$ {formatCurrency(s.totalActualProfit || 0)}</TableCell>
                         <TableCell className="text-right pr-8">
-                          <div className="flex justify-end gap-2">
-                            <Button variant="ghost" size="icon" onClick={() => { setCurrentSupplier(s); setShowSupplierForm(true); }} className="h-10 w-10 rounded-xl text-primary/40 hover:text-primary hover:bg-primary/10">
+                          <div className="flex justify-end gap-1">
+                            <Button variant="ghost" size="icon" onClick={() => { setCurrentSupplier(s); setShowSupplierForm(true); }} className="h-9 w-9 rounded-lg text-primary/40 hover:text-primary hover:bg-primary/10">
                               <Edit3 className="h-4 w-4" />
                             </Button>
                             {event?.status !== 'finalizado' && (
-                              <Button variant="ghost" size="icon" onClick={() => deleteSupplier(s.id)} className="h-10 w-10 rounded-xl text-destructive/40 hover:text-destructive hover:bg-destructive/10">
+                              <Button variant="ghost" size="icon" onClick={() => deleteSupplier(s.id)} className="h-9 w-9 rounded-lg text-destructive/40 hover:text-destructive hover:bg-destructive/10">
                                 <Trash2 className="h-4 w-4" />
                               </Button>
                             )}
@@ -442,64 +436,65 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
                   )}
                 </TableBody>
               </Table>
+              </div>
             </div>
           </TabsContent>
 
           <TabsContent value="products" className="space-y-6">
-            <div className="flex justify-between items-center">
-              <h3 className="text-xl font-black text-primary uppercase tracking-tight">Gestão do Cardápio</h3>
+            <div className="flex justify-between items-center px-1">
+              <h3 className="text-lg md:text-xl font-black text-primary uppercase tracking-tight">Cardápio</h3>
               {event?.status !== 'finalizado' && (
-                <Button onClick={() => { setCurrentProduct({ type: 'own', active: true }); setShowProductForm(true); }} className="rounded-xl h-12 font-black uppercase text-[10px] tracking-widest">
-                  <Plus className="mr-2 h-4 w-4" /> Novo Produto
+                <Button onClick={() => { setCurrentProduct({ type: 'own', active: true }); setShowProductForm(true); }} className="rounded-xl h-11 md:h-12 font-black uppercase text-[9px] md:text-[10px] tracking-widest px-4">
+                  <Plus className="mr-2 h-4 w-4" /> Novo Item
                 </Button>
               )}
             </div>
 
             {showProductForm && (
               <Card className="border-none shadow-2xl rounded-[2rem] bg-card animate-in fade-in slide-in-from-top-4 duration-300">
-                <CardHeader className="bg-primary/5 p-8 pb-4">
-                  <CardTitle className="text-lg font-black uppercase text-primary">Detalhes do Produto</CardTitle>
+                <CardHeader className="bg-primary/5 p-6 md:p-8 pb-4">
+                  <CardTitle className="text-base md:text-lg font-black uppercase text-primary">Detalhes do Produto</CardTitle>
                 </CardHeader>
-                <CardContent className="p-8 space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <div className="space-y-2">
+                <CardContent className="p-6 md:p-8 space-y-4 md:space-y-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+                    <div className="space-y-1.5">
                       <Label className="font-black uppercase text-[10px] ml-1">Nome do Produto</Label>
                       <Input 
                         placeholder="Ex: Pastel de Carne"
-                        className="h-14 rounded-2xl border-primary/10 font-bold bg-muted/20 px-6"
+                        className="h-12 md:h-14 rounded-xl md:rounded-2xl border-primary/10 font-bold bg-muted/20 px-6"
                         value={currentProduct.name || ''} 
                         onChange={(e) => setCurrentProduct({ ...currentProduct, name: e.target.value })} 
                       />
                     </div>
-                    <div className="space-y-2">
+                    <div className="space-y-1.5">
                       <Label className="font-black uppercase text-[10px] ml-1">Preço de Venda (R$)</Label>
                       <Input 
                         type="number"
                         placeholder="10,00"
-                        className="h-14 rounded-2xl border-primary/10 font-bold bg-muted/20 px-6"
+                        className="h-12 md:h-14 rounded-xl md:rounded-2xl border-primary/10 font-bold bg-muted/20 px-6"
                         value={currentProduct.price || ''} 
                         onChange={(e) => setCurrentProduct({ ...currentProduct, price: parseFloat(e.target.value) })} 
                       />
                     </div>
-                    <div className="space-y-2">
+                    <div className="space-y-1.5">
                       <Label className="font-black uppercase text-[10px] ml-1">Origem</Label>
                       <Select value={currentProduct.type} onValueChange={(v: any) => setCurrentProduct({ ...currentProduct, type: v })}>
-                        <SelectTrigger className="h-14 rounded-2xl border-primary/10 font-bold bg-muted/20 px-6">
+                        <SelectTrigger className="h-12 md:h-14 rounded-xl md:rounded-2xl border-primary/10 font-bold bg-muted/20 px-6 uppercase text-xs">
                           <SelectValue />
                         </SelectTrigger>
-                        <SelectContent className="rounded-2xl">
+                        <SelectContent className="rounded-2xl border-none shadow-2xl">
                           <SelectItem value="own" className="font-black uppercase text-xs">Próprio</SelectItem>
-                          <SelectItem value="supplier" className="font-black uppercase text-xs">Fornecedor / Barraca</SelectItem>
+                          <SelectItem value="supplier" className="font-black uppercase text-xs">Fornecedor</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
 
-                    <div className="space-y-2">
+                    <div className="space-y-1.5">
                       <Label className="font-black uppercase text-[10px] ml-1">Meta de Venda (Un)</Label>
                       <Input 
                         type="number"
                         placeholder="300"
-                        className="h-14 rounded-2xl border-primary/10 font-bold bg-muted/20 px-6"
+                        className="h-12 md:h-14 rounded-xl md:rounded-2xl border-primary/10 font-bold bg-muted/20 px-6"
                         value={currentProduct.plannedQuantity || ''} 
                         onChange={(e) => setCurrentProduct({ ...currentProduct, plannedQuantity: parseInt(e.target.value) })} 
                       />
@@ -507,11 +502,11 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
 
                     {currentProduct.type === 'supplier' && (
                       <>
-                        <div className="space-y-2">
+                        <div className="space-y-1.5">
                           <Label className="font-black uppercase text-[10px] ml-1">Vincular Barraca</Label>
                           <Select value={currentProduct.supplierId} onValueChange={(v) => setCurrentProduct({ ...currentProduct, supplierId: v })}>
-                            <SelectTrigger className="h-14 rounded-2xl border-primary/10 font-bold bg-muted/20 px-6">
-                              <SelectValue placeholder="Selecione a barraca" />
+                            <SelectTrigger className="h-12 md:h-14 rounded-xl md:rounded-2xl border-primary/10 font-bold bg-muted/20 px-6 uppercase text-xs">
+                              <SelectValue placeholder="Selecione" />
                             </SelectTrigger>
                             <SelectContent className="rounded-2xl">
                               {suppliers.map(s => (
@@ -520,12 +515,12 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
                             </SelectContent>
                           </Select>
                         </div>
-                        <div className="space-y-2">
+                        <div className="space-y-1.5">
                           <Label className="font-black uppercase text-[10px] ml-1">Custo Repasse (R$)</Label>
                           <Input 
                             type="number"
                             placeholder="7,00"
-                            className="h-14 rounded-2xl border-primary/10 font-bold bg-muted/20 px-6"
+                            className="h-12 md:h-14 rounded-xl md:rounded-2xl border-primary/10 font-bold bg-muted/20 px-6"
                             value={currentProduct.supplierUnitCost || ''} 
                             onChange={(e) => setCurrentProduct({ ...currentProduct, supplierUnitCost: parseFloat(e.target.value) })} 
                           />
@@ -534,31 +529,32 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
                     )}
                   </div>
                   <div className="flex justify-end gap-3 pt-4">
-                    <Button variant="ghost" onClick={() => setShowProductForm(false)} className="rounded-xl font-bold uppercase text-[10px]">Cancelar</Button>
-                    <Button onClick={handleSaveProduct} disabled={submitting} className="rounded-xl px-10 h-14 font-black uppercase text-[10px] shadow-xl shadow-primary/20">
-                      {submitting ? <Loader2 className="animate-spin h-4 w-4" /> : "Salvar Produto"}
+                    <Button variant="ghost" onClick={() => setShowProductForm(false)} className="rounded-xl font-bold uppercase text-[9px]">Cancelar</Button>
+                    <Button onClick={handleSaveProduct} disabled={submitting} className="rounded-xl px-8 h-12 md:h-14 font-black uppercase text-[9px] md:text-[10px] shadow-xl shadow-primary/20">
+                      {submitting ? <Loader2 className="animate-spin h-4 w-4" /> : "Salvar Item"}
                     </Button>
                   </div>
                 </CardContent>
               </Card>
             )}
 
-            <div className="rounded-[2.5rem] border border-primary/5 bg-card shadow-2xl overflow-hidden">
-              <Table>
+            <div className="rounded-[2rem] md:rounded-[2.5rem] border border-primary/5 bg-card shadow-2xl overflow-hidden">
+              <div className="overflow-x-auto">
+              <Table className="min-w-[700px]">
                 <TableHeader className="bg-muted/30">
                   <TableRow className="hover:bg-transparent border-primary/5">
                     <TableHead className="font-black uppercase text-[10px] py-6 pl-8">Produto</TableHead>
                     <TableHead className="font-black uppercase text-[10px]">Vendido</TableHead>
-                    <TableHead className="font-black uppercase text-[10px]">Faltou (Meta)</TableHead>
+                    <TableHead className="font-black uppercase text-[10px]">Meta (Restante)</TableHead>
                     <TableHead className="font-black uppercase text-[10px]">Arrecadado</TableHead>
-                    <TableHead className="text-right font-black uppercase text-[10px] pr-8">Ações</TableHead>
+                    <TableHead className="text-right font-black uppercase text-[10px] pr-8 w-[100px]">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {productsLoading ? (
                     <TableRow><TableCell colSpan={5} className="text-center py-20"><Loader2 className="animate-spin h-10 w-10 mx-auto text-primary opacity-20" /></TableCell></TableRow>
                   ) : products.length === 0 ? (
-                    <TableRow><TableCell colSpan={5} className="text-center py-20 text-muted-foreground font-black uppercase text-[10px] tracking-widest opacity-40">Nenhum produto cadastrado</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={5} className="text-center py-20 text-muted-foreground font-black uppercase text-[10px] tracking-widest opacity-40">Nenhum item cadastrado</TableCell></TableRow>
                   ) : (
                     products.map((p) => {
                       const missed = Math.max(0, (p.plannedQuantity || 0) - (p.soldQuantity || 0));
@@ -568,18 +564,18 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
                             {p.name}
                             <Badge variant="outline" className="ml-2 text-[7px] border-primary/20 uppercase px-1 h-3">{p.type === 'own' ? 'Prop' : 'Fornec'}</Badge>
                           </TableCell>
-                          <TableCell className="font-black text-xl tracking-tighter">{p.soldQuantity || 0} un</TableCell>
-                          <TableCell className={cn("font-bold text-xs", missed > 0 ? "text-secondary" : "text-green-600")}>
+                          <TableCell className="font-black text-lg md:text-xl tracking-tighter whitespace-nowrap">{p.soldQuantity || 0} un</TableCell>
+                          <TableCell className={cn("font-bold text-[10px] md:text-xs", missed > 0 ? "text-secondary" : "text-green-600")}>
                             {missed > 0 ? `${missed} pendentes` : 'Meta batida!'}
                           </TableCell>
-                          <TableCell className="font-black text-primary text-base">R$ {formatCurrency((p.soldQuantity || 0) * p.price)}</TableCell>
+                          <TableCell className="font-black text-primary text-sm md:text-base whitespace-nowrap">R$ {formatCurrency((p.soldQuantity || 0) * p.price)}</TableCell>
                           <TableCell className="text-right pr-8">
-                            <div className="flex justify-end gap-2">
-                              <Button variant="ghost" size="icon" onClick={() => { setCurrentProduct(p); setShowProductForm(true); }} className="h-10 w-10 rounded-xl text-primary/40 hover:text-primary hover:bg-primary/10">
+                            <div className="flex justify-end gap-1">
+                              <Button variant="ghost" size="icon" onClick={() => { setCurrentProduct(p); setShowProductForm(true); }} className="h-9 w-9 rounded-lg text-primary/40 hover:text-primary hover:bg-primary/10">
                                 <Edit3 className="h-4 w-4" />
                               </Button>
                               {event?.status !== 'finalizado' && (
-                                <Button variant="ghost" size="icon" onClick={() => deleteProduct(p.id)} className="h-10 w-10 rounded-xl text-destructive/40 hover:text-destructive hover:bg-destructive/10">
+                                <Button variant="ghost" size="icon" onClick={() => deleteProduct(p.id)} className="h-9 w-9 rounded-lg text-destructive/40 hover:text-destructive hover:bg-destructive/10">
                                   <Trash2 className="h-4 w-4" />
                                 </Button>
                               )}
@@ -591,22 +587,24 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
                   )}
                 </TableBody>
               </Table>
+              </div>
             </div>
           </TabsContent>
 
           <TabsContent value="team" className="space-y-6">
-            <div className="flex justify-between items-center">
-              <h3 className="text-xl font-black text-primary uppercase tracking-tight">Equipe Vinculada</h3>
+            <div className="flex justify-between items-center px-1">
+              <h3 className="text-lg md:text-xl font-black text-primary uppercase tracking-tight">Equipe</h3>
             </div>
 
-            <div className="rounded-[2.5rem] border border-primary/5 bg-card shadow-2xl overflow-hidden">
-              <Table>
+            <div className="rounded-[2rem] md:rounded-[2.5rem] border border-primary/5 bg-card shadow-2xl overflow-hidden">
+              <div className="overflow-x-auto">
+              <Table className="min-w-[700px]">
                 <TableHeader className="bg-muted/30">
                   <TableRow className="hover:bg-transparent border-primary/5">
                     <TableHead className="font-black uppercase text-[10px] py-6 pl-8">Operador</TableHead>
-                    <TableHead className="font-black uppercase text-[10px]">Acesso</TableHead>
-                    <TableHead className="font-black uppercase text-[10px]">Vínculo</TableHead>
-                    <TableHead className="text-right font-black uppercase text-[10px] pr-8">Ação</TableHead>
+                    <TableHead className="font-black uppercase text-[10px]">E-mail</TableHead>
+                    <TableHead className="font-black uppercase text-[10px]">Status</TableHead>
+                    <TableHead className="text-right font-black uppercase text-[10px] pr-8 w-[120px]">Ação</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -618,10 +616,10 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
                           {info.name || 'Operador'}
                           {info.role === 'owner' && <Badge variant="outline" className="ml-2 text-[8px] border-primary/20 text-primary">Dono</Badge>}
                         </TableCell>
-                        <TableCell className="font-bold text-muted-foreground text-xs">{info.email}</TableCell>
+                        <TableCell className="font-bold text-muted-foreground text-[10px]">{info.email}</TableCell>
                         <TableCell>
                           {isLinked ? (
-                            <Badge className="bg-green-500 font-black uppercase text-[8px] tracking-widest px-2">Ativo no Evento</Badge>
+                            <Badge className="bg-green-500 font-black uppercase text-[8px] tracking-widest px-2">Ativo</Badge>
                           ) : (
                             <Badge variant="outline" className="font-black uppercase text-[8px] tracking-widest px-2 opacity-40">Sem acesso</Badge>
                           )}
@@ -632,9 +630,9 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
                               variant={isLinked ? "ghost" : "default"} 
                               size="sm" 
                               onClick={() => toggleMemberInEvent(uid, info)}
-                              className={cn("font-black uppercase text-[9px] rounded-lg h-10 px-4", isLinked ? "text-destructive hover:bg-destructive/5" : "shadow-lg shadow-primary/10")}
+                              className={cn("font-black uppercase text-[9px] rounded-lg h-10 px-4 whitespace-nowrap", isLinked ? "text-destructive hover:bg-destructive/5" : "shadow-lg shadow-primary/10")}
                             >
-                              {isLinked ? <><UserMinus className="mr-1.5 h-3 w-3" /> Remover</> : <><UserPlus className="mr-1.5 h-3 w-3" /> Vincular</>}
+                              {isLinked ? "Remover" : "Vincular"}
                             </Button>
                           )}
                         </TableCell>
@@ -643,6 +641,7 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
                   })}
                 </TableBody>
               </Table>
+              </div>
             </div>
           </TabsContent>
         </Tabs>
@@ -654,13 +653,13 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
 function SummaryCard({ title, value, icon, color = "text-primary", description }: { title: string, value: string, icon: React.ReactNode, color?: string, description?: string }) {
   return (
     <Card className="border-none shadow-xl rounded-3xl bg-card overflow-hidden group">
-      <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{title}</CardTitle>
+      <CardHeader className="flex flex-row items-center justify-between pb-2 p-5 md:p-6">
+        <CardTitle className="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-muted-foreground">{title}</CardTitle>
         <div className={cn("p-2 rounded-lg bg-muted", color)}>{icon}</div>
       </CardHeader>
-      <CardContent>
-        <div className={cn("text-2xl font-black tracking-tighter", color)}>{value}</div>
-        {description && <p className="text-[9px] font-bold text-muted-foreground mt-1 uppercase">{description}</p>}
+      <CardContent className="px-5 md:px-6 pb-5 md:pb-6">
+        <div className={cn("text-xl md:text-2xl font-black tracking-tighter", color)}>{value}</div>
+        {description && <p className="text-[9px] font-bold text-muted-foreground mt-1 uppercase tracking-widest leading-none">{description}</p>}
       </CardContent>
     </Card>
   );

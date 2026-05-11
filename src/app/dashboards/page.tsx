@@ -4,11 +4,11 @@
 import { AppShell } from '@/components/layout/AppShell';
 import { useAuth } from '@/hooks/use-auth-context';
 import { useEffect, useState, Suspense, useMemo } from 'react';
-import { collection, query, where, orderBy, getDocs, doc } from 'firebase/firestore';
-import { useFirestore, useCollection, useDoc, useMemoFirebase } from '@/firebase';
+import { collection, query, where, orderBy, getDocs } from 'firebase/firestore';
+import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend } from 'recharts';
-import { DollarSign, ShoppingBag, TrendingUp, Calendar as CalendarIcon, Loader2, User as UserIcon, Calendar, Store, Target, ArrowLeftRight } from 'lucide-react';
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend, Tooltip } from 'recharts';
+import { DollarSign, ShoppingBag, TrendingUp, Calendar as CalendarIcon, Loader2, User as UserIcon, Store, Target, ArrowLeftRight } from 'lucide-react';
 import { startOfDay, endOfDay, format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
@@ -18,8 +18,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { cn } from "@/lib/utils";
 import { useRouter, useSearchParams } from 'next/navigation';
-
-const COLORS = ['#f97316', '#ef4444', '#eab308', '#22c55e', '#06b6d4', '#8b5cf6'];
 
 const formatCurrency = (value: number) => {
   return value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -63,8 +61,6 @@ function DashboardsContent() {
     }
     loadEvents();
   }, [tenantId, db]);
-
-  const activeEvent = useMemo(() => events.find(e => e.id === activeEventId), [events, activeEventId]);
 
   const cashierList = Object.entries(tenantMembers || {}).map(([uid, info]: [string, any]) => ({
     id: uid,
@@ -159,17 +155,17 @@ function DashboardsContent() {
 
   return (
     <AppShell>
-      <div className="flex flex-col gap-8 mb-10 max-w-7xl mx-auto">
+      <div className="flex flex-col gap-6 md:gap-8 mb-10 max-w-7xl mx-auto px-1">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
           <div className="space-y-1">
-            <h2 className="text-4xl font-black text-primary uppercase tracking-tighter italic leading-none">Dashboards</h2>
-            <p className="text-muted-foreground font-medium italic">Análise de lucro real e performance.</p>
+            <h2 className="text-3xl md:text-4xl font-black text-primary uppercase tracking-tighter italic leading-none">Dashboards</h2>
+            <p className="text-xs md:text-base text-muted-foreground font-medium italic">Análise de lucro real e performance.</p>
           </div>
           
           <div className="w-full md:w-auto">
             <span className="text-[9px] font-black uppercase text-primary tracking-widest ml-1 mb-2 block">Evento Analisado:</span>
             <Select value={activeEventId || 'none'} onValueChange={handleSwitchEventRequest}>
-              <SelectTrigger className="h-14 rounded-2xl border-2 border-primary font-bold bg-white text-primary px-6 min-w-[280px] shadow-xl uppercase text-xs">
+              <SelectTrigger className="h-14 rounded-2xl border-2 border-primary font-bold bg-white text-primary px-6 w-full md:min-w-[280px] shadow-xl uppercase text-xs">
                 <SelectValue placeholder="Selecione o Evento" />
               </SelectTrigger>
               <SelectContent className="rounded-2xl border-none shadow-2xl">
@@ -181,13 +177,13 @@ function DashboardsContent() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 bg-card p-6 rounded-[2rem] border-2 border-primary/10 shadow-2xl">
-          <div className="flex-1 space-y-3">
-            <span className="text-[11px] font-black uppercase text-primary tracking-[0.2em] ml-1 flex items-center gap-2">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 bg-card p-4 md:p-6 rounded-[2rem] border-2 border-primary/10 shadow-2xl">
+          <div className="flex-1 space-y-2">
+            <span className="text-[10px] font-black uppercase text-primary tracking-[0.2em] ml-1 flex items-center gap-2">
               <UserIcon className="h-4 w-4" /> Operador
             </span>
             <Select value={selectedCashier} onValueChange={setSelectedCashier}>
-              <SelectTrigger className="h-14 rounded-2xl border-2 border-primary font-bold bg-white px-6 text-primary">
+              <SelectTrigger className="h-12 md:h-14 rounded-2xl border-2 border-primary font-bold bg-white px-6 text-primary uppercase text-xs">
                 <SelectValue placeholder="Todos os caixas" />
               </SelectTrigger>
               <SelectContent className="rounded-2xl border-none shadow-2xl">
@@ -201,16 +197,16 @@ function DashboardsContent() {
             </Select>
           </div>
 
-          <div className="flex-1 space-y-3">
-            <span className="text-[11px] font-black uppercase text-primary tracking-[0.2em] ml-1 flex items-center gap-2">
-              <CalendarIcon className="h-4 w-4" /> Data da Análise
+          <div className="flex-1 space-y-2">
+            <span className="text-[10px] font-black uppercase text-primary tracking-[0.2em] ml-1 flex items-center gap-2">
+              <CalendarIcon className="h-4 w-4" /> Data
             </span>
             <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
               <PopoverTrigger asChild>
                 <Button
                   variant={"outline"}
                   className={cn(
-                    "w-full justify-start text-left font-bold h-14 rounded-2xl border-2 border-primary bg-white px-6 text-primary flex",
+                    "w-full justify-start text-left font-bold h-12 md:h-14 rounded-2xl border-2 border-primary bg-white px-6 text-primary flex uppercase text-xs",
                     !date && "text-muted-foreground"
                   )}
                 >
@@ -231,36 +227,36 @@ function DashboardsContent() {
           </div>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 md:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
           <StatCard title="Receita Bruta" value={`R$ ${formatCurrency(stats.totalRevenue)}`} icon={<DollarSign className="h-6 w-6" />} loading={ordersLoading} />
           <StatCard title="Lucro Org." value={`R$ ${formatCurrency(stats.totalProfit)}`} icon={<TrendingUp className="h-6 w-6" />} color="text-green-600" loading={ordersLoading} />
           <StatCard title="Mais Vendido" value={stats.bestSeller} icon={<ShoppingBag className="h-6 w-6" />} loading={ordersLoading} />
           <StatCard title="Maior Lucro" value={stats.bestSellerProfit} icon={<Target className="h-6 w-6" />} loading={ordersLoading} />
         </div>
 
-        <div className="grid gap-8 lg:grid-cols-12">
+        <div className="grid gap-6 md:gap-8 lg:grid-cols-12">
           <Card className="lg:col-span-7 shadow-2xl border-none rounded-[2.5rem] overflow-hidden bg-card">
-            <CardHeader className="p-8 pb-2">
-              <CardTitle className="text-[11px] font-black uppercase text-primary tracking-widest flex items-center gap-2">
-                <TrendingUp className="h-4 w-4" /> Performance de Vendas (Vendido vs Alvo)
+            <CardHeader className="p-6 md:p-8 pb-2">
+              <CardTitle className="text-[10px] font-black uppercase text-primary tracking-widest flex items-center gap-2">
+                <TrendingUp className="h-4 w-4" /> Vendas vs Alvo
               </CardTitle>
             </CardHeader>
-            <CardContent className="h-[400px] p-8">
+            <CardContent className="h-[300px] md:h-[400px] p-4 md:p-8">
               {ordersLoading ? (
                 <div className="flex items-center justify-center h-full"><Loader2 className="animate-spin text-primary h-12 w-12 opacity-20" /></div>
               ) : stats.performanceData.length === 0 ? (
-                <div className="flex items-center justify-center h-full text-muted-foreground text-xs font-black uppercase tracking-widest opacity-20">Sem dados de cardápio planejado</div>
+                <div className="flex items-center justify-center h-full text-muted-foreground text-[10px] font-black uppercase tracking-widest opacity-20 text-center">Sem dados de cardápio planejado</div>
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={stats.performanceData}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--muted))" />
-                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 'bold' }} />
-                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 'bold' }} />
+                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 9, fontWeight: 'bold' }} />
+                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 9, fontWeight: 'bold' }} />
                     <Tooltip 
                       cursor={{ fill: 'hsl(var(--primary)/0.05)' }}
                       contentStyle={{ borderRadius: '20px', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)' }}
                     />
-                    <Legend iconType="circle" />
+                    <Legend iconType="circle" wrapperStyle={{ fontSize: 10, fontWeight: 'bold', textTransform: 'uppercase' }} />
                     <Bar dataKey="Vendido" fill="#f97316" radius={[4, 4, 0, 0]} />
                     <Bar dataKey="Planejado" fill="#e2e8f0" radius={[4, 4, 0, 0]} />
                   </BarChart>
@@ -270,28 +266,28 @@ function DashboardsContent() {
           </Card>
 
           <Card className="lg:col-span-5 shadow-2xl border-none rounded-[2.5rem] overflow-hidden bg-card">
-            <CardHeader className="p-8 pb-2">
-              <CardTitle className="text-[11px] font-black uppercase text-muted-foreground tracking-widest flex items-center gap-2">
-                 <Store className="h-4 w-4" /> Lucro Líquido por Produto
+            <CardHeader className="p-6 md:p-8 pb-2">
+              <CardTitle className="text-[10px] font-black uppercase text-muted-foreground tracking-widest flex items-center gap-2">
+                 <Store className="h-4 w-4" /> Lucro por Produto
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
               <div className="overflow-x-auto">
-                <table className="w-full text-left text-sm">
+                <table className="w-full text-left text-sm min-w-[300px]">
                   <thead>
                     <tr className="border-b border-primary/5 bg-muted/10">
-                      <th className="py-6 pl-8 font-black uppercase text-[10px] tracking-widest text-muted-foreground">Produto (Qtd)</th>
-                      <th className="py-6 pr-8 font-black uppercase text-[10px] tracking-widest text-muted-foreground text-right">Lucro Org.</th>
+                      <th className="py-4 md:py-6 pl-6 md:pl-8 font-black uppercase text-[10px] tracking-widest text-muted-foreground">Item</th>
+                      <th className="py-4 md:py-6 pr-6 md:pr-8 font-black uppercase text-[10px] tracking-widest text-muted-foreground text-right">Lucro</th>
                     </tr>
                   </thead>
                   <tbody>
                     {stats.productSales.map((s, idx) => (
                       <tr key={idx} className="border-b border-primary/5 last:border-0 hover:bg-primary/5 transition-colors group">
-                        <td className="py-6 pl-8 font-black uppercase text-xs group-hover:text-primary transition-colors">
+                        <td className="py-4 md:py-6 pl-6 md:pl-8 font-black uppercase text-[11px] group-hover:text-primary transition-colors leading-tight">
                           {s.name}
-                          <span className="ml-2 text-[9px] text-muted-foreground">({s.quantity} un)</span>
+                          <span className="block text-[9px] text-muted-foreground font-bold mt-0.5">{s.quantity} UNIDADES</span>
                         </td>
-                        <td className="py-6 pr-8 text-right font-black text-green-600 text-base">R$ {formatCurrency(s.profit)}</td>
+                        <td className="py-4 md:py-6 pr-6 md:pr-8 text-right font-black text-green-600 text-sm md:text-base whitespace-nowrap">R$ {formatCurrency(s.profit)}</td>
                       </tr>
                     ))}
                     {stats.productSales.length === 0 && (
@@ -307,13 +303,13 @@ function DashboardsContent() {
 
       {/* Pop-up de Confirmação de Troca de Evento */}
       <Dialog open={showSwitchDialog} onOpenChange={setShowSwitchDialog}>
-        <DialogContent className="rounded-[2.5rem] border-none p-0 overflow-hidden sm:max-w-md w-[95vw] !top-[50%] !translate-y-[-50%]">
+        <DialogContent className="rounded-[2.5rem] border-none p-0 overflow-hidden sm:max-w-md w-[92vw] !top-[50%] !translate-y-[-50%]">
           <DialogHeader className="bg-primary p-6 text-white text-center">
             <DialogTitle className="text-2xl font-black uppercase italic tracking-tighter">Mudar Análise?</DialogTitle>
           </DialogHeader>
           <div className="p-8 text-center space-y-6">
             <div className="bg-primary/5 p-6 rounded-2xl border-2 border-primary/10">
-              <p className="text-sm font-bold text-muted-foreground leading-relaxed uppercase">
+              <p className="text-[10px] font-black text-muted-foreground leading-relaxed uppercase tracking-widest">
                 Você quer visualizar o dashboard do evento:
               </p>
               <div className="text-xl font-black text-primary mt-2 uppercase tracking-tight">
@@ -322,8 +318,8 @@ function DashboardsContent() {
             </div>
           </div>
           <DialogFooter className="p-8 pt-0 grid grid-cols-2 gap-4">
-            <Button variant="ghost" onClick={() => setShowSwitchDialog(false)} className="h-14 font-black uppercase text-xs rounded-xl">Cancelar</Button>
-            <Button onClick={confirmSwitchEvent} className="h-14 font-black uppercase text-xs rounded-xl shadow-lg">Confirmar Troca</Button>
+            <Button variant="ghost" onClick={() => setShowSwitchDialog(false)} className="h-14 font-black uppercase text-[10px] tracking-widest rounded-xl">Cancelar</Button>
+            <Button onClick={confirmSwitchEvent} className="h-14 font-black uppercase text-[10px] tracking-widest rounded-xl shadow-lg">Confirmar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -341,16 +337,16 @@ export default function DashboardsPage() {
 
 function StatCard({ title, value, icon, loading, color = "text-primary" }: { title: string, value: string, icon: React.ReactNode, loading?: boolean, color?: string }) {
   return (
-    <Card className="shadow-xl border-none hover:-translate-y-2 transition-all duration-500 rounded-[2rem] group overflow-hidden bg-card">
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 p-8 pb-2">
-        <CardTitle className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em] group-hover:text-primary transition-colors">{title}</CardTitle>
-        <div className="text-primary bg-primary/10 p-4 rounded-2xl group-hover:scale-110 group-hover:rotate-6 transition-all duration-500">{icon}</div>
+    <Card className="shadow-xl border-none hover:-translate-y-1 transition-all duration-300 rounded-[2rem] group overflow-hidden bg-card">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 p-6 md:p-8 pb-2">
+        <CardTitle className="text-[9px] md:text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em] group-hover:text-primary transition-colors">{title}</CardTitle>
+        <div className="text-primary bg-primary/10 p-3 md:p-4 rounded-xl group-hover:scale-110 group-hover:rotate-6 transition-all duration-500">{icon}</div>
       </CardHeader>
-      <CardContent className="p-8 pt-4">
+      <CardContent className="p-6 md:p-8 pt-4">
         {loading ? (
-          <div className="h-10 w-32 bg-muted/50 animate-pulse rounded-xl" />
+          <div className="h-8 md:h-10 w-32 bg-muted/50 animate-pulse rounded-xl" />
         ) : (
-          <div className={cn("text-2xl font-black tracking-tighter group-hover:scale-[1.05] transition-transform origin-left truncate", color)}>{value}</div>
+          <div className={cn("text-xl md:text-2xl font-black tracking-tighter group-hover:scale-[1.02] transition-transform origin-left truncate", color)}>{value}</div>
         )}
       </CardContent>
     </Card>

@@ -31,11 +31,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     
     return [
       { name: 'Início', href: '/', icon: LayoutDashboard, visible: isAdmin && !isSuperAdmin },
-      { name: 'Controle Global', href: '/super-admin', icon: Settings2, visible: isSuperAdmin },
-      { name: 'Meus Eventos', href: '/events', icon: Calendar, visible: !isSuperAdmin },
-      { name: 'Dashboards', href: `/dashboards${eventQuery}`, icon: BarChart3, visible: isAdmin && !isSuperAdmin && !!selectedEventId },
-      { name: 'Fazer Pedidos', href: `/pdv${eventQuery}`, icon: ShoppingCart, visible: !isSuperAdmin && !!selectedEventId },
-      { name: 'Histórico', href: `/orders${eventQuery}`, icon: ListOrdered, visible: !isSuperAdmin && !!selectedEventId },
+      { name: 'Global', href: '/super-admin', icon: Settings2, visible: isSuperAdmin },
+      { name: 'Eventos', href: '/events', icon: Calendar, visible: !isSuperAdmin },
+      { name: 'Dashboard', href: `/dashboards${eventQuery}`, icon: BarChart3, visible: isAdmin && !isSuperAdmin && !!selectedEventId },
+      { name: 'PDV', href: `/pdv${eventQuery}`, icon: ShoppingCart, visible: !isSuperAdmin && !!selectedEventId },
+      { name: 'Ordens', href: `/orders${eventQuery}`, icon: ListOrdered, visible: !isSuperAdmin && !!selectedEventId },
       { name: 'Equipe', href: '/team', icon: Users, visible: isAdmin && !isSuperAdmin },
     ].filter(item => item.visible);
   }, [isAdmin, isSuperAdmin, selectedEventId]);
@@ -47,8 +47,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   if (loading && !user) return (
     <div className="h-screen w-screen flex items-center justify-center bg-background">
       <div className="flex flex-col items-center gap-4">
-        <OrderTicketIcon className="h-12 w-12 animate-bounce text-primary" />
-        <span className="font-black uppercase text-[10px] tracking-[0.3em] text-primary/40 italic">Iniciando Flow...</span>
+        <OrderTicketIcon className="h-10 w-10 md:h-12 md:w-12 animate-bounce text-primary" />
+        <span className="font-black uppercase text-[9px] md:text-[10px] tracking-[0.3em] text-primary/40 italic">Flow Events...</span>
       </div>
     </div>
   );
@@ -56,15 +56,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <SidebarProvider>
       <Sidebar className="border-r bg-card shadow-xl">
-        <SidebarHeader className="p-6 flex flex-row items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary text-white shadow-lg shrink-0">
-            <OrderTicketIcon className="h-7 w-7" />
+        <SidebarHeader className="p-5 md:p-6 flex flex-row items-center gap-3">
+          <div className="flex h-10 w-10 md:h-12 md:w-12 items-center justify-center rounded-2xl bg-primary text-white shadow-lg shrink-0">
+            <OrderTicketIcon className="h-6 w-6 md:h-7 md:w-7" />
           </div>
           <div className="flex flex-col overflow-hidden">
-            <span className="font-black text-lg leading-none text-primary uppercase tracking-tighter truncate">
+            <span className="font-black text-base md:text-lg leading-none text-primary uppercase tracking-tighter truncate">
               {organizationName || 'Flow Events'}
             </span>
-            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Painel Operacional</span>
+            <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Painel Operacional</span>
           </div>
         </SidebarHeader>
         <SidebarContent className="px-3 pt-2">
@@ -73,7 +73,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               const active = idx === activeIndex;
               return (
                 <SidebarMenuItem key={item.href}>
-                  <SidebarMenuButton asChild isActive={active} onClick={() => pathname !== item.href && setIsNavigating(true)} className={cn("h-12 rounded-2xl transition-all duration-150 mb-1 font-black uppercase text-[10px] tracking-widest px-4", active ? "!bg-primary !text-white shadow-lg" : "text-primary/60 hover:bg-primary/5")}>
+                  <SidebarMenuButton asChild isActive={active} onClick={() => pathname !== item.href && setIsNavigating(true)} className={cn("h-11 md:h-12 rounded-2xl transition-all duration-150 mb-1 font-black uppercase text-[10px] tracking-widest px-4", active ? "!bg-primary !text-white shadow-lg" : "text-primary/60 hover:bg-primary/5")}>
                     <Link href={item.href} className="flex items-center gap-3 w-full">
                       <item.icon className={cn("h-5 w-5", active ? "text-white" : "text-primary")} />
                       <span className="truncate">{item.name}</span>
@@ -87,40 +87,40 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <SidebarFooter className="p-4">
           <SidebarMenu>
             <SidebarMenuItem>
-              <div className="px-4 py-2 mb-3 bg-muted rounded-xl text-[9px] font-black uppercase text-muted-foreground border border-primary/5">
+              <div className="px-4 py-2 mb-3 bg-muted rounded-xl text-[8px] font-black uppercase text-muted-foreground border border-primary/5">
                 <span className={cn("flex items-center gap-2", (isAdmin || isSuperAdmin) ? "text-primary" : "text-secondary")}>
-                  <ShieldCheck className="h-3.5 w-3.5" />
-                  {isSuperAdmin ? 'Super Admin' : (isAdmin ? 'Administrador' : 'Caixa')}
+                  <ShieldCheck className="h-3 w-3" />
+                  {isSuperAdmin ? 'Super Admin' : (isAdmin ? 'Admin' : 'Caixa')}
                 </span>
               </div>
-              <SidebarMenuButton onClick={signOut} className="h-11 rounded-xl text-muted-foreground hover:text-destructive hover:bg-destructive/5 font-black uppercase text-[10px]">
-                <LogOut className="h-4 w-4" /> <span>Sair do Flow Events</span>
+              <SidebarMenuButton onClick={signOut} className="h-10 rounded-xl text-muted-foreground hover:text-destructive hover:bg-destructive/5 font-black uppercase text-[10px]">
+                <LogOut className="h-4 w-4" /> <span>Sair</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
         </SidebarFooter>
       </Sidebar>
-      <SidebarInset className="bg-background relative">
+      <SidebarInset className="bg-background relative min-w-0">
         <header className="flex h-16 items-center justify-between border-b bg-card/50 backdrop-blur-sm px-4 md:px-6 no-print shadow-sm sticky top-0 z-40">
-          <div className="flex items-center gap-4">
-            <SidebarTrigger className="text-primary hover:bg-primary/10 rounded-xl md:hidden" />
-            <h1 className="text-base md:text-lg font-black text-primary uppercase tracking-tighter truncate">
-              {navItems[activeIndex]?.name || 'Hub de Eventos'}
+          <div className="flex items-center gap-3 md:gap-4 overflow-hidden">
+            <SidebarTrigger className="text-primary hover:bg-primary/10 rounded-xl md:hidden shrink-0" />
+            <h1 className="text-sm md:text-lg font-black text-primary uppercase tracking-tighter truncate max-w-[150px] md:max-w-none">
+              {navItems[activeIndex]?.name || 'Flow Events'}
             </h1>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             {!isOnline ? (
-              <Badge variant="destructive" className="font-black uppercase text-[9px] tracking-widest flex items-center gap-1.5 px-3 py-1 animate-pulse border-none">
-                <WifiOff className="h-3 w-3" /> Modo Offline
+              <Badge variant="destructive" className="font-black uppercase text-[8px] md:text-[9px] tracking-widest flex items-center gap-1.5 px-2 md:px-3 py-1 animate-pulse border-none">
+                <WifiOff className="h-3 w-3" /> <span className="hidden xs:inline">Offline</span>
               </Badge>
             ) : (
-              <Badge variant="outline" className="font-black uppercase text-[9px] tracking-widest flex items-center gap-1.5 px-3 py-1 border-primary/20 text-primary/40 bg-white/50">
-                <Wifi className="h-3 w-3" /> Online
+              <Badge variant="outline" className="font-black uppercase text-[8px] md:text-[9px] tracking-widest flex items-center gap-1.5 px-2 md:px-3 py-1 border-primary/20 text-primary/40 bg-white/50">
+                <Wifi className="h-3 w-3" /> <span className="hidden xs:inline">Online</span>
               </Badge>
             )}
           </div>
         </header>
-        <main className={cn("flex-1 p-4 md:p-10 transition-all duration-150", isNavigating ? "opacity-50 grayscale" : "opacity-100")}>
+        <main className={cn("flex-1 p-4 md:p-10 transition-all duration-150 min-w-0", isNavigating ? "opacity-50 grayscale" : "opacity-100")}>
           {children}
         </main>
       </SidebarInset>
