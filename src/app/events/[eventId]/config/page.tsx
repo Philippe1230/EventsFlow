@@ -14,7 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Loader2, Edit3, Trash2, Store, Package, Users, ChevronLeft, UserPlus, ShieldCheck, Flag, TrendingUp, Target, Calculator, AlertTriangle, Info, ArrowUpRight, BarChart3 } from 'lucide-react';
+import { Plus, Loader2, Edit3, Trash2, Store, Package, Users, ChevronLeft, UserPlus, ShieldCheck, Flag, TrendingUp, Target, Calculator, AlertTriangle, Info, ArrowUpRight, BarChart3, TrendingDown } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
@@ -76,6 +76,8 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
     let plannedCost = 0;
     let actualRevenue = 0;
     let actualCost = 0;
+    let totalPlannedQty = 0;
+    let totalActualQty = 0;
 
     products.forEach(p => {
       const pPlanned = p.plannedQuantity || 0;
@@ -83,6 +85,8 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
       
       plannedRevenue += pPlanned * p.price;
       actualRevenue += pSold * p.price;
+      totalPlannedQty += pPlanned;
+      totalActualQty += pSold;
 
       if (p.type === 'supplier') {
         plannedCost += pPlanned * (p.supplierUnitCost || 0);
@@ -100,7 +104,7 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
       actualRevenue,
       actualCost,
       actualProfit,
-      efficiency: plannedProfit > 0 ? (actualProfit / plannedProfit) * 100 : 0
+      efficiency: totalPlannedQty > 0 ? (totalActualQty / totalPlannedQty) * 100 : 0
     };
   }, [products]);
 
@@ -320,7 +324,7 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
                    <SummaryCard title="Arrecadação Realizada" value={`R$ ${formatCurrency(projections.actualRevenue)}`} icon={<ArrowUpRight className="h-5 w-5" />} description="Vendas Efetuadas" />
                    <SummaryCard title={projections.actualProfit < 0 ? "Prejuízo Atual" : "Lucro Org. Real"} value={`R$ ${formatCurrency(projections.actualProfit)}`} icon={<ShieldCheck className="h-5 w-5" />} color={projections.actualProfit < 0 ? "text-destructive" : "text-primary"} description={projections.actualProfit < 0 ? "Atenção: Saldo Negativo" : "Ganho Líquido Atual"} />
-                   <SummaryCard title="Atingimento da Meta" value={`${projections.efficiency.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`} icon={<BarChart3 className="h-5 w-5" />} color="text-secondary" description="Progresso do Lucro" />
+                   <SummaryCard title="Atingimento da Meta" value={`${projections.efficiency.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`} icon={<BarChart3 className="h-5 w-5" />} color="text-secondary" description="Progresso de Vendas" />
                 </div>
              </div>
 
@@ -340,6 +344,7 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
                       <TableHeader className="bg-muted/50">
                         <TableRow className="hover:bg-transparent border-primary/5">
                           <TableHead className="font-black uppercase text-[10px] py-6 pl-8">Produto</TableHead>
+                          <TableHead className="font-black uppercase text-[10px]">Lucro/Unid</TableHead>
                           <TableHead className="font-black uppercase text-[10px]">Meta de Lucro</TableHead>
                           <TableHead className="font-black uppercase text-[10px]">Lucro Real</TableHead>
                           <TableHead className="font-black uppercase text-[10px]">Status</TableHead>
@@ -362,12 +367,18 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
                                   {hasLoss && <AlertTriangle className="h-4 w-4 text-destructive animate-pulse" />}
                                 </div>
                               </TableCell>
+                              <TableCell className={cn("font-black text-xs", hasLoss ? "text-destructive" : "text-green-600")}>
+                                <div className="flex flex-col">
+                                   <span>R$ {formatCurrency(profitPerUnit)}</span>
+                                   {hasLoss && <span className="text-[8px] uppercase">Perda por venda</span>}
+                                </div>
+                              </TableCell>
                               <TableCell className={cn("font-bold text-xs", totalPlannedProfit < 0 && "text-destructive")}>
                                 R$ {formatCurrency(totalPlannedProfit)}
                               </TableCell>
                               <TableCell className={cn("font-black text-xs", totalActualProfit < 0 ? "text-destructive" : "text-green-600")}>
                                 R$ {formatCurrency(totalActualProfit)}
-                                {totalActualProfit < 0 && <span className="block text-[8px] font-black uppercase">PREJUÍZO</span>}
+                                {totalActualProfit < 0 && <span className="block text-[8px] font-black uppercase leading-none">PREJUÍZO</span>}
                               </TableCell>
                               <TableCell>
                                 {progress >= 100 ? (
@@ -582,7 +593,7 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
                             type="number"
                             placeholder="7,00"
                             className={cn(
-                              "h-12 md:h-14 rounded-xl md:rounded-2xl border-primary/10 font-bold px-6",
+                              "h-12 md:h-14 rounded-xl md:rounded-2xl border-primary/10 font-bold px-6 transition-colors",
                               currentProduct.supplierUnitCost && currentProduct.price && currentProduct.supplierUnitCost > currentProduct.price 
                                 ? "bg-destructive/10 border-destructive text-destructive" 
                                 : "bg-muted/20"
@@ -591,7 +602,7 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
                             onChange={(e) => setCurrentProduct({ ...currentProduct, supplierUnitCost: parseFloat(e.target.value) })} 
                           />
                           {currentProduct.supplierUnitCost && currentProduct.price && currentProduct.supplierUnitCost > currentProduct.price && (
-                            <p className="text-[10px] text-destructive font-black uppercase flex items-center gap-1 mt-1">
+                            <p className="text-[10px] text-destructive font-black uppercase flex items-center gap-1 mt-1 animate-pulse">
                               <AlertTriangle className="h-3 w-3" /> Prejuízo Detectado
                             </p>
                           )}
@@ -599,6 +610,30 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
                       </>
                     )}
                   </div>
+                  
+                  {/* Prévia de Lucro Unitário */}
+                  {currentProduct.price !== undefined && (
+                    <div className="bg-primary/5 p-4 rounded-xl border border-primary/10 mt-4 flex justify-between items-center">
+                      <div className="space-y-0.5">
+                        <span className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Resultado por Venda</span>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className="text-[9px] uppercase border-primary/20">
+                            {currentProduct.type === 'own' ? '100% Lucro' : 'Comissionado'}
+                          </Badge>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <span className={cn(
+                          "text-xl font-black tracking-tighter",
+                          (currentProduct.price - (currentProduct.type === 'supplier' ? (currentProduct.supplierUnitCost || 0) : 0)) < 0 ? "text-destructive" : "text-green-600"
+                        )}>
+                          R$ {formatCurrency(currentProduct.price - (currentProduct.type === 'supplier' ? (currentProduct.supplierUnitCost || 0) : 0))}
+                        </span>
+                        <span className="block text-[9px] font-bold text-muted-foreground uppercase">Saldo Líquido</span>
+                      </div>
+                    </div>
+                  )}
+
                   <div className="flex justify-end gap-3 pt-4">
                     <Button variant="ghost" onClick={() => setShowProductForm(false)} className="rounded-xl font-bold uppercase text-[9px]">Cancelar</Button>
                     <Button onClick={handleSaveProduct} disabled={submitting} className="rounded-xl px-8 h-12 md:h-14 font-black uppercase text-[9px] md:text-[10px] shadow-xl shadow-primary/20">
