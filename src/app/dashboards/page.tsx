@@ -8,7 +8,7 @@ import { collection, query, where, orderBy, getDocs } from 'firebase/firestore';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend, Tooltip } from 'recharts';
-import { DollarSign, ShoppingBag, TrendingUp, Calendar as CalendarIcon, Loader2, User as UserIcon, Store, Target, ArrowLeftRight } from 'lucide-react';
+import { DollarSign, ShoppingBag, TrendingUp, Calendar as CalendarIcon, Loader2, User as UserIcon, Store, Target, ArrowLeftRight, AlertCircle } from 'lucide-react';
 import { startOfDay, endOfDay, format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
@@ -229,7 +229,7 @@ function DashboardsContent() {
 
         <div className="grid gap-4 md:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
           <StatCard title="Receita Bruta" value={`R$ ${formatCurrency(stats.totalRevenue)}`} icon={<DollarSign className="h-6 w-6" />} loading={ordersLoading} />
-          <StatCard title="Lucro Org." value={`R$ ${formatCurrency(stats.totalProfit)}`} icon={<TrendingUp className="h-6 w-6" />} color="text-green-600" loading={ordersLoading} />
+          <StatCard title={stats.totalProfit < 0 ? "Prejuízo Org." : "Lucro Org."} value={`R$ ${formatCurrency(stats.totalProfit)}`} icon={<TrendingUp className="h-6 w-6" />} color={stats.totalProfit < 0 ? "text-destructive" : "text-green-600"} loading={ordersLoading} />
           <StatCard title="Mais Vendido" value={stats.bestSeller} icon={<ShoppingBag className="h-6 w-6" />} loading={ordersLoading} />
           <StatCard title="Maior Lucro" value={stats.bestSellerProfit} icon={<Target className="h-6 w-6" />} loading={ordersLoading} />
         </div>
@@ -282,12 +282,18 @@ function DashboardsContent() {
                   </thead>
                   <tbody>
                     {stats.productSales.map((s, idx) => (
-                      <tr key={idx} className="border-b border-primary/5 last:border-0 hover:bg-primary/5 transition-colors group">
+                      <tr key={idx} className={cn("border-b border-primary/5 last:border-0 hover:bg-primary/5 transition-colors group", s.profit < 0 && "bg-destructive/5")}>
                         <td className="py-4 md:py-6 pl-6 md:pl-8 font-black uppercase text-[11px] group-hover:text-primary transition-colors leading-tight">
-                          {s.name}
-                          <span className="block text-[9px] text-muted-foreground font-bold mt-0.5">{s.quantity} UNIDADES</span>
+                          <div className="flex items-center gap-2">
+                            {s.name}
+                            {s.profit < 0 && <AlertCircle className="h-3 w-3 text-destructive" />}
+                          </div>
+                          <span className="block text-[9px] text-muted-foreground font-bold mt-0.5 uppercase">{s.quantity} UNIDADES</span>
                         </td>
-                        <td className="py-4 md:py-6 pr-6 md:pr-8 text-right font-black text-green-600 text-sm md:text-base whitespace-nowrap">R$ {formatCurrency(s.profit)}</td>
+                        <td className={cn("py-4 md:py-6 pr-6 md:pr-8 text-right font-black text-sm md:text-base whitespace-nowrap", s.profit < 0 ? "text-destructive" : "text-green-600")}>
+                          R$ {formatCurrency(s.profit)}
+                          {s.profit < 0 && <span className="block text-[8px] font-black uppercase leading-none">Prejuízo</span>}
+                        </td>
                       </tr>
                     ))}
                     {stats.productSales.length === 0 && (

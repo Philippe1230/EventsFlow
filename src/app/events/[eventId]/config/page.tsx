@@ -14,7 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Loader2, Edit3, Trash2, Store, Package, Users, ChevronLeft, UserPlus, UserMinus, ShieldCheck, Flag, TrendingUp, Target, Calculator } from 'lucide-react';
+import { Plus, Loader2, Edit3, Trash2, Store, Package, Users, ChevronLeft, UserPlus, ShieldCheck, Flag, TrendingUp, Target, Calculator, AlertTriangle, Info } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
@@ -138,6 +138,14 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
 
   const handleSaveProduct = async () => {
     if (!tenantId || !currentProduct.name || !currentProduct.price) return;
+    
+    // Alerta de Prejuízo
+    if (currentProduct.type === 'supplier' && (currentProduct.supplierUnitCost || 0) > (currentProduct.price || 0)) {
+      if (!confirm(`ATENÇÃO: O custo de repasse (R$ ${currentProduct.supplierUnitCost}) é maior que o preço de venda (R$ ${currentProduct.price}). Isso resultará em prejuízo financeiro para cada venda. Deseja continuar?`)) {
+        return;
+      }
+    }
+
     setSubmitting(true);
     try {
       const colRef = collection(db, 'tenants', tenantId, 'events', eventId, 'products');
@@ -286,14 +294,20 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
           <TabsContent value="lucros" className="space-y-6 md:space-y-8">
              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 animate-in fade-in slide-in-from-top-4">
                 <SummaryCard title="Arrecadação Projetada" value={`R$ ${formatCurrency(projections.plannedRevenue)}`} icon={<Target className="h-5 w-5" />} description="Meta de Vendas" />
-                <SummaryCard title="Lucro Projetado" value={`R$ ${formatCurrency(projections.plannedProfit)}`} icon={<TrendingUp className="h-5 w-5" />} color="text-green-500" description="Margem Alvo" />
-                <SummaryCard title="Lucro Atual (Real)" value={`R$ ${formatCurrency(projections.actualProfit)}`} icon={<ShieldCheck className="h-5 w-5" />} color="text-primary" description="Ganhos Reais" />
+                <SummaryCard title={projections.plannedProfit < 0 ? "Prejuízo Projetado" : "Lucro Projetado"} value={`R$ ${formatCurrency(projections.plannedProfit)}`} icon={<TrendingUp className="h-5 w-5" />} color={projections.plannedProfit < 0 ? "text-destructive" : "text-green-500"} description={projections.plannedProfit < 0 ? "Ação Necessária" : "Margem Alvo"} />
+                <SummaryCard title={projections.actualProfit < 0 ? "Prejuízo Atual" : "Lucro Atual (Real)"} value={`R$ ${formatCurrency(projections.actualProfit)}`} icon={<ShieldCheck className="h-5 w-5" />} color={projections.actualProfit < 0 ? "text-destructive" : "text-primary"} description={projections.actualProfit < 0 ? "Ganhos Negativos" : "Ganhos Reais"} />
                 <SummaryCard title="Eficiência" value={`${projections.efficiency.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`} icon={<Flag className="h-5 w-5" />} color="text-secondary" description="Atingimento" />
              </div>
 
              <Card className="border-none shadow-2xl rounded-[2.5rem] overflow-hidden bg-card">
                 <CardHeader className="bg-muted/10 p-6 md:p-8">
-                  <CardTitle className="text-lg md:text-xl font-black uppercase text-primary">Análise por Produto</CardTitle>
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <CardTitle className="text-lg md:text-xl font-black uppercase text-primary">Análise por Produto</CardTitle>
+                    <div className="flex items-center gap-2 bg-primary/5 px-4 py-2 rounded-xl border border-primary/10">
+                      <Info className="h-4 w-4 text-primary" />
+                      <span className="text-[10px] font-bold uppercase text-muted-foreground tracking-tight leading-none">Lucro Unit. = Preço - Custo de Repasse</span>
+                    </div>
+                  </div>
                 </CardHeader>
                 <CardContent className="p-0">
                   <div className="overflow-x-auto">
@@ -312,18 +326,29 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
                           const profitPerUnit = p.price - (p.type === 'supplier' ? (p.supplierUnitCost || 0) : 0);
                           const totalPlannedProfit = (p.plannedQuantity || 0) * profitPerUnit;
                           const progress = p.plannedQuantity ? ((p.soldQuantity || 0) / p.plannedQuantity) * 100 : 0;
+                          const hasLoss = profitPerUnit < 0;
                           
                           return (
-                            <TableRow key={p.id} className="border-primary/5 hover:bg-primary/5 transition-all">
-                              <TableCell className="font-black text-primary py-6 pl-8 uppercase text-sm">{p.name}</TableCell>
+                            <TableRow key={p.id} className={cn("border-primary/5 transition-all", hasLoss ? "bg-destructive/5 hover:bg-destructive/10" : "hover:bg-primary/5")}>
+                              <TableCell className="font-black text-primary py-6 pl-8 uppercase text-sm">
+                                <div className="flex items-center gap-2">
+                                  {p.name}
+                                  {hasLoss && <AlertTriangle className="h-4 w-4 text-destructive animate-pulse" />}
+                                </div>
+                              </TableCell>
                               <TableCell className="font-bold text-xs">R$ {formatCurrency(p.price)}</TableCell>
-                              <TableCell className="font-black text-green-600 text-xs">R$ {formatCurrency(profitPerUnit)}</TableCell>
-                              <TableCell className="font-black text-primary text-xs">R$ {formatCurrency(totalPlannedProfit)}</TableCell>
+                              <TableCell className={cn("font-black text-xs", hasLoss ? "text-destructive" : "text-green-600")}>
+                                R$ {formatCurrency(profitPerUnit)}
+                                {hasLoss && <span className="block text-[8px] font-black uppercase">Prejuízo!</span>}
+                              </TableCell>
+                              <TableCell className={cn("font-black text-xs", totalPlannedProfit < 0 ? "text-destructive" : "text-primary")}>
+                                R$ {formatCurrency(totalPlannedProfit)}
+                              </TableCell>
                               <TableCell className="text-right pr-8">
                                 <div className="flex flex-col items-end gap-1">
                                   <span className="font-black text-[9px] uppercase text-muted-foreground">{p.soldQuantity || 0} / {p.plannedQuantity || 0}</span>
                                   <div className="w-20 h-1.5 bg-muted rounded-full overflow-hidden">
-                                    <div className="h-full bg-primary" style={{ width: `${Math.min(100, progress)}%` }} />
+                                    <div className={cn("h-full", hasLoss ? "bg-destructive" : "bg-primary")} style={{ width: `${Math.min(100, progress)}%` }} />
                                   </div>
                                 </div>
                               </TableCell>
@@ -418,7 +443,9 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
                         </TableCell>
                         <TableCell className="font-black text-primary text-xs whitespace-nowrap">R$ {formatCurrency(s.totalActualRevenue || 0)}</TableCell>
                         <TableCell className="font-bold text-secondary text-xs whitespace-nowrap">R$ {formatCurrency(s.totalActualCost || 0)}</TableCell>
-                        <TableCell className="font-black text-green-600 text-xs whitespace-nowrap">R$ {formatCurrency(s.totalActualProfit || 0)}</TableCell>
+                        <TableCell className={cn("font-black text-xs whitespace-nowrap", (s.totalActualProfit || 0) < 0 ? "text-destructive" : "text-green-600")}>
+                          R$ {formatCurrency(s.totalActualProfit || 0)}
+                        </TableCell>
                         <TableCell className="text-right pr-8">
                           <div className="flex justify-end gap-1">
                             <Button variant="ghost" size="icon" onClick={() => { setCurrentSupplier(s); setShowSupplierForm(true); }} className="h-9 w-9 rounded-lg text-primary/40 hover:text-primary hover:bg-primary/10">
@@ -451,7 +478,7 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
             </div>
 
             {showProductForm && (
-              <Card className="border-none shadow-2xl rounded-[2rem] bg-card animate-in fade-in slide-in-from-top-4 duration-300">
+              <Card className="border-none shadow-2xl rounded-3xl bg-card animate-in fade-in slide-in-from-top-4 duration-300 border-2 border-primary/5">
                 <CardHeader className="bg-primary/5 p-6 md:p-8 pb-4">
                   <CardTitle className="text-base md:text-lg font-black uppercase text-primary">Detalhes do Produto</CardTitle>
                 </CardHeader>
@@ -483,14 +510,14 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent className="rounded-2xl border-none shadow-2xl">
-                          <SelectItem value="own" className="font-black uppercase text-xs">Próprio</SelectItem>
-                          <SelectItem value="supplier" className="font-black uppercase text-xs">Fornecedor</SelectItem>
+                          <SelectItem value="own" className="font-black uppercase text-xs">Próprio (Lucro 100%)</SelectItem>
+                          <SelectItem value="supplier" className="font-black uppercase text-xs">Barraca Parceira</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
 
                     <div className="space-y-1.5">
-                      <Label className="font-black uppercase text-[10px] ml-1">Meta de Venda (Un)</Label>
+                      <Label className="font-black uppercase text-[10px] ml-1">Meta de Venda (Unidades)</Label>
                       <Input 
                         type="number"
                         placeholder="300"
@@ -516,14 +543,24 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
                           </Select>
                         </div>
                         <div className="space-y-1.5">
-                          <Label className="font-black uppercase text-[10px] ml-1">Custo Repasse (R$)</Label>
+                          <Label className="font-black uppercase text-[10px] ml-1">Custo de Repasse (R$)</Label>
                           <Input 
                             type="number"
                             placeholder="7,00"
-                            className="h-12 md:h-14 rounded-xl md:rounded-2xl border-primary/10 font-bold bg-muted/20 px-6"
+                            className={cn(
+                              "h-12 md:h-14 rounded-xl md:rounded-2xl border-primary/10 font-bold px-6",
+                              currentProduct.supplierUnitCost && currentProduct.price && currentProduct.supplierUnitCost > currentProduct.price 
+                                ? "bg-destructive/10 border-destructive text-destructive" 
+                                : "bg-muted/20"
+                            )}
                             value={currentProduct.supplierUnitCost || ''} 
                             onChange={(e) => setCurrentProduct({ ...currentProduct, supplierUnitCost: parseFloat(e.target.value) })} 
                           />
+                          {currentProduct.supplierUnitCost && currentProduct.price && currentProduct.supplierUnitCost > currentProduct.price && (
+                            <p className="text-[10px] text-destructive font-black uppercase flex items-center gap-1 mt-1">
+                              <AlertTriangle className="h-3 w-3" /> Prejuízo Detectado
+                            </p>
+                          )}
                         </div>
                       </>
                     )}
