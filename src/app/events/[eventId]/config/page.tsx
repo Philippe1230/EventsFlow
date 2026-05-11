@@ -14,7 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Loader2, Edit3, Trash2, Store, Package, Users, ChevronLeft, UserPlus, ShieldCheck, Flag, TrendingUp, Target, Calculator, AlertTriangle, Info } from 'lucide-react';
+import { Plus, Loader2, Edit3, Trash2, Store, Package, Users, ChevronLeft, UserPlus, ShieldCheck, Flag, TrendingUp, Target, Calculator, AlertTriangle, Info, ArrowUpRight, BarChart3 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
@@ -281,7 +281,7 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
               <Store className="mr-1 md:mr-2 h-3 w-3 md:h-4 md:w-4" /> Barracas
             </TabsTrigger>
             <TabsTrigger value="products" className="rounded-xl md:rounded-2xl font-black uppercase text-[8px] md:text-[10px] tracking-tighter md:tracking-widest data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-xl transition-all h-full px-1">
-              <Package className="mr-1 md:mr-2 h-3 w-3 md:h-4 md:w-4" /> Itens
+              <Package className="mr-1 md:mr-2 h-3 w-3 md:h-4 md:w-4" /> Cardápio
             </TabsTrigger>
             <TabsTrigger value="lucros" className="rounded-xl md:rounded-2xl font-black uppercase text-[8px] md:text-[10px] tracking-tighter md:tracking-widest data-[state=active]:bg-secondary data-[state=active]:text-white data-[state=active]:shadow-xl transition-all h-full px-1">
               <Calculator className="mr-1 md:mr-2 h-3 w-3 md:h-4 md:w-4" /> Lucros
@@ -291,18 +291,43 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="lucros" className="space-y-6 md:space-y-8">
-             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 animate-in fade-in slide-in-from-top-4">
-                <SummaryCard title="Arrecadação Projetada" value={`R$ ${formatCurrency(projections.plannedRevenue)}`} icon={<Target className="h-5 w-5" />} description="Meta de Vendas" />
-                <SummaryCard title={projections.plannedProfit < 0 ? "Prejuízo Projetado" : "Lucro Projetado"} value={`R$ ${formatCurrency(projections.plannedProfit)}`} icon={<TrendingUp className="h-5 w-5" />} color={projections.plannedProfit < 0 ? "text-destructive" : "text-green-500"} description={projections.plannedProfit < 0 ? "Ação Necessária" : "Margem Alvo"} />
-                <SummaryCard title={projections.actualProfit < 0 ? "Prejuízo Atual" : "Lucro Atual (Real)"} value={`R$ ${formatCurrency(projections.actualProfit)}`} icon={<ShieldCheck className="h-5 w-5" />} color={projections.actualProfit < 0 ? "text-destructive" : "text-primary"} description={projections.actualProfit < 0 ? "Ganhos Negativos" : "Ganhos Reais"} />
-                <SummaryCard title="Eficiência" value={`${projections.efficiency.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`} icon={<Flag className="h-5 w-5" />} color="text-secondary" description="Atingimento" />
+          <TabsContent value="lucros" className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
+             {/* SEÇÃO 1: LUCROS PREVISTOS (PLANEJADO) */}
+             <div className="space-y-6">
+                <div className="flex items-center gap-3 px-1 border-l-4 border-muted-foreground/20 pl-4">
+                  <div className="bg-muted p-2 rounded-lg"><Target className="h-5 w-5 text-muted-foreground" /></div>
+                  <div>
+                    <h3 className="text-lg font-black uppercase text-muted-foreground leading-none tracking-tight">Lucros Previstos (Projetado)</h3>
+                    <p className="text-[10px] font-bold uppercase text-muted-foreground/60 tracking-widest mt-1">Expectativa baseada no cadastro inicial e metas</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
+                   <SummaryCard title="Arrecadação Bruta Prevista" value={`R$ ${formatCurrency(projections.plannedRevenue)}`} icon={<TrendingUp className="h-5 w-5" />} description="Meta de Vendas Total" color="text-muted-foreground" />
+                   <SummaryCard title="Custo de Repasse Previsto" value={`R$ ${formatCurrency(projections.plannedCost)}`} icon={<Calculator className="h-5 w-5" />} description="Pagamentos a Terceiros" color="text-secondary" />
+                   <SummaryCard title={projections.plannedProfit < 0 ? "Prejuízo Projetado" : "Lucro Org. Projetado"} value={`R$ ${formatCurrency(projections.plannedProfit)}`} icon={<Flag className="h-5 w-5" />} color={projections.plannedProfit < 0 ? "text-destructive" : "text-green-600"} description="Expectativa de Ganho Líquido" />
+                </div>
+             </div>
+
+             {/* SEÇÃO 2: LUCROS REAIS (REALIZADO) */}
+             <div className="space-y-6">
+                <div className="flex items-center gap-3 px-1 border-l-4 border-primary pl-4">
+                  <div className="bg-primary/10 p-2 rounded-lg"><BarChart3 className="h-5 w-5 text-primary" /></div>
+                  <div>
+                    <h3 className="text-lg font-black uppercase text-primary leading-none tracking-tight">Resultado Operacional (Real)</h3>
+                    <p className="text-[10px] font-bold uppercase text-primary/60 tracking-widest mt-1">Desempenho atual das vendas no caixa</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
+                   <SummaryCard title="Arrecadação Realizada" value={`R$ ${formatCurrency(projections.actualRevenue)}`} icon={<ArrowUpRight className="h-5 w-5" />} description="Vendas Efetuadas" />
+                   <SummaryCard title={projections.actualProfit < 0 ? "Prejuízo Atual" : "Lucro Org. Real"} value={`R$ ${formatCurrency(projections.actualProfit)}`} icon={<ShieldCheck className="h-5 w-5" />} color={projections.actualProfit < 0 ? "text-destructive" : "text-primary"} description={projections.actualProfit < 0 ? "Atenção: Saldo Negativo" : "Ganho Líquido Atual"} />
+                   <SummaryCard title="Atingimento da Meta" value={`${projections.efficiency.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`} icon={<BarChart3 className="h-5 w-5" />} color="text-secondary" description="Progresso do Lucro" />
+                </div>
              </div>
 
              <Card className="border-none shadow-2xl rounded-[2.5rem] overflow-hidden bg-card">
                 <CardHeader className="bg-muted/10 p-6 md:p-8">
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <CardTitle className="text-lg md:text-xl font-black uppercase text-primary">Análise por Produto</CardTitle>
+                    <CardTitle className="text-lg md:text-xl font-black uppercase text-primary">Detalhamento Financeiro</CardTitle>
                     <div className="flex items-center gap-2 bg-primary/5 px-4 py-2 rounded-xl border border-primary/10">
                       <Info className="h-4 w-4 text-primary" />
                       <span className="text-[10px] font-bold uppercase text-muted-foreground tracking-tight leading-none">Lucro Unit. = Preço - Custo de Repasse</span>
@@ -311,20 +336,21 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
                 </CardHeader>
                 <CardContent className="p-0">
                   <div className="overflow-x-auto">
-                   <Table className="min-w-[600px]">
+                   <Table className="min-w-[700px]">
                       <TableHeader className="bg-muted/50">
                         <TableRow className="hover:bg-transparent border-primary/5">
                           <TableHead className="font-black uppercase text-[10px] py-6 pl-8">Produto</TableHead>
-                          <TableHead className="font-black uppercase text-[10px]">Preço</TableHead>
-                          <TableHead className="font-black uppercase text-[10px]">Lucro Unit.</TableHead>
-                          <TableHead className="font-black uppercase text-[10px]">Lucro Total Meta</TableHead>
-                          <TableHead className="font-black uppercase text-[10px] text-right pr-8">Atingimento</TableHead>
+                          <TableHead className="font-black uppercase text-[10px]">Meta de Lucro</TableHead>
+                          <TableHead className="font-black uppercase text-[10px]">Lucro Real</TableHead>
+                          <TableHead className="font-black uppercase text-[10px]">Status</TableHead>
+                          <TableHead className="font-black uppercase text-[10px] text-right pr-8">Performance</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {products.map((p) => {
                           const profitPerUnit = p.price - (p.type === 'supplier' ? (p.supplierUnitCost || 0) : 0);
                           const totalPlannedProfit = (p.plannedQuantity || 0) * profitPerUnit;
+                          const totalActualProfit = (p.soldQuantity || 0) * profitPerUnit;
                           const progress = p.plannedQuantity ? ((p.soldQuantity || 0) / p.plannedQuantity) * 100 : 0;
                           const hasLoss = profitPerUnit < 0;
                           
@@ -336,13 +362,21 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
                                   {hasLoss && <AlertTriangle className="h-4 w-4 text-destructive animate-pulse" />}
                                 </div>
                               </TableCell>
-                              <TableCell className="font-bold text-xs">R$ {formatCurrency(p.price)}</TableCell>
-                              <TableCell className={cn("font-black text-xs", hasLoss ? "text-destructive" : "text-green-600")}>
-                                R$ {formatCurrency(profitPerUnit)}
-                                {hasLoss && <span className="block text-[8px] font-black uppercase">Prejuízo!</span>}
-                              </TableCell>
-                              <TableCell className={cn("font-black text-xs", totalPlannedProfit < 0 ? "text-destructive" : "text-primary")}>
+                              <TableCell className={cn("font-bold text-xs", totalPlannedProfit < 0 && "text-destructive")}>
                                 R$ {formatCurrency(totalPlannedProfit)}
+                              </TableCell>
+                              <TableCell className={cn("font-black text-xs", totalActualProfit < 0 ? "text-destructive" : "text-green-600")}>
+                                R$ {formatCurrency(totalActualProfit)}
+                                {totalActualProfit < 0 && <span className="block text-[8px] font-black uppercase">PREJUÍZO</span>}
+                              </TableCell>
+                              <TableCell>
+                                {progress >= 100 ? (
+                                  <Badge className="bg-green-500 text-white font-black uppercase text-[8px] px-2">Meta Batida</Badge>
+                                ) : hasLoss ? (
+                                  <Badge variant="destructive" className="font-black uppercase text-[8px] px-2">Risco Financeiro</Badge>
+                                ) : (
+                                  <Badge variant="outline" className="font-black uppercase text-[8px] px-2">Em andamento</Badge>
+                                )}
                               </TableCell>
                               <TableCell className="text-right pr-8">
                                 <div className="flex flex-col items-end gap-1">
