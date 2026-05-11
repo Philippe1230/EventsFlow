@@ -3,8 +3,8 @@
 
 import { AppShell } from '@/components/layout/AppShell';
 import { useAuth } from '@/hooks/use-auth-context';
-import { useState, useEffect } from 'react';
-import { collection, query, orderBy, addDoc, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { useState } from 'react';
+import { collection, query, orderBy, addDoc, doc, updateDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -13,7 +13,7 @@ import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Calendar as CalendarIcon, MapPin, Plus, Loader2, Edit3, ArrowRight, Settings, LayoutDashboard, Clock, TrendingUp } from 'lucide-react';
+import { Calendar as CalendarIcon, MapPin, Plus, Loader2, Edit3, Trash2, ArrowRight, Settings, LayoutDashboard, Clock, TrendingUp } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
@@ -103,6 +103,17 @@ export default function EventsPage() {
     }
   };
 
+  const handleDelete = async (id: string) => {
+    if (!tenantId || !confirm("Deseja excluir este evento permanentemente? Todos os dados vinculados (produtos, pedidos) podem ficar inacessíveis.")) return;
+    
+    try {
+      await deleteDoc(doc(db, 'tenants', tenantId, 'events', id));
+      toast({ title: 'Sucesso', description: 'Evento excluído com sucesso.' });
+    } catch (e) {
+      toast({ title: 'Erro ao Excluir', variant: 'destructive' });
+    }
+  };
+
   const openDialog = (event?: Event) => {
     if (event) {
       setCurrentEvent(event);
@@ -159,9 +170,14 @@ export default function EventsPage() {
                       {event.status}
                     </Badge>
                     {isAdmin && (
-                      <Button variant="ghost" size="icon" onClick={() => openDialog(event)} className="h-10 w-10 rounded-xl text-primary/40 hover:text-primary hover:bg-primary/5">
-                        <Edit3 className="h-5 w-5" />
-                      </Button>
+                      <div className="flex gap-1">
+                        <Button variant="ghost" size="icon" onClick={() => openDialog(event)} className="h-10 w-10 rounded-xl text-primary/40 hover:text-primary hover:bg-primary/5">
+                          <Edit3 className="h-5 w-5" />
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => handleDelete(event.id)} className="h-10 w-10 rounded-xl text-destructive/40 hover:text-destructive hover:bg-destructive/5">
+                          <Trash2 className="h-5 w-5" />
+                        </Button>
+                      </div>
                     )}
                   </div>
                   <CardTitle className="text-2xl font-black uppercase tracking-tighter text-primary group-hover:translate-x-1 transition-transform">{event.name}</CardTitle>
