@@ -8,7 +8,7 @@ import { collection, query, where, orderBy, getDocs } from 'firebase/firestore';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend, Tooltip } from 'recharts';
-import { DollarSign, ShoppingBag, TrendingUp, Calendar as CalendarIcon, Loader2, User as UserIcon, Store, Target, ArrowLeftRight, AlertCircle } from 'lucide-react';
+import { DollarSign, ShoppingBag, TrendingUp, Calendar as CalendarIcon, Loader2, User as UserIcon, Store, Target } from 'lucide-react';
 import { startOfDay, endOfDay, format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
@@ -159,7 +159,7 @@ function DashboardsContent() {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
           <div className="space-y-1">
             <h2 className="text-3xl md:text-4xl font-black text-primary uppercase tracking-tighter italic leading-none">Dashboards</h2>
-            <p className="text-xs md:text-base text-muted-foreground font-medium italic">Análise de lucro real e performance.</p>
+            <p className="text-xs md:text-base text-muted-foreground font-medium italic">Análise de arrecadação e performance.</p>
           </div>
           
           <div className="w-full md:w-auto">
@@ -229,7 +229,7 @@ function DashboardsContent() {
 
         <div className="grid gap-4 md:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
           <StatCard title="Receita Bruta" value={`R$ ${formatCurrency(stats.totalRevenue)}`} icon={<DollarSign className="h-6 w-6" />} loading={ordersLoading} />
-          <StatCard title={stats.totalProfit < 0 ? "Prejuízo Org." : "Lucro Org."} value={`R$ ${formatCurrency(stats.totalProfit)}`} icon={<TrendingUp className="h-6 w-6" />} color={stats.totalProfit < 0 ? "text-destructive" : "text-green-600"} loading={ordersLoading} />
+          <StatCard title="Lucro Org." value={`R$ ${formatCurrency(stats.totalProfit)}`} icon={<TrendingUp className="h-6 w-6" />} color={stats.totalProfit < 0 ? "text-destructive" : "text-green-600"} loading={ordersLoading} />
           <StatCard title="Mais Vendido" value={stats.bestSeller} icon={<ShoppingBag className="h-6 w-6" />} loading={ordersLoading} />
           <StatCard title="Maior Lucro" value={stats.bestSellerProfit} icon={<Target className="h-6 w-6" />} loading={ordersLoading} />
         </div>
@@ -268,7 +268,7 @@ function DashboardsContent() {
           <Card className="lg:col-span-5 shadow-2xl border-none rounded-[2.5rem] overflow-hidden bg-card">
             <CardHeader className="p-6 md:p-8 pb-2">
               <CardTitle className="text-[10px] font-black uppercase text-muted-foreground tracking-widest flex items-center gap-2">
-                 <Store className="h-4 w-4" /> Lucro por Produto
+                 <Store className="h-4 w-4" /> Performance Financeira
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
@@ -277,22 +277,18 @@ function DashboardsContent() {
                   <thead>
                     <tr className="border-b border-primary/5 bg-muted/10">
                       <th className="py-4 md:py-6 pl-6 md:pl-8 font-black uppercase text-[10px] tracking-widest text-muted-foreground">Item</th>
-                      <th className="py-4 md:py-6 pr-6 md:pr-8 font-black uppercase text-[10px] tracking-widest text-muted-foreground text-right">Lucro</th>
+                      <th className="py-4 md:py-6 pr-6 md:pr-8 font-black uppercase text-[10px] tracking-widest text-muted-foreground text-right">Lucro Org.</th>
                     </tr>
                   </thead>
                   <tbody>
                     {stats.productSales.map((s, idx) => (
                       <tr key={idx} className={cn("border-b border-primary/5 last:border-0 hover:bg-primary/5 transition-colors group", s.profit < 0 && "bg-destructive/5")}>
                         <td className="py-4 md:py-6 pl-6 md:pl-8 font-black uppercase text-[11px] group-hover:text-primary transition-colors leading-tight">
-                          <div className="flex items-center gap-2">
-                            {s.name}
-                            {s.profit < 0 && <AlertCircle className="h-3 w-3 text-destructive" />}
-                          </div>
+                          {s.name}
                           <span className="block text-[9px] text-muted-foreground font-bold mt-0.5 uppercase">{s.quantity} UNIDADES</span>
                         </td>
                         <td className={cn("py-4 md:py-6 pr-6 md:pr-8 text-right font-black text-sm md:text-base whitespace-nowrap", s.profit < 0 ? "text-destructive" : "text-green-600")}>
                           R$ {formatCurrency(s.profit)}
-                          {s.profit < 0 && <span className="block text-[8px] font-black uppercase leading-none">Prejuízo</span>}
                         </td>
                       </tr>
                     ))}
