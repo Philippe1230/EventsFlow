@@ -32,6 +32,10 @@ interface Order {
   eventId?: string;
 }
 
+const formatCurrency = (value: number) => {
+  return value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+};
+
 export default function OrdersPage() {
   const { tenantId, user, role, tenantMembers, isSuperAdmin, loading: authLoading, selectedEventId } = useAuth();
   const db = useFirestore();
@@ -112,7 +116,7 @@ export default function OrdersPage() {
       const eventName = events.find(e => e.id === (activeEventFilter === "all" ? selectedEventId : activeEventFilter))?.name || 'Evento';
       
       order.items.forEach(item => {
-        csvContent += `${dateStr},${order.orderNumber},"${item.name}",${item.quantity},"${item.price.toFixed(2)}","${order.paymentMethod}","${cashierName}","${eventName}"\n`;
+        csvContent += `${dateStr},${order.orderNumber},"${item.name}",${item.quantity},"${formatCurrency(item.price)}","${order.paymentMethod}","${cashierName}","${eventName}"\n`;
       });
     });
 
@@ -279,7 +283,7 @@ export default function OrdersPage() {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right font-black text-xl text-primary tracking-tighter">
-                      R$ {o.total?.toFixed(2)}
+                      R$ {formatCurrency(o.total || 0)}
                     </TableCell>
                     <TableCell className="text-right pr-8">
                       <Button variant="ghost" size="icon" onClick={() => handleReprint(o)} className="h-10 w-10 rounded-xl text-primary/40 hover:text-primary hover:bg-primary/10">

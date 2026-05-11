@@ -21,6 +21,10 @@ import { useRouter, useSearchParams } from 'next/navigation';
 
 const COLORS = ['#f97316', '#ef4444', '#eab308', '#22c55e', '#06b6d4', '#8b5cf6'];
 
+const formatCurrency = (value: number) => {
+  return value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+};
+
 function DashboardsContent() {
   const { tenantId, user, role, tenantMembers, loading: authLoading, selectedEventId, setSelectedEventId } = useAuth();
   const db = useFirestore();
@@ -117,7 +121,7 @@ function DashboardsContent() {
     const bestSeller = sortedByQuantity[0] ? `${sortedByQuantity[0][0]} (${sortedByQuantity[0][1].quantity} un)` : '---';
 
     const sortedByProfit = Object.entries(productCounts).sort((a, b) => b[1].profit - a[1].profit);
-    const bestSellerProfit = sortedByProfit[0] ? `${sortedByProfit[0][0]} (R$ ${sortedByProfit[0][1].profit.toFixed(2)})` : '---';
+    const bestSellerProfit = sortedByProfit[0] ? `${sortedByProfit[0][0]} (R$ ${formatCurrency(sortedByProfit[0][1].profit)})` : '---';
     
     const performanceData = (productsData || []).map(p => ({
       name: p.name,
@@ -228,8 +232,8 @@ function DashboardsContent() {
         </div>
 
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-          <StatCard title="Receita Bruta" value={`R$ ${stats.totalRevenue.toFixed(2)}`} icon={<DollarSign className="h-6 w-6" />} loading={ordersLoading} />
-          <StatCard title="Lucro Org." value={`R$ ${stats.totalProfit.toFixed(2)}`} icon={<TrendingUp className="h-6 w-6" />} color="text-green-600" loading={ordersLoading} />
+          <StatCard title="Receita Bruta" value={`R$ ${formatCurrency(stats.totalRevenue)}`} icon={<DollarSign className="h-6 w-6" />} loading={ordersLoading} />
+          <StatCard title="Lucro Org." value={`R$ ${formatCurrency(stats.totalProfit)}`} icon={<TrendingUp className="h-6 w-6" />} color="text-green-600" loading={ordersLoading} />
           <StatCard title="Mais Vendido" value={stats.bestSeller} icon={<ShoppingBag className="h-6 w-6" />} loading={ordersLoading} />
           <StatCard title="Maior Lucro" value={stats.bestSellerProfit} icon={<Target className="h-6 w-6" />} loading={ordersLoading} />
         </div>
@@ -287,7 +291,7 @@ function DashboardsContent() {
                           {s.name}
                           <span className="ml-2 text-[9px] text-muted-foreground">({s.quantity} un)</span>
                         </td>
-                        <td className="py-6 pr-8 text-right font-black text-green-600 text-base">R$ {s.profit.toFixed(2)}</td>
+                        <td className="py-6 pr-8 text-right font-black text-green-600 text-base">R$ {formatCurrency(s.profit)}</td>
                       </tr>
                     ))}
                     {stats.productSales.length === 0 && (

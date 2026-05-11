@@ -1,3 +1,4 @@
+
 "use client";
 
 import { AppShell } from '@/components/layout/AppShell';
@@ -25,6 +26,10 @@ interface Product {
   category: string;
   active: boolean;
 }
+
+const formatCurrency = (value: number) => {
+  return value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+};
 
 export default function ProductsPage() {
   const { tenantId, loading: authLoading } = useAuth();
@@ -160,7 +165,7 @@ export default function ProductsPage() {
                       </Badge>
                     </TableCell>
                     <TableCell className="font-black text-lg text-primary tracking-tighter">
-                      R$ {p.price.toFixed(2)}
+                      R$ {formatCurrency(p.price)}
                     </TableCell>
                     <TableCell className="text-center">
                       <div className="flex items-center justify-center gap-3">

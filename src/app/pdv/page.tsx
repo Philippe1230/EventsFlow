@@ -38,6 +38,10 @@ interface CartItem extends Product {
   quantity: number;
 }
 
+const formatCurrency = (value: number) => {
+  return value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+};
+
 function PDVContent() {
   const { tenantId, user, role, loading: authLoading, selectedEventId, setSelectedEventId } = useAuth();
   const db = useFirestore();
@@ -309,7 +313,7 @@ function PDVContent() {
                 <button key={p.id} onClick={() => addToCart(p)} className="flex flex-col items-center justify-center p-4 bg-card border-2 border-primary/10 hover:border-primary hover:bg-primary/5 rounded-[2.5rem] shadow-sm transition-all active:scale-90 h-40 group relative overflow-hidden">
                   <div className="absolute top-0 left-0 w-full h-1 bg-primary/10 group-hover:bg-primary transition-colors" />
                   <span className="font-black text-xs leading-tight uppercase line-clamp-2 mb-3 text-center group-hover:text-primary transition-colors">{p.name}</span>
-                  <span className="bg-primary text-white px-5 py-2 rounded-full text-[11px] font-black shadow-lg shadow-primary/10">R$ {p.price.toFixed(2)}</span>
+                  <span className="bg-primary text-white px-5 py-2 rounded-full text-[11px] font-black shadow-lg shadow-primary/10">R$ {formatCurrency(p.price)}</span>
                 </button>
               ))}
             </div>
@@ -331,7 +335,7 @@ function PDVContent() {
                 <div key={item.id} className="flex flex-col bg-card border border-primary/5 p-3 rounded-2xl shadow-sm">
                   <div className="flex justify-between items-start mb-1">
                     <span className="font-black uppercase text-[10px] leading-tight flex-1">{item.name}</span>
-                    <span className="font-black text-primary text-[11px]">R$ {(item.price * item.quantity).toFixed(2)}</span>
+                    <span className="font-black text-primary text-[11px]">R$ {formatCurrency(item.price * item.quantity)}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <div className="flex items-center bg-muted/50 rounded-xl p-0.5">
@@ -352,7 +356,7 @@ function PDVContent() {
             <div className="bg-card border-t-2 border-primary/10 p-5 space-y-4">
               <div className="flex justify-between items-center px-2">
                 <span className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Subtotal</span>
-                <span className="text-3xl font-black text-primary tracking-tighter">R$ {total.toFixed(2)}</span>
+                <span className="text-3xl font-black text-primary tracking-tighter">R$ {formatCurrency(total)}</span>
               </div>
               <Button className="w-full h-16 font-black uppercase text-lg rounded-2xl shadow-2xl shadow-primary/20 active:scale-95 transition-all" disabled={cart.length === 0} onClick={() => setShowPaymentModal(true)}>
                 Concluir Venda <ArrowRight className="ml-2 h-6 w-6" />
@@ -394,7 +398,7 @@ function PDVContent() {
           <div className="p-8 space-y-8">
             <div className="text-center">
               <span className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Valor do Pedido</span>
-              <div className="text-5xl font-black text-primary tracking-tighter italic">R$ {total.toFixed(2)}</div>
+              <div className="text-5xl font-black text-primary tracking-tighter italic">R$ {formatCurrency(total)}</div>
             </div>
             <div className="grid grid-cols-3 gap-3">
               <Button variant={paymentMethod === 'dinheiro' ? 'default' : 'outline'} className="flex flex-col h-24 gap-2 border-2 rounded-2xl font-black uppercase text-[10px]" onClick={() => setPaymentMethod('dinheiro')}><Banknote className="h-8 w-8 text-primary" /><span>Dinheiro</span></Button>
@@ -405,7 +409,7 @@ function PDVContent() {
               <div className="space-y-4 animate-in fade-in slide-in-from-top-2">
                 <Label className="text-[10px] font-black uppercase text-muted-foreground ml-1">Valor Recebido</Label>
                 <Input type="text" inputMode="decimal" className="h-16 text-3xl font-black rounded-2xl border-primary/20 px-8 bg-muted/20" value={receivedAmount} onChange={(e) => setReceivedAmount(e.target.value)} autoFocus />
-                {changeAmount > 0 && <div className="bg-primary/5 rounded-[2rem] p-6 text-center border-2 border-primary/10"><span className="text-[10px] font-black uppercase text-primary tracking-widest">Troco a Devolver</span><div className="text-4xl font-black text-primary italic">R$ {changeAmount.toFixed(2)}</div></div>}
+                {changeAmount > 0 && <div className="bg-primary/5 rounded-[2rem] p-6 text-center border-2 border-primary/10"><span className="text-[10px] font-black uppercase text-primary tracking-widest">Troco a Devolver</span><div className="text-4xl font-black text-primary italic">R$ {formatCurrency(changeAmount)}</div></div>}
               </div>
             )}
           </div>

@@ -43,6 +43,10 @@ interface Product {
   soldQuantity?: number;
 }
 
+const formatCurrency = (value: number) => {
+  return value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+};
+
 export default function EventConfigPage({ params }: { params: Promise<{ eventId: string }> }) {
   const { eventId } = use(params);
   const { tenantId, role, tenantMembers } = useAuth();
@@ -281,10 +285,10 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
 
           <TabsContent value="lucros" className="space-y-8">
              <div className="grid grid-cols-1 md:grid-cols-4 gap-6 animate-in fade-in slide-in-from-top-4">
-                <SummaryCard title="Arrecadação Projetada" value={`R$ ${projections.plannedRevenue.toFixed(2)}`} icon={<Target className="h-5 w-5" />} description="Baseado nas metas" />
-                <SummaryCard title="Lucro Projetado" value={`R$ ${projections.plannedProfit.toFixed(2)}`} icon={<TrendingUp className="h-5 w-5" />} color="text-green-500" description="Margem esperada" />
-                <SummaryCard title="Lucro Atual (Real)" value={`R$ ${projections.actualProfit.toFixed(2)}`} icon={<ShieldCheck className="h-5 w-5" />} color="text-primary" description="Vendas realizadas" />
-                <SummaryCard title="Eficiência do Evento" value={`${projections.efficiency.toFixed(1)}%`} icon={<Flag className="h-5 w-5" />} color="text-secondary" description="Atingimento da meta" />
+                <SummaryCard title="Arrecadação Projetada" value={`R$ ${formatCurrency(projections.plannedRevenue)}`} icon={<Target className="h-5 w-5" />} description="Baseado nas metas" />
+                <SummaryCard title="Lucro Projetado" value={`R$ ${formatCurrency(projections.plannedProfit)}`} icon={<TrendingUp className="h-5 w-5" />} color="text-green-500" description="Margem esperada" />
+                <SummaryCard title="Lucro Atual (Real)" value={`R$ ${formatCurrency(projections.actualProfit)}`} icon={<ShieldCheck className="h-5 w-5" />} color="text-primary" description="Vendas realizadas" />
+                <SummaryCard title="Eficiência do Evento" value={`${projections.efficiency.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`} icon={<Flag className="h-5 w-5" />} color="text-secondary" description="Atingimento da meta" />
              </div>
 
              <Card className="border-none shadow-2xl rounded-[2.5rem] overflow-hidden bg-card">
@@ -311,9 +315,9 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
                           return (
                             <TableRow key={p.id} className="border-primary/5 hover:bg-primary/5 transition-all">
                               <TableCell className="font-black text-primary py-6 pl-8 uppercase text-sm">{p.name}</TableCell>
-                              <TableCell className="font-bold">R$ {p.price.toFixed(2)}</TableCell>
-                              <TableCell className="font-black text-green-600">R$ {profitPerUnit.toFixed(2)}</TableCell>
-                              <TableCell className="font-black text-primary">R$ {totalPlannedProfit.toFixed(2)}</TableCell>
+                              <TableCell className="font-bold">R$ {formatCurrency(p.price)}</TableCell>
+                              <TableCell className="font-black text-green-600">R$ {formatCurrency(profitPerUnit)}</TableCell>
+                              <TableCell className="font-black text-primary">R$ {formatCurrency(totalPlannedProfit)}</TableCell>
                               <TableCell className="text-right pr-8">
                                 <div className="flex flex-col items-end gap-1">
                                   <span className="font-black text-[10px] uppercase text-muted-foreground">{p.soldQuantity || 0} / {p.plannedQuantity || 0}</span>
@@ -418,9 +422,9 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
                           {s.name}
                           <p className="text-[9px] text-muted-foreground font-bold">{s.responsibleName || 'Sem responsável'}</p>
                         </TableCell>
-                        <TableCell className="font-black text-primary">R$ {s.totalActualRevenue?.toFixed(2) || '0.00'}</TableCell>
-                        <TableCell className="font-bold text-secondary">R$ {s.totalActualCost?.toFixed(2) || '0.00'}</TableCell>
-                        <TableCell className="font-black text-green-600">R$ {s.totalActualProfit?.toFixed(2) || '0.00'}</TableCell>
+                        <TableCell className="font-black text-primary">R$ {formatCurrency(s.totalActualRevenue || 0)}</TableCell>
+                        <TableCell className="font-bold text-secondary">R$ {formatCurrency(s.totalActualCost || 0)}</TableCell>
+                        <TableCell className="font-black text-green-600">R$ {formatCurrency(s.totalActualProfit || 0)}</TableCell>
                         <TableCell className="text-right pr-8">
                           <div className="flex justify-end gap-2">
                             <Button variant="ghost" size="icon" onClick={() => { setCurrentSupplier(s); setShowSupplierForm(true); }} className="h-10 w-10 rounded-xl text-primary/40 hover:text-primary hover:bg-primary/10">
@@ -471,7 +475,7 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
                       <Label className="font-black uppercase text-[10px] ml-1">Preço de Venda (R$)</Label>
                       <Input 
                         type="number"
-                        placeholder="10.00"
+                        placeholder="10,00"
                         className="h-14 rounded-2xl border-primary/10 font-bold bg-muted/20 px-6"
                         value={currentProduct.price || ''} 
                         onChange={(e) => setCurrentProduct({ ...currentProduct, price: parseFloat(e.target.value) })} 
@@ -520,7 +524,7 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
                           <Label className="font-black uppercase text-[10px] ml-1">Custo Repasse (R$)</Label>
                           <Input 
                             type="number"
-                            placeholder="7.00"
+                            placeholder="7,00"
                             className="h-14 rounded-2xl border-primary/10 font-bold bg-muted/20 px-6"
                             value={currentProduct.supplierUnitCost || ''} 
                             onChange={(e) => setCurrentProduct({ ...currentProduct, supplierUnitCost: parseFloat(e.target.value) })} 
@@ -568,7 +572,7 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
                           <TableCell className={cn("font-bold text-xs", missed > 0 ? "text-secondary" : "text-green-600")}>
                             {missed > 0 ? `${missed} pendentes` : 'Meta batida!'}
                           </TableCell>
-                          <TableCell className="font-black text-primary text-base">R$ {((p.soldQuantity || 0) * p.price).toFixed(2)}</TableCell>
+                          <TableCell className="font-black text-primary text-base">R$ {formatCurrency((p.soldQuantity || 0) * p.price)}</TableCell>
                           <TableCell className="text-right pr-8">
                             <div className="flex justify-end gap-2">
                               <Button variant="ghost" size="icon" onClick={() => { setCurrentProduct(p); setShowProductForm(true); }} className="h-10 w-10 rounded-xl text-primary/40 hover:text-primary hover:bg-primary/10">
