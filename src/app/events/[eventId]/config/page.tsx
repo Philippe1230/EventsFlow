@@ -14,7 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Loader2, Edit3, Trash2, Store, Package, Users, ChevronLeft, Flag, TrendingUp, Target, Calculator, Info, ArrowUpRight, BarChart3 } from 'lucide-react';
+import { Plus, Loader2, Edit3, Trash2, Store, Package, Users, ChevronLeft, Flag, TrendingUp, Target, Calculator, Info, ArrowUpRight, BarChart3, ShieldCheck } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
@@ -289,7 +289,6 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
           </TabsList>
 
           <TabsContent value="lucros" className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
-             {/* SEÇÃO 1: LUCROS PREVISTOS (PLANEJADO) */}
              <div className="space-y-6">
                 <div className="flex items-center gap-3 px-1 border-l-4 border-muted-foreground/20 pl-4">
                   <div className="bg-muted p-2 rounded-lg"><Target className="h-5 w-5 text-muted-foreground" /></div>
@@ -305,7 +304,6 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
                 </div>
              </div>
 
-             {/* SEÇÃO 2: RESULTADO OPERACIONAL (REAL) */}
              <div className="space-y-6">
                 <div className="flex items-center gap-3 px-1 border-l-4 border-primary pl-4">
                   <div className="bg-primary/10 p-2 rounded-lg"><BarChart3 className="h-5 w-5 text-primary" /></div>
