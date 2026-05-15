@@ -14,7 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Loader2, Edit3, Trash2, Store, Package, Users, ChevronLeft, Flag, TrendingUp, Target, Calculator, Info, ArrowUpRight, BarChart3, ShieldCheck, Wallet } from 'lucide-react';
+import { Plus, Loader2, Edit3, Trash2, Store, Package, Users, ChevronLeft, Flag, TrendingUp, Target, Calculator, Info, ArrowUpRight, BarChart3, ShieldCheck, Wallet, Lock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
@@ -59,6 +59,7 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
   // Event Data
   const eventRef = useMemoFirebase(() => tenantId ? doc(db, 'tenants', tenantId, 'events', eventId) : null, [tenantId, db, eventId]);
   const { data: event, isLoading: eventLoading } = useDoc(eventRef);
+  const isFinalized = event?.status === 'finalizado';
 
   // Suppliers Data
   const suppliersQuery = useMemoFirebase(() => tenantId ? query(collection(db, 'tenants', tenantId, 'events', eventId, 'suppliers'), orderBy('name')) : null, [tenantId, db, eventId]);
@@ -132,7 +133,7 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
   const [currentProduct, setCurrentProduct] = useState<Partial<Product>>({ type: 'own', active: true });
 
   const handleSaveSupplier = async () => {
-    if (!tenantId || !currentSupplier.name) return;
+    if (!tenantId || !currentSupplier.name || isFinalized) return;
     setSubmitting(true);
     try {
       const colRef = collection(db, 'tenants', tenantId, 'events', eventId, 'suppliers');
@@ -157,7 +158,7 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
   };
 
   const handleSaveProduct = async () => {
-    if (!tenantId || !currentProduct.name || !currentProduct.price) return;
+    if (!tenantId || !currentProduct.name || !currentProduct.price || isFinalized) return;
     
     setSubmitting(true);
     try {
@@ -178,7 +179,7 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
   };
 
   const handleFinalizeEvent = async () => {
-    if (!tenantId || !event || !confirm("Deseja finalizar o evento? Isso calculará automaticamente os repasses para cada barraca.")) return;
+    if (!tenantId || !event || !confirm("Deseja finalizar o evento? Isso calculará automaticamente os repasses finais e bloqueará novas vendas no PDV.")) return;
     setSubmitting(true);
 
     try {
@@ -210,7 +211,7 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
 
       batch.update(eventRef!, { status: 'finalizado' });
       await batch.commit();
-      toast({ title: "Evento Finalizado", description: "Todos os repasses financeiros foram processados com sucesso." });
+      toast({ title: "Evento Finalizado", description: "Todos os repasses financeiros foram processados e o PDV foi encerrado." });
     } catch (e) {
       console.error(e);
       toast({ title: "Erro ao finalizar", variant: "destructive" });
@@ -220,7 +221,7 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
   };
 
   const toggleMemberInEvent = async (userId: string, memberInfo: any) => {
-    if (!tenantId || !event) return;
+    if (!tenantId || !event || isFinalized) return;
     const currentMembers = event.members || {};
     const newMembers = { ...currentMembers };
 
@@ -238,7 +239,7 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
   };
 
   const deleteSupplier = async (id: string) => {
-    if (!confirm("Excluir este fornecedor?")) return;
+    if (isFinalized || !confirm("Excluir este fornecedor?")) return;
     try {
       await deleteDoc(doc(db, 'tenants', tenantId!, 'events', eventId, 'suppliers', id));
     } catch (e) {
@@ -247,7 +248,7 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
   };
 
   const deleteProduct = async (id: string) => {
-    if (!confirm("Excluir este produto do evento?")) return;
+    if (isFinalized || !confirm("Excluir este produto do evento?")) return;
     try {
       await deleteDoc(doc(db, 'tenants', tenantId!, 'events', eventId, 'products', id));
     } catch (e) {
@@ -285,6 +286,12 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
                 {submitting ? <Loader2 className="animate-spin h-4 w-4" /> : <><Flag className="mr-2 h-4 w-4" /> Finalizar</>}
               </Button>
             )}
+            {isFinalized && (
+              <div className="bg-primary/10 text-primary flex items-center gap-2 px-4 py-2 rounded-xl border border-primary/20">
+                <Lock className="h-4 w-4" />
+                <span className="text-[10px] font-black uppercase tracking-widest">Fechado</span>
+              </div>
+            )}
           </div>
         </div>
 
@@ -305,43 +312,50 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
           </TabsList>
 
           <TabsContent value="lucros" className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
-             <div className="space-y-6">
-                <div className="flex items-center gap-3 px-1 border-l-4 border-muted-foreground/20 pl-4">
-                  <div className="bg-muted p-2 rounded-lg"><Target className="h-5 w-5 text-muted-foreground" /></div>
-                  <div>
-                    <h3 className="text-lg font-black uppercase text-muted-foreground leading-none tracking-tight">Análise Prevista (Metas)</h3>
-                    <p className="text-[10px] font-bold uppercase text-muted-foreground/60 tracking-widest mt-1">Estimativa baseada no planejamento inicial</p>
+             {!isFinalized && (
+               <div className="space-y-6">
+                  <div className="flex items-center gap-3 px-1 border-l-4 border-muted-foreground/20 pl-4">
+                    <div className="bg-muted p-2 rounded-lg"><Target className="h-5 w-5 text-muted-foreground" /></div>
+                    <div>
+                      <h3 className="text-lg font-black uppercase text-muted-foreground leading-none tracking-tight">Análise Prevista (Metas)</h3>
+                      <p className="text-[10px] font-bold uppercase text-muted-foreground/60 tracking-widest mt-1">Estimativa baseada no planejamento inicial</p>
+                    </div>
                   </div>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
-                   <SummaryCard title="Arrecadação Prevista" value={`R$ ${formatCurrency(projections.plannedRevenue)}`} icon={<TrendingUp className="h-5 w-5" />} description="Meta Bruta de Vendas" color="text-muted-foreground" />
-                   <SummaryCard title="Custo de Repasse" value={`R$ ${formatCurrency(projections.plannedCost)}`} icon={<Calculator className="h-5 w-5" />} description="Saída Prevista para Terceiros" color="text-secondary" />
-                   <SummaryCard title="Lucro Org. Projetado" value={`R$ ${formatCurrency(projections.plannedProfit)}`} icon={<Flag className="h-5 w-5" />} color={projections.plannedProfit < 0 ? "text-destructive" : "text-green-600"} description="Expectativa de Ganho Líquido" />
-                </div>
-             </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
+                     <SummaryCard title="Arrecadação Prevista" value={`R$ ${formatCurrency(projections.plannedRevenue)}`} icon={<TrendingUp className="h-5 w-5" />} description="Meta Bruta de Vendas" color="text-muted-foreground" />
+                     <SummaryCard title="Custo de Repasse" value={`R$ ${formatCurrency(projections.plannedCost)}`} icon={<Calculator className="h-5 w-5" />} description="Saída Prevista para Terceiros" color="text-secondary" />
+                     <SummaryCard title="Lucro Org. Projetado" value={`R$ ${formatCurrency(projections.plannedProfit)}`} icon={<Flag className="h-5 w-5" />} color="text-green-600" description="Expectativa de Ganho Líquido" />
+                  </div>
+               </div>
+             )}
 
              <div className="space-y-6">
                 <div className="flex items-center gap-3 px-1 border-l-4 border-primary pl-4">
-                  <div className="bg-primary/10 p-2 rounded-lg"><BarChart3 className="h-5 w-5 text-primary" /></div>
+                  <div className={cn("p-2 rounded-lg", isFinalized ? "bg-green-500/10" : "bg-primary/10")}>
+                    {isFinalized ? <ShieldCheck className="h-5 w-5 text-green-600" /> : <BarChart3 className="h-5 w-5 text-primary" />}
+                  </div>
                   <div>
-                    <h3 className="text-lg font-black uppercase text-primary leading-none tracking-tight">Resultado Operacional (Real)</h3>
-                    <p className="text-[10px] font-bold uppercase text-primary/60 tracking-widest mt-1">Desempenho atual capturado no caixa</p>
+                    <h3 className={cn("text-lg font-black uppercase leading-none tracking-tight", isFinalized ? "text-green-600" : "text-primary")}>
+                      {isFinalized ? "Fechamento de Caixa (Final)" : "Resultado Operacional (Real)"}
+                    </h3>
+                    <p className="text-[10px] font-bold uppercase opacity-60 tracking-widest mt-1">
+                      {isFinalized ? "Valores finais consolidados pós-evento" : "Desempenho atual capturado no caixa"}
+                    </p>
                   </div>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
                    <SummaryCard title="Arrecadação Realizada" value={`R$ ${formatCurrency(projections.actualRevenue)}`} icon={<ArrowUpRight className="h-5 w-5" />} description="Entrada Bruta no Caixa" />
-                   <SummaryCard title="Lucro Org. Real" value={`R$ ${formatCurrency(projections.actualProfit)}`} icon={<ShieldCheck className="h-5 w-5" />} color={projections.actualProfit < 0 ? "text-destructive" : "text-primary"} description={projections.actualProfit < 0 ? "Saldo Negativo" : "Ganho Líquido Atual"} />
+                   <SummaryCard title="Lucro Org. Real" value={`R$ ${formatCurrency(projections.actualProfit)}`} icon={<ShieldCheck className="h-5 w-5" />} color="text-primary" description="Ganho Líquido da Organização" />
                    <SummaryCard title="Atingimento da Meta" value={`${projections.efficiency.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`} icon={<BarChart3 className="h-5 w-5" />} color="text-secondary" description="Volume de Itens Vendidos" />
                 </div>
              </div>
 
-             {/* NOVO: Detalhamento por Barraca/Terceiro */}
              <div className="space-y-6">
                 <div className="flex items-center gap-3 px-1 border-l-4 border-secondary pl-4">
                   <div className="bg-secondary/10 p-2 rounded-lg"><Wallet className="h-5 w-5 text-secondary" /></div>
                   <div>
-                    <h3 className="text-lg font-black uppercase text-secondary leading-none tracking-tight">Repasses por Fornecedor (Terceiros)</h3>
-                    <p className="text-[10px] font-bold uppercase text-secondary/60 tracking-widest mt-1">Valores a pagar para cada barraca</p>
+                    <h3 className="text-lg font-black uppercase text-secondary leading-none tracking-tight">Repasses para Terceiros (Barracas)</h3>
+                    <p className="text-[10px] font-bold uppercase text-secondary/60 tracking-widest mt-1">Valores {isFinalized ? "pagos" : "a pagar"} para cada barraca</p>
                   </div>
                 </div>
                 <Card className="border-none shadow-2xl rounded-[2.5rem] overflow-hidden bg-card">
@@ -351,8 +365,8 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
                         <TableHeader className="bg-muted/50">
                           <TableRow className="hover:bg-transparent border-primary/5">
                             <TableHead className="font-black uppercase text-[10px] py-6 pl-8">Barraca</TableHead>
-                            <TableHead className="font-black uppercase text-[10px]">Repasse Previsto (Se vender tudo)</TableHead>
-                            <TableHead className="font-black uppercase text-[10px]">Repasse Real (A Pagar Agora)</TableHead>
+                            {!isFinalized && <TableHead className="font-black uppercase text-[10px]">Repasse Previsto (Meta)</TableHead>}
+                            <TableHead className="font-black uppercase text-[10px]">{isFinalized ? "Repasse Efetuado" : "Repasse Real (A Pagar)"}</TableHead>
                             <TableHead className="font-black uppercase text-[10px] text-right pr-8">Seu Ganho (Org.)</TableHead>
                           </TableRow>
                         </TableHeader>
@@ -362,7 +376,7 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
                             return (
                               <TableRow key={s.id} className="border-primary/5 hover:bg-primary/5 transition-all">
                                 <TableCell className="font-black text-primary py-6 pl-8 uppercase text-sm">{s.name}</TableCell>
-                                <TableCell className="font-bold text-muted-foreground text-xs italic">R$ {formatCurrency(stats.plannedRepasse)}</TableCell>
+                                {!isFinalized && <TableCell className="font-bold text-muted-foreground text-xs italic">R$ {formatCurrency(stats.plannedRepasse)}</TableCell>}
                                 <TableCell className="font-black text-secondary text-base">R$ {formatCurrency(stats.actualRepasse)}</TableCell>
                                 <TableCell className="text-right pr-8 font-black text-green-600">R$ {formatCurrency(stats.revenue - stats.actualRepasse)}</TableCell>
                               </TableRow>
@@ -377,80 +391,12 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
                   </CardContent>
                 </Card>
              </div>
-
-             <Card className="border-none shadow-2xl rounded-[2.5rem] overflow-hidden bg-card">
-                <CardHeader className="bg-muted/10 p-6 md:p-8">
-                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <CardTitle className="text-lg md:text-xl font-black uppercase text-primary">Detalhamento por Item</CardTitle>
-                    <div className="flex items-center gap-2 bg-primary/5 px-4 py-2 rounded-xl border border-primary/10">
-                      <Info className="h-4 w-4 text-primary" />
-                      <span className="text-[10px] font-bold uppercase text-muted-foreground tracking-tight leading-none">Seu Ganho = Preço de Venda - Valor do Fornecedor</span>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="p-0">
-                  <div className="overflow-x-auto">
-                   <Table className="min-w-[700px]">
-                      <TableHeader className="bg-muted/50">
-                        <TableRow className="hover:bg-transparent border-primary/5">
-                          <TableHead className="font-black uppercase text-[10px] py-6 pl-8">Produto</TableHead>
-                          <TableHead className="font-black uppercase text-[10px]">Seu Ganho/Unid</TableHead>
-                          <TableHead className="font-black uppercase text-[10px]">Meta de Ganho</TableHead>
-                          <TableHead className="font-black uppercase text-[10px]">Ganho no Caixa</TableHead>
-                          <TableHead className="font-black uppercase text-[10px]">Status</TableHead>
-                          <TableHead className="font-black uppercase text-[10px] text-right pr-8">Performance</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {products.map((p) => {
-                          const profitPerUnit = p.price - (p.type === 'supplier' ? (p.supplierUnitCost || 0) : 0);
-                          const totalPlannedProfit = (p.plannedQuantity || 0) * profitPerUnit;
-                          const totalActualProfit = (p.soldQuantity || 0) * profitPerUnit;
-                          const progress = p.plannedQuantity ? ((p.soldQuantity || 0) / p.plannedQuantity) * 100 : 0;
-                          
-                          return (
-                            <TableRow key={p.id} className="border-primary/5 hover:bg-primary/5 transition-all">
-                              <TableCell className="font-black text-primary py-6 pl-8 uppercase text-sm">
-                                {p.name}
-                              </TableCell>
-                              <TableCell className={cn("font-black text-xs", profitPerUnit < 0 ? "text-destructive" : "text-green-600")}>
-                                R$ {formatCurrency(profitPerUnit)}
-                              </TableCell>
-                              <TableCell className={cn("font-bold text-xs", totalPlannedProfit < 0 && "text-destructive")}>
-                                R$ {formatCurrency(totalPlannedProfit)}
-                              </TableCell>
-                              <TableCell className={cn("font-black text-xs", totalActualProfit < 0 ? "text-destructive" : "text-green-600")}>
-                                R$ {formatCurrency(totalActualProfit)}
-                              </TableCell>
-                              <TableCell>
-                                {progress >= 100 ? (
-                                  <Badge className="bg-green-500 text-white font-black uppercase text-[8px] px-2">Meta Batida</Badge>
-                                ) : (
-                                  <Badge variant="outline" className="font-black uppercase text-[8px] px-2">Em andamento</Badge>
-                                )}
-                              </TableCell>
-                              <TableCell className="text-right pr-8">
-                                <div className="flex flex-col items-end gap-1">
-                                  <span className="font-black text-[9px] uppercase text-muted-foreground">{p.soldQuantity || 0} / {p.plannedQuantity || 0}</span>
-                                  <div className="w-20 h-1.5 bg-muted rounded-full overflow-hidden">
-                                    <div className={cn("h-full", profitPerUnit < 0 ? "bg-destructive" : "bg-primary")} style={{ width: `${Math.min(100, progress)}%` }} />
-                                  </div>
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          );
-                        })}
-                      </TableBody>
-                   </Table>
-                  </div>
-                </CardContent>
-             </Card>
           </TabsContent>
 
           <TabsContent value="suppliers" className="space-y-6">
             <div className="flex justify-between items-center px-1">
               <h3 className="text-lg md:text-xl font-black text-primary uppercase tracking-tight">Fornecedores</h3>
-              {event?.status !== 'finalizado' && (
+              {!isFinalized && (
                 <Button onClick={() => { setCurrentSupplier({}); setShowSupplierForm(true); }} className="rounded-xl h-11 md:h-12 font-black uppercase text-[9px] md:text-[10px] tracking-widest px-4">
                   <Plus className="mr-2 h-4 w-4" /> Nova Barraca
                 </Button>
@@ -518,7 +464,7 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
                   {suppliersLoading ? (
                     <TableRow><TableCell colSpan={5} className="text-center py-20"><Loader2 className="animate-spin h-10 w-10 mx-auto text-primary opacity-20" /></TableCell></TableRow>
                   ) : suppliers.length === 0 ? (
-                    <TableRow><TableCell colSpan={5} className="text-center py-20 text-muted-foreground font-black uppercase text-[10px] tracking-widest opacity-40">Nenhuma barraca cadastrada</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={5} className="text-center py-20 text-muted-foreground font-black uppercase text-[10px] tracking-widest opacity-40">Nenhuma barraca cadastrada</TableRow>
                   ) : (
                     suppliers.map((s) => (
                       <TableRow key={s.id} className="border-primary/5 hover:bg-primary/5 transition-all">
@@ -528,15 +474,17 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
                         </TableCell>
                         <TableCell className="font-black text-primary text-xs whitespace-nowrap">R$ {formatCurrency(s.totalActualRevenue || 0)}</TableCell>
                         <TableCell className="font-bold text-secondary text-xs whitespace-nowrap">R$ {formatCurrency(s.totalActualCost || 0)}</TableCell>
-                        <TableCell className={cn("font-black text-xs whitespace-nowrap", (s.totalActualProfit || 0) < 0 ? "text-destructive" : "text-green-600")}>
+                        <TableCell className="font-black text-xs whitespace-nowrap text-green-600">
                           R$ {formatCurrency(s.totalActualProfit || 0)}
                         </TableCell>
                         <TableCell className="text-right pr-8">
                           <div className="flex justify-end gap-1">
-                            <Button variant="ghost" size="icon" onClick={() => { setCurrentSupplier(s); setShowSupplierForm(true); }} className="h-9 w-9 rounded-lg text-primary/40 hover:text-primary hover:bg-primary/10">
-                              <Edit3 className="h-4 w-4" />
-                            </Button>
-                            {event?.status !== 'finalizado' && (
+                            {!isFinalized && (
+                              <Button variant="ghost" size="icon" onClick={() => { setCurrentSupplier(s); setShowSupplierForm(true); }} className="h-9 w-9 rounded-lg text-primary/40 hover:text-primary hover:bg-primary/10">
+                                <Edit3 className="h-4 w-4" />
+                              </Button>
+                            )}
+                            {!isFinalized && (
                               <Button variant="ghost" size="icon" onClick={() => deleteSupplier(s.id)} className="h-9 w-9 rounded-lg text-destructive/40 hover:text-destructive hover:bg-destructive/10">
                                 <Trash2 className="h-4 w-4" />
                               </Button>
@@ -555,7 +503,7 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
           <TabsContent value="products" className="space-y-6">
             <div className="flex justify-between items-center px-1">
               <h3 className="text-lg md:text-xl font-black text-primary uppercase tracking-tight">Cardápio</h3>
-              {event?.status !== 'finalizado' && (
+              {!isFinalized && (
                 <Button onClick={() => { setCurrentProduct({ type: 'own', active: true }); setShowProductForm(true); }} className="rounded-xl h-11 md:h-12 font-black uppercase text-[9px] md:text-[10px] tracking-widest px-4">
                   <Plus className="mr-2 h-4 w-4" /> Novo Item
                 </Button>
@@ -579,7 +527,7 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
                       />
                     </div>
                     <div className="space-y-1.5">
-                      <Label className="font-black uppercase text-[10px] ml-1">Preço de Venda na Festa (R$)</Label>
+                      <Label className="font-black uppercase text-[10px] ml-1">Preço de Venda (R$)</Label>
                       <Input 
                         type="number"
                         placeholder="12,00"
@@ -595,8 +543,8 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent className="rounded-2xl border-none shadow-2xl">
-                          <SelectItem value="own" className="font-black uppercase text-xs">Próprio (Ganho 100%)</SelectItem>
-                          <SelectItem value="supplier" className="font-black uppercase text-xs">Barraca Parceira</SelectItem>
+                          <SelectItem value="own" className="font-black uppercase text-xs">Próprio (Dono)</SelectItem>
+                          <SelectItem value="supplier" className="font-black uppercase text-xs">Barraca (Terceiro)</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -641,29 +589,6 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
                     )}
                   </div>
                   
-                  {/* Prévia de Ganho do Dono da Festa */}
-                  {currentProduct.price !== undefined && (
-                    <div className="bg-primary/5 p-4 rounded-xl border border-primary/10 mt-4 flex justify-between items-center">
-                      <div className="space-y-0.5">
-                        <span className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Seu Ganho por Unidade</span>
-                        <div className="flex items-center gap-2">
-                          <Badge variant="outline" className="text-[9px] uppercase border-primary/20">
-                            {currentProduct.type === 'own' ? '100% Ganho' : 'Lucro sobre Repasse'}
-                          </Badge>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <span className={cn(
-                          "text-xl font-black tracking-tighter",
-                          (currentProduct.price - (currentProduct.type === 'supplier' ? (currentProduct.supplierUnitCost || 0) : 0)) < 0 ? "text-destructive" : "text-green-600"
-                        )}>
-                          R$ {formatCurrency(currentProduct.price - (currentProduct.type === 'supplier' ? (currentProduct.supplierUnitCost || 0) : 0))}
-                        </span>
-                        <span className="block text-[9px] font-bold text-muted-foreground uppercase">Sobra p/ Você</span>
-                      </div>
-                    </div>
-                  )}
-
                   <div className="flex justify-end gap-3 pt-4">
                     <Button variant="ghost" onClick={() => setShowProductForm(false)} className="rounded-xl font-bold uppercase text-[9px]">Cancelar</Button>
                     <Button onClick={handleSaveProduct} disabled={submitting} className="rounded-xl px-8 h-12 md:h-14 font-black uppercase text-[9px] md:text-[10px] shadow-xl shadow-primary/20">
@@ -698,7 +623,7 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
                         <TableRow key={p.id} className="border-primary/5 hover:bg-primary/5 transition-all">
                           <TableCell className="font-black text-primary py-6 pl-8 uppercase text-sm">
                             {p.name}
-                            <Badge variant="outline" className="ml-2 text-[7px] border-primary/20 uppercase px-1 h-3">{p.type === 'own' ? 'Prop' : 'Fornec'}</Badge>
+                            <Badge variant="outline" className="ml-2 text-[7px] border-primary/20 uppercase px-1 h-3">{p.type === 'own' ? 'Dono' : 'Barraca'}</Badge>
                           </TableCell>
                           <TableCell className="font-black text-lg md:text-xl tracking-tighter whitespace-nowrap">{p.soldQuantity || 0} un</TableCell>
                           <TableCell className={cn("font-bold text-[10px] md:text-xs", missed > 0 ? "text-secondary" : "text-green-600")}>
@@ -707,10 +632,12 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
                           <TableCell className="font-black text-primary text-sm md:text-base whitespace-nowrap">R$ {formatCurrency((p.soldQuantity || 0) * p.price)}</TableCell>
                           <TableCell className="text-right pr-8">
                             <div className="flex justify-end gap-1">
-                              <Button variant="ghost" size="icon" onClick={() => { setCurrentProduct(p); setShowProductForm(true); }} className="h-9 w-9 rounded-lg text-primary/40 hover:text-primary hover:bg-primary/10">
-                                <Edit3 className="h-4 w-4" />
-                              </Button>
-                              {event?.status !== 'finalizado' && (
+                              {!isFinalized && (
+                                <Button variant="ghost" size="icon" onClick={() => { setCurrentProduct(p); setShowProductForm(true); }} className="h-9 w-9 rounded-lg text-primary/40 hover:text-primary hover:bg-primary/10">
+                                  <Edit3 className="h-4 w-4" />
+                                </Button>
+                              )}
+                              {!isFinalized && (
                                 <Button variant="ghost" size="icon" onClick={() => deleteProduct(p.id)} className="h-9 w-9 rounded-lg text-destructive/40 hover:text-destructive hover:bg-destructive/10">
                                   <Trash2 className="h-4 w-4" />
                                 </Button>
@@ -761,7 +688,7 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
                           )}
                         </TableCell>
                         <TableCell className="text-right pr-8">
-                          {event?.status !== 'finalizado' && (
+                          {!isFinalized && (
                             <Button 
                               variant={isLinked ? "ghost" : "default"} 
                               size="sm" 
