@@ -14,7 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Loader2, Edit3, Trash2, Store, Package, Users, ChevronLeft, Flag, TrendingUp, Target, Calculator, Info, ArrowUpRight, BarChart3, ShieldCheck, Wallet, Lock } from 'lucide-react';
+import { Plus, Loader2, Edit3, Trash2, Store, Package, Users, ChevronLeft, Flag, TrendingUp, Target, Calculator, ArrowUpRight, BarChart3, ShieldCheck, Wallet, Lock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
@@ -464,7 +464,11 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
                   {suppliersLoading ? (
                     <TableRow><TableCell colSpan={5} className="text-center py-20"><Loader2 className="animate-spin h-10 w-10 mx-auto text-primary opacity-20" /></TableCell></TableRow>
                   ) : suppliers.length === 0 ? (
-                    <TableRow><TableCell colSpan={5} className="text-center py-20 text-muted-foreground font-black uppercase text-[10px] tracking-widest opacity-40">Nenhuma barraca cadastrada</TableRow>
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center py-20 text-muted-foreground font-black uppercase text-[10px] tracking-widest opacity-40">
+                        Nenhuma barraca cadastrada
+                      </TableCell>
+                    </TableRow>
                   ) : (
                     suppliers.map((s) => (
                       <TableRow key={s.id} className="border-primary/5 hover:bg-primary/5 transition-all">
