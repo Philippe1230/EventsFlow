@@ -14,7 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Loader2, Edit3, Trash2, Store, Package, Users, ChevronLeft, Flag, TrendingUp, Target, Calculator, Info, ArrowUpRight, BarChart3, ShieldCheck } from 'lucide-react';
+import { Plus, Loader2, Edit3, Trash2, Store, Package, Users, ChevronLeft, Flag, TrendingUp, Target, Calculator, Info, ArrowUpRight, BarChart3, ShieldCheck, Wallet } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
@@ -79,6 +79,8 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
     let totalPlannedQty = 0;
     let totalActualQty = 0;
 
+    const supplierProjections: Record<string, { plannedRepasse: number, actualRepasse: number, revenue: number }> = {};
+
     products.forEach(p => {
       const pPlanned = p.plannedQuantity || 0;
       const pSold = p.soldQuantity || 0;
@@ -89,8 +91,21 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
       totalActualQty += pSold;
 
       if (p.type === 'supplier') {
-        plannedCost += pPlanned * (p.supplierUnitCost || 0);
-        actualCost += pSold * (p.supplierUnitCost || 0);
+        const unitCost = p.supplierUnitCost || 0;
+        const itemPlannedCost = pPlanned * unitCost;
+        const itemActualCost = pSold * unitCost;
+        
+        plannedCost += itemPlannedCost;
+        actualCost += itemActualCost;
+
+        if (p.supplierId) {
+          if (!supplierProjections[p.supplierId]) {
+            supplierProjections[p.supplierId] = { plannedRepasse: 0, actualRepasse: 0, revenue: 0 };
+          }
+          supplierProjections[p.supplierId].plannedRepasse += itemPlannedCost;
+          supplierProjections[p.supplierId].actualRepasse += itemActualCost;
+          supplierProjections[p.supplierId].revenue += pSold * p.price;
+        }
       }
     });
 
@@ -104,7 +119,8 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
       actualRevenue,
       actualCost,
       actualProfit,
-      efficiency: totalPlannedQty > 0 ? (totalActualQty / totalPlannedQty) * 100 : 0
+      efficiency: totalPlannedQty > 0 ? (totalActualQty / totalPlannedQty) * 100 : 0,
+      supplierProjections
     };
   }, [products]);
 
@@ -162,7 +178,7 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
   };
 
   const handleFinalizeEvent = async () => {
-    if (!tenantId || !event || !confirm("Deseja finalizar o evento? Isso calculará automaticamente os resultados.")) return;
+    if (!tenantId || !event || !confirm("Deseja finalizar o evento? Isso calculará automaticamente os repasses para cada barraca.")) return;
     setSubmitting(true);
 
     try {
@@ -194,7 +210,7 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
 
       batch.update(eventRef!, { status: 'finalizado' });
       await batch.commit();
-      toast({ title: "Evento Finalizado", description: "Todos os cálculos foram processados com sucesso." });
+      toast({ title: "Evento Finalizado", description: "Todos os repasses financeiros foram processados com sucesso." });
     } catch (e) {
       console.error(e);
       toast({ title: "Erro ao finalizar", variant: "destructive" });
@@ -317,6 +333,49 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
                    <SummaryCard title="Lucro Org. Real" value={`R$ ${formatCurrency(projections.actualProfit)}`} icon={<ShieldCheck className="h-5 w-5" />} color={projections.actualProfit < 0 ? "text-destructive" : "text-primary"} description={projections.actualProfit < 0 ? "Saldo Negativo" : "Ganho Líquido Atual"} />
                    <SummaryCard title="Atingimento da Meta" value={`${projections.efficiency.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`} icon={<BarChart3 className="h-5 w-5" />} color="text-secondary" description="Volume de Itens Vendidos" />
                 </div>
+             </div>
+
+             {/* NOVO: Detalhamento por Barraca/Terceiro */}
+             <div className="space-y-6">
+                <div className="flex items-center gap-3 px-1 border-l-4 border-secondary pl-4">
+                  <div className="bg-secondary/10 p-2 rounded-lg"><Wallet className="h-5 w-5 text-secondary" /></div>
+                  <div>
+                    <h3 className="text-lg font-black uppercase text-secondary leading-none tracking-tight">Repasses por Fornecedor (Terceiros)</h3>
+                    <p className="text-[10px] font-bold uppercase text-secondary/60 tracking-widest mt-1">Valores a pagar para cada barraca</p>
+                  </div>
+                </div>
+                <Card className="border-none shadow-2xl rounded-[2.5rem] overflow-hidden bg-card">
+                  <CardContent className="p-0">
+                    <div className="overflow-x-auto">
+                      <Table className="min-w-[700px]">
+                        <TableHeader className="bg-muted/50">
+                          <TableRow className="hover:bg-transparent border-primary/5">
+                            <TableHead className="font-black uppercase text-[10px] py-6 pl-8">Barraca</TableHead>
+                            <TableHead className="font-black uppercase text-[10px]">Repasse Previsto (Se vender tudo)</TableHead>
+                            <TableHead className="font-black uppercase text-[10px]">Repasse Real (A Pagar Agora)</TableHead>
+                            <TableHead className="font-black uppercase text-[10px] text-right pr-8">Seu Ganho (Org.)</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {suppliers.map(s => {
+                            const stats = projections.supplierProjections[s.id] || { plannedRepasse: 0, actualRepasse: 0, revenue: 0 };
+                            return (
+                              <TableRow key={s.id} className="border-primary/5 hover:bg-primary/5 transition-all">
+                                <TableCell className="font-black text-primary py-6 pl-8 uppercase text-sm">{s.name}</TableCell>
+                                <TableCell className="font-bold text-muted-foreground text-xs italic">R$ {formatCurrency(stats.plannedRepasse)}</TableCell>
+                                <TableCell className="font-black text-secondary text-base">R$ {formatCurrency(stats.actualRepasse)}</TableCell>
+                                <TableCell className="text-right pr-8 font-black text-green-600">R$ {formatCurrency(stats.revenue - stats.actualRepasse)}</TableCell>
+                              </TableRow>
+                            );
+                          })}
+                          {suppliers.length === 0 && (
+                            <TableRow><TableCell colSpan={4} className="py-12 text-center text-muted-foreground font-black uppercase text-[10px] opacity-40">Nenhuma barraca vinculada para repasse</TableCell></TableRow>
+                          )}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </CardContent>
+                </Card>
              </div>
 
              <Card className="border-none shadow-2xl rounded-[2.5rem] overflow-hidden bg-card">
@@ -569,7 +628,7 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
                           </Select>
                         </div>
                         <div className="space-y-1.5">
-                          <Label className="font-black uppercase text-[10px] ml-1">Custo da Barraca (Valor Fornec.)</Label>
+                          <Label className="font-black uppercase text-[10px] ml-1">Valor do Fornecedor (Repasse)</Label>
                           <Input 
                             type="number"
                             placeholder="7,00"
