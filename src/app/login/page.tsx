@@ -9,15 +9,21 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, AlertCircle, WifiOff } from 'lucide-react';
+import { Loader2, AlertCircle, WifiOff, Smartphone, Download, Share2, PlusSquare, MoreVertical, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 import { OrderTicketIcon } from '@/components/layout/AppShell';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [isOnline, setIsOnline] = useState(true);
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [isStandalone, setIsStandalone] = useState(false);
+  const [showGuideDialog, setShowGuideDialog] = useState(false);
+  
   const auth = useFirebaseAuth();
   const router = useRouter();
   const { toast } = useToast();
@@ -33,6 +39,30 @@ export default function LoginPage() {
       window.removeEventListener('offline', goOffline);
     };
   }, []);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const isPWA = window.matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone;
+      setIsStandalone(!!isPWA);
+    }
+
+    const handleBeforeInstall = (e: any) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstall);
+    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+      setDeferredPrompt(null);
+    }
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -80,7 +110,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-4 bg-background">
+    <div className="flex flex-col min-h-screen items-center justify-center p-4 bg-background py-8">
       <Card className="w-full max-w-md shadow-2xl border-primary/10 rounded-[2.5rem] overflow-hidden">
         <CardHeader className="text-center pt-12 pb-8">
           <div className="flex justify-center mb-6">
@@ -141,6 +171,134 @@ export default function LoginPage() {
           </CardFooter>
         </form>
       </Card>
+
+      {!isStandalone && (
+        <div className="w-full max-w-md mt-6 animate-in slide-in-from-bottom-2 duration-300">
+          <Card className="rounded-[2.5rem] border-primary/10 bg-card/60 backdrop-blur-sm shadow-xl overflow-hidden border">
+            <CardContent className="p-8 flex flex-col items-center text-center gap-4">
+              <div className="inline-flex items-center gap-2 text-primary font-black uppercase text-[10px] tracking-wider bg-primary/10 px-3 py-1.5 rounded-full">
+                <Smartphone className="h-4 w-4" /> Instale o Aplicativo (PWA)
+              </div>
+              <p className="text-xs font-bold text-muted-foreground leading-snug">
+                Tenha vendas em tela cheia, latência zero, acesso rápido offline e sem barras de navegação instalando o app no seu dispositivo.
+              </p>
+              <div className="flex gap-3 w-full mt-2">
+                {deferredPrompt ? (
+                  <Button onClick={handleInstallClick} className="flex-1 h-14 rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-lg bg-primary hover:bg-primary/90 text-white">
+                    <Download className="mr-2 h-4 w-4" /> Instalar Aqui
+                  </Button>
+                ) : (
+                  <Button onClick={() => setShowGuideDialog(true)} className="flex-1 h-14 rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-lg bg-primary hover:bg-primary/90 text-white">
+                    <Download className="mr-2 h-4 w-4" /> Instalar no Celular
+                  </Button>
+                )}
+                <Button variant="outline" onClick={() => setShowGuideDialog(true)} className="h-14 px-6 rounded-2xl font-black uppercase text-[10px] border-primary/20 text-primary hover:bg-primary/5">
+                  Como Instalar
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      <Dialog open={showGuideDialog} onOpenChange={setShowGuideDialog}>
+        <DialogContent className="rounded-[2.5rem] border-none p-0 overflow-hidden sm:max-w-md w-[92vw] !top-[50%] !translate-y-[-50%] shadow-4xl bg-card">
+          <DialogHeader className="bg-primary p-8 text-white text-center">
+            <Smartphone className="h-12 w-12 mx-auto mb-3 opacity-60 animate-pulse" />
+            <DialogTitle className="text-2xl font-black uppercase italic tracking-tighter">Como Instalar o App</DialogTitle>
+            <DialogDescription className="text-white/70 font-black text-[9px] uppercase tracking-[0.2em] mt-1">Siga o passo a passo para o seu aparelho</DialogDescription>
+          </DialogHeader>
+          <div className="p-6">
+            <Tabs defaultValue="ios" className="w-full">
+              <TabsList className="grid grid-cols-2 rounded-xl bg-muted p-1 mb-6">
+                <TabsTrigger value="ios" className="rounded-lg font-black uppercase text-[9px] tracking-widest"> Apple (iOS)</TabsTrigger>
+                <TabsTrigger value="android" className="rounded-lg font-black uppercase text-[9px] tracking-widest">🤖 Android / Chrome</TabsTrigger>
+              </TabsList>
+              <TabsContent value="ios" className="space-y-4 animate-in fade-in duration-200">
+                <div className="space-y-3">
+                  <div className="flex gap-4 items-start bg-primary/5 p-4 rounded-2xl border border-primary/5">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary text-white text-xs font-black shrink-0">1</span>
+                    <p className="text-xs font-bold leading-normal text-foreground">
+                      Abra o site no navegador oficial da Apple, o <strong className="text-primary font-black uppercase text-[10px]">Safari</strong> (essencial para o iOS).
+                    </p>
+                  </div>
+                  <div className="flex gap-4 items-start bg-primary/5 p-4 rounded-2xl border border-primary/5">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary text-white text-xs font-black shrink-0">2</span>
+                    <div className="space-y-1">
+                      <p className="text-xs font-bold leading-normal text-foreground">
+                        Toque no botão de Compartilhar na barra de ferramentas inferior do Safari:
+                      </p>
+                      <div className="flex items-center justify-center p-2 bg-background border border-primary/15 rounded-xl w-fit mt-1.5">
+                        <Share2 className="h-5 w-5 text-primary" />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex gap-4 items-start bg-primary/5 p-4 rounded-2xl border border-primary/5">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary text-white text-xs font-black shrink-0">3</span>
+                    <div className="space-y-1">
+                      <p className="text-xs font-bold leading-normal text-foreground">
+                        Role a lista para baixo e selecione a opção <strong className="text-primary font-black uppercase text-[10px]">Adicionar à Tela de Início</strong>:
+                      </p>
+                      <div className="flex items-center gap-2 p-2 px-3 bg-background border border-primary/15 rounded-xl w-fit mt-1.5 font-black uppercase text-[8px] tracking-wider text-primary">
+                        <PlusSquare className="h-4 w-4" /> Adicionar à Tela de Início
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex gap-4 items-start bg-primary/5 p-4 rounded-2xl border border-primary/5">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary text-white text-xs font-black shrink-0">4</span>
+                    <p className="text-xs font-bold leading-normal text-foreground">
+                      Toque em <strong className="text-primary font-black uppercase text-[10px]">Adicionar</strong> no canto superior direito. Pronto! O app aparecerá na tela do seu iPhone.
+                    </p>
+                  </div>
+                </div>
+              </TabsContent>
+              <TabsContent value="android" className="space-y-4 animate-in fade-in duration-200">
+                <div className="space-y-3">
+                  <div className="flex gap-4 items-start bg-primary/5 p-4 rounded-2xl border border-primary/5">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary text-white text-xs font-black shrink-0">1</span>
+                    <p className="text-xs font-bold leading-normal text-foreground">
+                      Abra o site no seu navegador <strong className="text-primary font-black uppercase text-[10px]">Google Chrome</strong>.
+                    </p>
+                  </div>
+                  <div className="flex gap-4 items-start bg-primary/5 p-4 rounded-2xl border border-primary/5">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary text-white text-xs font-black shrink-0">2</span>
+                    <div className="space-y-1">
+                      <p className="text-xs font-bold leading-normal text-foreground">
+                        Toque no menu de três pontos no canto superior direito:
+                      </p>
+                      <div className="flex items-center justify-center p-2 bg-background border border-primary/15 rounded-xl w-fit mt-1.5">
+                        <MoreVertical className="h-5 w-5 text-primary" />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex gap-4 items-start bg-primary/5 p-4 rounded-2xl border border-primary/5">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary text-white text-xs font-black shrink-0">3</span>
+                    <div className="space-y-1">
+                      <p className="text-xs font-bold leading-normal text-foreground">
+                        Toque em <strong className="text-primary font-black uppercase text-[10px]">Instalar aplicativo</strong> ou <strong className="text-primary font-black uppercase text-[10px]">Adicionar à tela inicial</strong>:
+                      </p>
+                      <div className="flex items-center gap-2 p-2 px-3 bg-background border border-primary/15 rounded-xl w-fit mt-1.5 font-black uppercase text-[8px] tracking-wider text-primary">
+                        <Download className="h-4 w-4" /> Instalar Aplicativo
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex gap-4 items-start bg-primary/5 p-4 rounded-2xl border border-primary/5">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary text-white text-xs font-black shrink-0">4</span>
+                    <p className="text-xs font-bold leading-normal text-foreground">
+                      Confirme a instalação e aguarde o ícone ser adicionado à sua gaveta de aplicativos do celular!
+                    </p>
+                  </div>
+                </div>
+              </TabsContent>
+            </Tabs>
+          </div>
+          <DialogFooter className="p-6 pt-0">
+            <Button onClick={() => setShowGuideDialog(false)} className="w-full h-12 font-black uppercase text-xs rounded-xl tracking-wider shadow-md bg-muted hover:bg-muted/80 text-foreground">
+              Entendido
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

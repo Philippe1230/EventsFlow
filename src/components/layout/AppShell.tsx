@@ -45,10 +45,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }, [pathname, navItems]);
 
   if (loading && !user) return (
-    <div className="h-screen w-screen flex items-center justify-center bg-background">
-      <div className="flex flex-col items-center gap-4">
-        <OrderTicketIcon className="h-10 w-10 md:h-12 md:w-12 animate-bounce text-primary" />
-        <span className="font-black uppercase text-[9px] md:text-[10px] tracking-[0.3em] text-primary/40 italic">Flow Events...</span>
+    <div className="h-screen w-screen flex items-center justify-center bg-background animate-in fade-in duration-300">
+      <div className="flex flex-col items-center gap-6">
+        <div className="relative flex items-center justify-center">
+          <div className="absolute -inset-6 rounded-3xl bg-primary/20 blur-xl animate-pulse" />
+          <img src="/icon.svg" alt="Flow Events Logo" className="h-20 w-20 animate-bounce" />
+        </div>
+        <span className="font-black uppercase text-[10px] tracking-[0.3em] text-primary/40 italic animate-pulse">Iniciando sistema...</span>
       </div>
     </div>
   );
@@ -56,9 +59,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <SidebarProvider>
       <Sidebar className="border-r bg-card shadow-xl">
-        <SidebarHeader className="p-5 md:p-6 flex flex-row items-center gap-3">
-          <div className="flex h-10 w-10 md:h-12 md:w-12 items-center justify-center rounded-2xl bg-primary text-white shadow-lg shrink-0">
-            <OrderTicketIcon className="h-6 w-6 md:h-7 md:w-7" />
+        <SidebarHeader className="p-5 md:p-6 pt-[calc(1.25rem+env(safe-area-inset-top))] flex flex-row items-center gap-3">
+          <div className="flex h-10 w-10 md:h-12 md:w-12 items-center justify-center rounded-2xl overflow-hidden shadow-lg shrink-0 bg-transparent">
+            <img src="/icon.svg" alt="Flow Events" className="h-full w-full object-cover" />
           </div>
           <div className="flex flex-col overflow-hidden">
             <span className="font-black text-base md:text-lg leading-none text-primary uppercase tracking-tighter truncate">
@@ -101,7 +104,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </SidebarFooter>
       </Sidebar>
       <SidebarInset className="bg-background relative min-w-0">
-        <header className="flex h-16 items-center justify-between border-b bg-card/50 backdrop-blur-sm px-4 md:px-6 no-print shadow-sm sticky top-0 z-40">
+        <header className="flex h-[calc(4rem+env(safe-area-inset-top))] pt-[env(safe-area-inset-top)] items-center justify-between border-b bg-card/50 backdrop-blur-sm px-4 md:px-6 no-print shadow-sm sticky top-0 z-40">
           <div className="flex items-center gap-3 md:gap-4 overflow-hidden">
             <SidebarTrigger className="text-primary hover:bg-primary/10 rounded-xl md:hidden shrink-0" />
             <h1 className="text-sm md:text-lg font-black text-primary uppercase tracking-tighter truncate max-w-[150px] md:max-w-none">
@@ -120,7 +123,24 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             )}
           </div>
         </header>
-        <main className={cn("flex-1 p-4 md:p-10 transition-all duration-150 min-w-0", isNavigating ? "opacity-50 grayscale" : "opacity-100")}>
+        <main className={cn("flex-1 p-4 md:p-10 transition-all duration-150 min-w-0 relative", isNavigating && "pointer-events-none")}>
+          {isNavigating && (
+            <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-background/80 backdrop-blur-md animate-in fade-in duration-200">
+              <div className="flex flex-col items-center gap-6">
+                <div className="relative flex items-center justify-center">
+                  <div className="absolute -inset-4 rounded-3xl bg-primary/20 blur-xl animate-pulse" />
+                  <img 
+                    src="/icon.svg" 
+                    alt="Flow Events Logo" 
+                    className="h-16 w-16 animate-bounce"
+                  />
+                </div>
+                <span className="font-black uppercase text-[10px] tracking-[0.3em] text-primary animate-pulse italic">
+                  Carregando painel...
+                </span>
+              </div>
+            </div>
+          )}
           {children}
         </main>
       </SidebarInset>
