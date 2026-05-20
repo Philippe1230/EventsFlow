@@ -4,6 +4,7 @@ import './globals.css';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
 import { AuthProvider } from '@/hooks/use-auth-context';
 import { Toaster } from '@/components/ui/toaster';
+import { PWARegister } from '@/components/pwa/PWARegister';
 
 export const metadata: Metadata = {
   title: 'Flow Events - Gestão de Vendas Ultra Rápida',
@@ -73,6 +74,7 @@ export default function RootLayout({
       <body className="font-body antialiased bg-background text-foreground overflow-x-hidden selection:bg-primary/20 selection:text-primary">
         <FirebaseClientProvider>
           <AuthProvider>
+            <PWARegister />
             {children}
             <Toaster />
           </AuthProvider>
