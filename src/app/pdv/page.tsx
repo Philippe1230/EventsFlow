@@ -442,37 +442,37 @@ function PDVContent() {
       </Dialog>
 
       <Dialog open={showPaymentModal} onOpenChange={setShowPaymentModal}>
-        <DialogContent className="rounded-[2.5rem] border-none p-0 overflow-hidden sm:max-w-md w-[92vw] !top-[50%] !translate-y-[-50%] shadow-4xl">
-          <DialogHeader className="bg-primary p-8 text-white">
-            <DialogTitle className="text-3xl font-black uppercase text-center italic tracking-tighter">Pagamento</DialogTitle>
-            <p className="text-center text-white/70 font-black text-[10px] uppercase tracking-[0.2em] mt-2">Selecione a forma de entrada</p>
+        <DialogContent className="rounded-[2.5rem] border-none p-0 overflow-hidden sm:max-w-md w-[92vw] !top-[50%] !translate-y-[-50%] shadow-4xl max-h-[92vh] overflow-y-auto flex flex-col scrollbar-thin scrollbar-thumb-muted">
+          <DialogHeader className="bg-primary p-5 md:p-6 text-white shrink-0">
+            <DialogTitle className="text-2xl md:text-3xl font-black uppercase text-center italic tracking-tighter text-white">Pagamento</DialogTitle>
+            <p className="text-center text-white/70 font-black text-[9px] md:text-[10px] uppercase tracking-[0.2em] mt-1">Selecione a forma de entrada</p>
           </DialogHeader>
-          <div className="p-8 space-y-8">
-            <div className="text-center bg-primary/5 p-6 rounded-[2rem] border-2 border-primary/10 shadow-inner">
-              <span className="text-[10px] font-black uppercase text-muted-foreground tracking-widest mb-1 block">Total a Receber</span>
-              <div className="text-5xl font-black text-primary tracking-tighter italic">R$ {formatCurrency(total)}</div>
+          <div className="p-5 md:p-6 space-y-4 md:space-y-6 flex-1">
+            <div className="text-center bg-primary/5 p-4 md:p-5 rounded-[1.5rem] md:rounded-[2rem] border-2 border-primary/10 shadow-inner">
+              <span className="text-[9px] md:text-[10px] font-black uppercase text-muted-foreground tracking-widest mb-0.5 block">Total a Receber</span>
+              <div className="text-3xl md:text-4xl font-black text-primary tracking-tighter italic">R$ {formatCurrency(total)}</div>
             </div>
-            <div className="grid grid-cols-3 gap-3">
-              <Button variant={paymentMethod === 'dinheiro' ? 'default' : 'outline'} className="flex flex-col h-28 gap-2 border-2 rounded-2xl font-black uppercase text-[9px] shadow-sm transition-all" onClick={() => setPaymentMethod('dinheiro')}><Banknote className="h-8 w-8 text-primary" /><span>Dinheiro</span></Button>
-              <Button variant={paymentMethod === 'pix' ? 'default' : 'outline'} className="flex flex-col h-28 gap-2 border-2 rounded-2xl font-black uppercase text-[9px] shadow-sm transition-all" onClick={() => setPaymentMethod('pix')}><QrCode className="h-8 w-8 text-primary" /><span>Pix</span></Button>
-              <Button variant={paymentMethod === 'cartao' ? 'default' : 'outline'} className="flex flex-col h-28 gap-2 border-2 rounded-2xl font-black uppercase text-[9px] shadow-sm transition-all" onClick={() => setPaymentMethod('cartao')}><CreditCard className="h-8 w-8 text-primary" /><span>Cartão</span></Button>
+            <div className="grid grid-cols-3 gap-2 md:gap-3">
+              <Button variant={paymentMethod === 'dinheiro' ? 'default' : 'outline'} className="flex flex-col h-20 md:h-24 gap-1 border-2 rounded-2xl font-black uppercase text-[8px] md:text-[9px] shadow-sm transition-all" onClick={() => setPaymentMethod('dinheiro')}><Banknote className="h-6 w-6 md:h-7 md:w-7 text-primary" /><span>Dinheiro</span></Button>
+              <Button variant={paymentMethod === 'pix' ? 'default' : 'outline'} className="flex flex-col h-20 md:h-24 gap-1 border-2 rounded-2xl font-black uppercase text-[8px] md:text-[9px] shadow-sm transition-all" onClick={() => setPaymentMethod('pix')}><QrCode className="h-6 w-6 md:h-7 md:w-7 text-primary" /><span>Pix</span></Button>
+              <Button variant={paymentMethod === 'cartao' ? 'default' : 'outline'} className="flex flex-col h-20 md:h-24 gap-1 border-2 rounded-2xl font-black uppercase text-[8px] md:text-[9px] shadow-sm transition-all" onClick={() => setPaymentMethod('cartao')}><CreditCard className="h-6 w-6 md:h-7 md:w-7 text-primary" /><span>Cartão</span></Button>
             </div>
             {paymentMethod === 'dinheiro' && (
-              <div className="space-y-4 animate-in fade-in slide-in-from-top-2">
-                <Label className="text-[10px] font-black uppercase text-muted-foreground ml-1 tracking-widest">Valor Recebido (Dinheiro)</Label>
-                <Input type="text" inputMode="decimal" className="h-20 text-4xl font-black rounded-2xl border-primary/20 px-8 bg-muted/20 text-center shadow-inner" value={receivedAmount} onChange={(e) => setReceivedAmount(e.target.value)} autoFocus />
+              <div className="space-y-3 animate-in fade-in slide-in-from-top-2">
+                <Label className="text-[9px] md:text-[10px] font-black uppercase text-muted-foreground ml-1 tracking-widest">Valor Recebido (Dinheiro)</Label>
+                <Input type="text" inputMode="decimal" className="h-14 md:h-16 text-2xl md:text-3xl font-black rounded-2xl border-primary/20 px-6 bg-muted/20 text-center shadow-inner" value={receivedAmount} onChange={(e) => setReceivedAmount(e.target.value)} autoFocus />
                 {changeAmount > 0 && (
-                  <div className="bg-green-500/10 rounded-[2rem] p-6 text-center border-2 border-green-500/20">
-                    <span className="text-[10px] font-black uppercase text-green-600 tracking-widest">Troco ao Cliente</span>
-                    <div className="text-5xl font-black text-green-600 italic leading-none mt-1">R$ {formatCurrency(changeAmount)}</div>
+                  <div className="bg-green-500/10 rounded-[1.5rem] md:rounded-[2rem] p-4 md:p-5 text-center border-2 border-green-500/20">
+                    <span className="text-[9px] md:text-[10px] font-black uppercase text-green-600 tracking-widest">Troco ao Cliente</span>
+                    <div className="text-3xl md:text-4xl font-black text-green-600 italic leading-none mt-0.5">R$ {formatCurrency(changeAmount)}</div>
                   </div>
                 )}
               </div>
             )}
           </div>
-          <DialogFooter className="p-8 pt-0">
-            <Button className="w-full h-20 text-2xl font-black uppercase rounded-2xl shadow-3xl shadow-primary/30 bg-primary hover:bg-primary/90 tracking-tighter italic" onClick={finalizeOrder} disabled={submitting}>
-              {submitting ? <Loader2 className="animate-spin h-8 w-8" /> : "Emitir Fichas"}
+          <DialogFooter className="p-5 md:p-6 pt-0 shrink-0">
+            <Button className="w-full h-14 md:h-16 text-xl md:text-2xl font-black uppercase rounded-2xl shadow-3xl shadow-primary/30 bg-primary hover:bg-primary/90 tracking-tighter italic" onClick={finalizeOrder} disabled={submitting}>
+              {submitting ? <Loader2 className="animate-spin h-6 w-6 md:h-8 md:w-8" /> : "Emitir Fichas"}
             </Button>
           </DialogFooter>
         </DialogContent>
