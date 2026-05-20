@@ -117,8 +117,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <WifiOff className="h-3 w-3" /> <span className="hidden xs:inline">Offline</span>
               </Badge>
             ) : (
-              <Badge variant="outline" className="font-black uppercase text-[8px] md:text-[9px] tracking-widest flex items-center gap-1.5 px-2 md:px-3 py-1 border-primary/20 text-primary/40 bg-white/50">
-                <Wifi className="h-3 w-3" /> <span className="hidden xs:inline">Online</span>
+              <Badge variant="outline" className="font-black uppercase text-[8px] md:text-[9px] tracking-widest flex items-center gap-1.5 px-2 md:px-3 py-1 border-emerald-500/20 text-emerald-600 dark:text-emerald-400 bg-emerald-500/5 shadow-sm">
+                <Wifi className="h-3 w-3 text-emerald-500 animate-pulse" /> <span className="hidden xs:inline">Online</span>
               </Badge>
             )}
           </div>
