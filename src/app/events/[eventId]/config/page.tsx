@@ -1,4 +1,3 @@
-
 "use client";
 
 import { AppShell } from '@/components/layout/AppShell';
@@ -465,8 +464,8 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
                     <TableRow><TableCell colSpan={5} className="text-center py-20"><Loader2 className="animate-spin h-10 w-10 mx-auto text-primary opacity-20" /></TableCell></TableRow>
                   ) : suppliers.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center py-20 text-muted-foreground font-black uppercase text-[10px] tracking-widest opacity-40">
-                        Nenhuma barraca cadastrada
+                      <TableCell colSpan={5} className="text-center py-20">
+                        <p className="text-muted-foreground font-black uppercase text-[10px] tracking-widest opacity-40">Nenhuma barraca cadastrada</p>
                       </TableCell>
                     </TableRow>
                   ) : (
@@ -531,7 +530,7 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
                       />
                     </div>
                     <div className="space-y-1.5">
-                      <Label className="font-black uppercase text-[10px] ml-1">Preço de Venda (R$)</Label>
+                      <Label className="font-black uppercase text-[10px] ml-1">Preço de Venda ao Público (R$)</Label>
                       <Input 
                         type="number"
                         placeholder="12,00"
@@ -580,7 +579,7 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
                           </Select>
                         </div>
                         <div className="space-y-1.5">
-                          <Label className="font-black uppercase text-[10px] ml-1">Valor do Fornecedor (Repasse)</Label>
+                          <Label className="font-black uppercase text-[10px] ml-1">Valor do Fornecedor / Repasse (R$)</Label>
                           <Input 
                             type="number"
                             placeholder="7,00"

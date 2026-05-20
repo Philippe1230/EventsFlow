@@ -50,12 +50,17 @@
   * {
     @apply border-border outline-none;
     -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
   }
   body {
     @apply bg-background text-foreground font-body antialiased selection:bg-primary/20 selection:text-primary;
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     overscroll-behavior: none;
+    overflow-x: hidden;
+    position: relative;
+    width: 100%;
+    min-height: 100dvh;
   }
 }
 
@@ -131,21 +136,10 @@
   }
 }
 
-.pdv-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-  gap: 1rem;
-}
-
-@media (min-width: 768px) {
-  .pdv-grid {
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  }
-}
-
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
   width: 5px;
+  height: 5px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
@@ -154,7 +148,7 @@
   @apply bg-primary/10 rounded-full hover:bg-primary/30;
 }
 
-/* Scoped Animations only for Dialog/Popover to avoid hiding SelectTriggers */
+/* Scoped Animations */
 .dialog-content[data-state="open"], 
 .popover-content[data-state="open"] {
   animation: enter 150ms ease-out forwards;
@@ -163,9 +157,4 @@
 @keyframes enter {
   from { opacity: 0; transform: scale(0.95); }
   to { opacity: 1; transform: scale(1); }
-}
-
-@keyframes exit {
-  from { opacity: 1; transform: scale(1); }
-  to { opacity: 0; transform: scale(0.95); }
 }

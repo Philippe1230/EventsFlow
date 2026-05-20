@@ -1,4 +1,3 @@
-
 "use client";
 
 import { AppShell } from '@/components/layout/AppShell';
@@ -263,7 +262,7 @@ function PDVContent() {
   }
 
   return (
-    <div className="flex flex-col lg:grid lg:grid-cols-12 gap-6 pb-28 lg:pb-0 gpu-accelerated">
+    <div className="flex flex-col lg:grid lg:grid-cols-12 gap-6 pb-32 lg:pb-0 gpu-accelerated">
       {/* Header Contextual do PDV */}
       <div className="lg:col-span-12 flex flex-col md:flex-row justify-between items-center gap-4 bg-card p-4 rounded-2xl border-2 border-primary shadow-lg">
         <div className="flex items-center gap-4 w-full md:w-auto">
@@ -336,17 +335,17 @@ function PDVContent() {
              </Button>
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4 px-1 md:px-0">
             {products.map(p => (
               <button 
                 key={p.id} 
                 onClick={() => addToCart(p)} 
                 disabled={isEventFinalized}
-                className="flex flex-col items-center justify-center p-3 md:p-4 bg-card border-2 border-primary/10 hover:border-primary hover:bg-primary/5 rounded-3xl md:rounded-[2.5rem] shadow-sm transition-all active:scale-90 h-32 md:h-40 group relative overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex flex-col items-center justify-center p-3 md:p-4 bg-card border-2 border-primary/10 hover:border-primary hover:bg-primary/5 rounded-3xl md:rounded-[2.5rem] shadow-sm transition-all active:scale-95 h-36 md:h-44 group relative overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <div className="absolute top-0 left-0 w-full h-1 bg-primary/10 group-hover:bg-primary transition-colors" />
-                <span className="font-black text-[10px] md:text-xs leading-tight uppercase line-clamp-2 mb-2 md:mb-3 text-center group-hover:text-primary transition-colors">{p.name}</span>
-                <span className="bg-primary text-white px-3 md:px-5 py-1.5 md:py-2 rounded-full text-[9px] md:text-[11px] font-black shadow-lg shadow-primary/10">R$ {formatCurrency(p.price)}</span>
+                <span className="font-black text-[11px] md:text-sm leading-tight uppercase line-clamp-3 mb-3 md:mb-4 text-center group-hover:text-primary transition-colors">{p.name}</span>
+                <span className="bg-primary text-white px-4 md:px-6 py-2 md:py-3 rounded-full text-[10px] md:text-xs font-black shadow-lg shadow-primary/20">R$ {formatCurrency(p.price)}</span>
               </button>
             ))}
           </div>
@@ -358,16 +357,16 @@ function PDVContent() {
         <div className="lg:col-span-5 xl:col-span-4 flex flex-col gap-6 lg:h-[calc(100vh-140px)] lg:sticky lg:top-4">
           {/* Barra de Resumo para Mobile */}
           {cart.length > 0 && (
-            <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-primary p-4 flex items-center justify-between shadow-[0_-10px_30px_-15px_rgba(0,0,0,0.3)] animate-in slide-in-from-bottom-full duration-300">
+            <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-primary p-4 pb-8 flex items-center justify-between shadow-[0_-10px_30px_-15px_rgba(0,0,0,0.4)] animate-in slide-in-from-bottom-full duration-300">
               <div className="flex flex-col">
-                <span className="text-[9px] font-black uppercase text-white/60 tracking-widest">Carrinho ({cart.reduce((a,b)=>a+b.quantity,0)})</span>
-                <span className="text-2xl font-black text-white tracking-tighter leading-none italic">R$ {formatCurrency(total)}</span>
+                <span className="text-[10px] font-black uppercase text-white/70 tracking-widest">Total ({cart.reduce((a,b)=>a+b.quantity,0)})</span>
+                <span className="text-3xl font-black text-white tracking-tighter leading-none italic">R$ {formatCurrency(total)}</span>
               </div>
               <Button 
-                className="h-14 px-8 bg-white text-primary font-black uppercase text-xs rounded-xl shadow-xl active:scale-95 transition-all"
+                className="h-16 px-8 bg-white text-primary hover:bg-white/90 font-black uppercase text-sm rounded-2xl shadow-xl active:scale-90 transition-all"
                 onClick={() => setShowPaymentModal(true)}
               >
-                Finalizar <ArrowRight className="ml-2 h-5 w-5" />
+                Finalizar <ArrowRight className="ml-2 h-6 w-6" />
               </Button>
             </div>
           )}
@@ -384,14 +383,14 @@ function PDVContent() {
                 {cart.map(item => (
                   <div key={item.id} className="flex flex-col bg-card border border-primary/5 p-3 rounded-2xl shadow-sm">
                     <div className="flex justify-between items-start mb-1">
-                      <span className="font-black uppercase text-[10px] leading-tight flex-1">{item.name}</span>
-                      <span className="font-black text-primary text-[11px]">R$ {formatCurrency(item.price * item.quantity)}</span>
+                      <span className="font-black uppercase text-[11px] leading-tight flex-1">{item.name}</span>
+                      <span className="font-black text-primary text-[12px]">R$ {formatCurrency(item.price * item.quantity)}</span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <div className="flex items-center bg-muted/50 rounded-xl p-0.5">
-                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => updateQuantity(item.id, -1)}><Minus className="h-3 w-3" /></Button>
-                        <span className="w-7 text-center font-black text-[11px]">{item.quantity}</span>
-                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => updateQuantity(item.id, 1)}><Plus className="h-3 w-3" /></Button>
+                      <div className="flex items-center bg-muted/50 rounded-xl p-1">
+                        <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-primary/10" onClick={() => updateQuantity(item.id, -1)}><Minus className="h-4 w-4" /></Button>
+                        <span className="w-8 text-center font-black text-sm">{item.quantity}</span>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-primary/10" onClick={() => updateQuantity(item.id, 1)}><Plus className="h-4 w-4" /></Button>
                       </div>
                     </div>
                   </div>
@@ -454,26 +453,26 @@ function PDVContent() {
               <div className="text-4xl md:text-5xl font-black text-primary tracking-tighter italic">R$ {formatCurrency(total)}</div>
             </div>
             <div className="grid grid-cols-3 gap-2 md:gap-3">
-              <Button variant={paymentMethod === 'dinheiro' ? 'default' : 'outline'} className="flex flex-col h-20 md:h-24 gap-1 md:gap-2 border-2 rounded-2xl font-black uppercase text-[9px] md:text-[10px]" onClick={() => setPaymentMethod('dinheiro')}><Banknote className="h-6 w-6 md:h-8 md:w-8 text-primary" /><span>Dinheiro</span></Button>
-              <Button variant={paymentMethod === 'pix' ? 'default' : 'outline'} className="flex flex-col h-20 md:h-24 gap-1 md:gap-2 border-2 rounded-2xl font-black uppercase text-[9px] md:text-[10px]" onClick={() => setPaymentMethod('pix')}><QrCode className="h-6 w-6 md:h-8 md:w-8 text-primary" /><span>Pix</span></Button>
-              <Button variant={paymentMethod === 'cartao' ? 'default' : 'outline'} className="flex flex-col h-20 md:h-24 gap-1 md:gap-2 border-2 rounded-2xl font-black uppercase text-[9px] md:text-[10px]" onClick={() => setPaymentMethod('cartao')}><CreditCard className="h-6 w-6 md:h-8 md:w-8 text-primary" /><span>Cartão</span></Button>
+              <Button variant={paymentMethod === 'dinheiro' ? 'default' : 'outline'} className="flex flex-col h-24 md:h-28 gap-2 border-2 rounded-2xl font-black uppercase text-[10px]" onClick={() => setPaymentMethod('dinheiro')}><Banknote className="h-8 w-8 md:h-10 md:w-10 text-primary" /><span>Dinheiro</span></Button>
+              <Button variant={paymentMethod === 'pix' ? 'default' : 'outline'} className="flex flex-col h-24 md:h-28 gap-2 border-2 rounded-2xl font-black uppercase text-[10px]" onClick={() => setPaymentMethod('pix')}><QrCode className="h-8 w-8 md:h-10 md:w-10 text-primary" /><span>Pix</span></Button>
+              <Button variant={paymentMethod === 'cartao' ? 'default' : 'outline'} className="flex flex-col h-24 md:h-28 gap-2 border-2 rounded-2xl font-black uppercase text-[10px]" onClick={() => setPaymentMethod('cartao')}><CreditCard className="h-8 w-8 md:h-10 md:w-10 text-primary" /><span>Cartão</span></Button>
             </div>
             {paymentMethod === 'dinheiro' && (
               <div className="space-y-4 animate-in fade-in slide-in-from-top-2">
                 <Label className="text-[10px] font-black uppercase text-muted-foreground ml-1">Valor Recebido</Label>
-                <Input type="text" inputMode="decimal" className="h-14 md:h-16 text-2xl md:text-3xl font-black rounded-2xl border-primary/20 px-6 md:px-8 bg-muted/20" value={receivedAmount} onChange={(e) => setReceivedAmount(e.target.value)} autoFocus />
+                <Input type="text" inputMode="decimal" className="h-16 md:h-20 text-3xl md:text-4xl font-black rounded-2xl border-primary/20 px-6 md:px-8 bg-muted/20 text-center" value={receivedAmount} onChange={(e) => setReceivedAmount(e.target.value)} autoFocus />
                 {changeAmount > 0 && (
                   <div className="bg-primary/5 rounded-[2rem] p-4 md:p-6 text-center border-2 border-primary/10">
                     <span className="text-[10px] font-black uppercase text-primary tracking-widest">Troco</span>
-                    <div className="text-3xl md:text-4xl font-black text-primary italic leading-none mt-1">R$ {formatCurrency(changeAmount)}</div>
+                    <div className="text-4xl md:text-5xl font-black text-primary italic leading-none mt-1">R$ {formatCurrency(changeAmount)}</div>
                   </div>
                 )}
               </div>
             )}
           </div>
           <DialogFooter className="p-6 md:p-8 pt-0">
-            <Button className="w-full h-16 md:h-18 text-lg md:text-xl font-black uppercase rounded-2xl shadow-2xl shadow-primary/20 bg-primary hover:bg-primary/90 tracking-tighter" onClick={finalizeOrder} disabled={submitting}>
-              {submitting ? <Loader2 className="animate-spin h-6 w-6 md:h-8 md:w-8" /> : "Emitir Fichas"}
+            <Button className="w-full h-18 md:h-20 text-xl md:text-2xl font-black uppercase rounded-2xl shadow-2xl shadow-primary/20 bg-primary hover:bg-primary/90 tracking-tighter" onClick={finalizeOrder} disabled={submitting}>
+              {submitting ? <Loader2 className="animate-spin h-8 w-8" /> : "Emitir Fichas"}
             </Button>
           </DialogFooter>
         </DialogContent>
