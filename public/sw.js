@@ -1,10 +1,15 @@
-const CACHE_NAME = 'flow-events-cache-v2';
+const CACHE_NAME = 'flow-events-cache-v3';
 
 // Recursos essenciais pré-carregados durante a instalação
 const PRECACHE_ASSETS = [
   '/',
   '/login',
   '/pdv',
+  '/orders',
+  '/events',
+  '/dashboards',
+  '/team',
+  '/super-admin',
   '/icon.svg',
   'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap'
 ];
@@ -103,9 +108,11 @@ self.addEventListener('fetch', (event) => {
             return cachedResponse;
           }
 
-          // Se a requisição for de navegação de página e não tiver no cache, retorna a página do PDV
+          // Se for uma requisição de navegação de página e não tiver no cache exato (ex: por causa de ?eventId=...)
           if (event.request.mode === 'navigate') {
-            return caches.match('/pdv') || caches.match('/login');
+            // Extrai o caminho básico sem query parameters (ex: /orders) e serve a rota base cacheada
+            const cleanPathname = url.pathname;
+            return caches.match(cleanPathname) || caches.match('/pdv') || caches.match('/login') || caches.match('/');
           }
 
           return new Response('Recurso indisponível offline', { status: 503, statusText: 'Offline' });
