@@ -3,7 +3,8 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Funções de Ajuda
+    // --- FUNÇÕES DE SEGURANÇA ---
+    
     function isSignedIn() {
       return request.auth != null;
     }
@@ -16,7 +17,7 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
-    // Verifica se o usuário é membro de um tenant específico
+    // Verifica se o usuário é membro do tenant (Organização)
     function isMember(tenantId) {
       return isSignedIn() && (
         isSuperAdmin() || 
@@ -24,13 +25,13 @@ service cloud.firestore {
       );
     }
 
-    // Verifica papel específico no tenant
+    // Verifica se o usuário tem um papel específico no tenant
     function hasRole(tenantId, role) {
       let member = get(/databases/$(database)/documents/tenants/$(tenantId)).data.members[request.auth.uid];
       return isSuperAdmin() || (member != null && (member == role || member.role == role));
     }
 
-    // Verifica se é membro de um evento específico
+    // Verifica se o usuário tem acesso a um evento específico
     function isEventMember(tenantId, eventId) {
       return isSignedIn() && (
         isSuperAdmin() || 
@@ -39,60 +40,71 @@ service cloud.firestore {
       );
     }
 
-    // --- REGRAS DE COLEÇÕES ---
+    // --- REGRAS POR COLEÇÃO ---
 
+    // Perfis de Usuário
     match /userProfiles/{userId} {
+      // Apenas o dono do perfil ou Super Admin pode ler/ver dados
       allow read: if isOwnerOfProfile(userId) || isSuperAdmin();
       allow write: if isOwnerOfProfile(userId);
+      // Proíbe qualquer pessoa de listar todos os usuários do sistema
       allow list: if isSuperAdmin();
       
       match /memberships/{membershipId} {
-        allow read, write: if isOwnerOfProfile(userId);
+        allow read, write: if isOwnerOfProfile(userId) || isSuperAdmin();
       }
     }
 
+    // Organizações (Tenants)
     match /tenants/{tenantId} {
       allow create: if isSignedIn();
+      // Ninguém (exceto super admin) pode listar todas as organizações do banco
       allow list: if isSuperAdmin();
+      // Apenas membros da própria organização podem ler seus dados
       allow read: if isMember(tenantId);
+      // Apenas o dono da organização pode alterar o nome ou membros
       allow update: if hasRole(tenantId, 'owner');
       
-      // Coleção de Eventos
+      // Eventos dentro da Organização
       match /events/{eventId} {
         allow read: if isMember(tenantId);
         allow write: if hasRole(tenantId, 'owner');
 
+        // Produtos vinculados ao Evento
         match /products/{productId} {
           allow read: if isEventMember(tenantId, eventId);
           allow write: if hasRole(tenantId, 'owner');
         }
 
+        // Fornecedores vinculados ao Evento
         match /suppliers/{supplierId} {
           allow read: if isEventMember(tenantId, eventId);
           allow write: if hasRole(tenantId, 'owner');
         }
 
+        // Pedidos/Vendas (PDV)
         match /orders/{orderId} {
+          // Apenas membros do evento podem vender ou ver histórico
           allow create: if isEventMember(tenantId, eventId);
           allow read: if isEventMember(tenantId, eventId);
+          // Pedidos nunca podem ser deletados ou alterados via console
+          allow update, delete: if false;
         }
       }
 
+      // Coleção legada/auxiliar de produtos na raiz do tenant (se usada)
       match /products/{productId} {
         allow read: if isMember(tenantId);
         allow write: if hasRole(tenantId, 'owner');
       }
-
-      match /orders/{orderId} {
-        allow create: if isMember(tenantId);
-        allow read: if isSuperAdmin() || hasRole(tenantId, 'owner') || (resource.data.userId == request.auth.uid);
-      }
     }
 
+    // Contadores de Pedidos (Garante números sequenciais)
     match /tenant_counters/{tenantId} {
       allow read, write: if isMember(tenantId);
     }
 
+    // Trava de Segurança Global: Qualquer caminho não especificado é negado por padrão
     match /{document=**} {
       allow read, write: if isSuperAdmin();
     }
