@@ -26,14 +26,14 @@ export function initializeFirebase() {
   // Initialize services only if they don't exist
   if (!auth) {
     auth = getAuth(firebaseApp);
-    // Garante que a sessão do usuário seja salva permanentemente no navegador
+    // Garante que a sessão do usuário seja salva permanentemente no navegador para uso offline
     setPersistence(auth, browserLocalPersistence).catch(console.error);
   }
   
   if (!firestore) {
     firestore = getFirestore(firebaseApp);
     
-    // Habilita persistência offline robusta
+    // Habilita persistência offline robusta para garantir que o PDV nunca pare
     if (typeof window !== 'undefined') {
       enableIndexedDbPersistence(firestore).catch((err) => {
         if (err.code === 'failed-precondition') {

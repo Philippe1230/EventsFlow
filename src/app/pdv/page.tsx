@@ -1,16 +1,15 @@
-
 "use client";
 
 import { AppShell } from '@/components/layout/AppShell';
 import { useAuth } from '@/hooks/use-auth-context';
 import { useState, useEffect, useMemo, useCallback, Suspense } from 'react';
-import { collection, doc, getDoc, serverTimestamp, addDoc, increment } from 'firebase/firestore';
+import { collection, doc, getDoc, serverTimestamp, increment } from 'firebase/firestore';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { ShoppingCart, Banknote, QrCode, CreditCard, RefreshCcw, Loader2, Plus, Minus, ArrowRight, Calendar, ChevronRight, ChevronLeft, ArrowLeftRight, Lock } from 'lucide-react';
+import { ShoppingCart, Banknote, QrCode, CreditCard, RefreshCcw, Loader2, Plus, Minus, ArrowRight, Calendar, ArrowLeftRight, Lock } from 'lucide-react';
 import { PrintTickets } from '@/components/pdv/PrintTickets';
 import { SuccessModal } from '@/components/pdv/SuccessModal';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -18,8 +17,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { setDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
-import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError } from '@/firebase/errors';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
@@ -64,7 +61,6 @@ function PDVContent() {
   const [receivedAmount, setReceivedAmount] = useState<string>('');
   const [changeAmount, setChangeAmount] = useState<number>(0);
 
-  // Controle de Troca de Evento
   const [showSwitchDialog, setShowSwitchDialog] = useState(false);
   const [pendingEventId, setPendingEventId] = useState<string | null>(null);
 
@@ -170,14 +166,18 @@ function PDVContent() {
     setSubmitting(true);
 
     try {
-      const ordersColRef = collection(db, 'tenants', tenantId, 'events', activeEventId, 'orders');
       const counterRef = doc(db, 'tenant_counters', tenantId);
       const counterSnap = await getDoc(counterRef);
       let nextNumber = (counterSnap.data()?.orderNumber || 0) + 1;
       
-      setDocumentNonBlocking(counterRef, { orderNumber: nextNumber }, { merge: true });
+      // Atualiza contador imediatamente (Offline-Safe)
+      updateDocumentNonBlocking(counterRef, { orderNumber: increment(1) });
 
+      const ordersColRef = collection(db, 'tenants', tenantId, 'events', activeEventId, 'orders');
+      const orderRef = doc(ordersColRef); // Pre-genera ID para uso imediato no ticket (Offline-Safe)
+      
       const orderData = {
+        id: orderRef.id,
         tenantId,
         eventId: activeEventId,
         userId: user.uid,
@@ -198,40 +198,42 @@ function PDVContent() {
         status: 'completed'
       };
 
-      addDoc(ordersColRef, orderData).then((orderRef) => {
-        cart.forEach(item => {
-          const productRef = doc(db, 'tenants', tenantId, 'events', activeEventId, 'products', item.id);
-          updateDocumentNonBlocking(productRef, { soldQuantity: increment(item.quantity) });
-        });
+      // Dispara gravação do pedido (Offline-Safe)
+      setDocumentNonBlocking(orderRef, orderData, { merge: true });
 
-        const tickets = cart.flatMap(item => Array(item.quantity).fill({
-          orderId: orderRef.id,
-          orderNumber: nextNumber,
-          productName: item.name,
-          timestamp: new Date()
-        }));
-
-        setPrintableTickets(tickets);
-        setLastOrderNumber(nextNumber);
-        setShowPaymentModal(false);
-        setShowSuccessModal(true);
-        
-        setTimeout(() => {
-          window.print();
-          localStorage.setItem(`last_order_${activeEventId}`, JSON.stringify(cart));
-          clearCart();
-          setSubmitting(false);
-          setPrintableTickets([]);
-          setReceivedAmount('');
-        }, 150);
-      }).catch((err) => {
-        errorEmitter.emit('permission-error', new FirestorePermissionError({
-          path: ordersColRef.path, operation: 'create', requestResourceData: orderData
-        }));
-        setSubmitting(false);
+      // Atualiza estoque/vendas de produtos (Offline-Safe)
+      cart.forEach(item => {
+        const productRef = doc(db, 'tenants', tenantId, 'events', activeEventId, 'products', item.id);
+        updateDocumentNonBlocking(productRef, { soldQuantity: increment(item.quantity) });
       });
+
+      // Prepara os cupons para impressão imediata
+      const tickets = cart.flatMap(item => Array(item.quantity).fill({
+        orderId: orderRef.id,
+        orderNumber: nextNumber,
+        productName: item.name,
+        timestamp: new Date()
+      }));
+
+      // Ações de UI instantâneas (Latência Zero)
+      setPrintableTickets(tickets);
+      setLastOrderNumber(nextNumber);
+      setShowPaymentModal(false);
+      setShowSuccessModal(true);
+      
+      setTimeout(() => {
+        window.print();
+        localStorage.setItem(`last_order_${activeEventId}`, JSON.stringify(cart));
+        clearCart();
+        setSubmitting(false);
+        setPrintableTickets([]);
+        setReceivedAmount('');
+      }, 100);
+
     } catch (e) {
+      console.error("Erro ao processar pedido:", e);
       setSubmitting(false);
+      toast({ title: "Erro no Pedido", description: "Verifique sua conexão ou tente novamente.", variant: "destructive" });
     }
   };
 
@@ -264,7 +266,6 @@ function PDVContent() {
 
   return (
     <div className="flex flex-col lg:grid lg:grid-cols-12 gap-6 pb-32 lg:pb-0 gpu-accelerated">
-      {/* Header Contextual do PDV */}
       <div className="lg:col-span-12 flex flex-col md:flex-row justify-between items-center gap-4 bg-card p-4 rounded-2xl border-2 border-primary shadow-lg">
         <div className="flex items-center gap-4 w-full md:w-auto">
           <div className="bg-primary/10 p-2 md:p-3 rounded-xl shrink-0">
@@ -321,7 +322,6 @@ function PDVContent() {
         </div>
       )}
 
-      {/* Grid de Produtos */}
       <div className={cn("lg:col-span-7 xl:col-span-8", isEventFinalized && "opacity-50 pointer-events-none")}>
         {productsLoading ? (
           <div className="flex flex-col items-center justify-center py-20 gap-4 opacity-40">
@@ -353,10 +353,8 @@ function PDVContent() {
         )}
       </div>
 
-      {/* Sidebar de Carrinho */}
       {!isEventFinalized && (
         <div className="lg:col-span-5 xl:col-span-4 flex flex-col gap-6 lg:h-[calc(100vh-140px)] lg:sticky lg:top-4">
-          {/* Barra de Resumo para Mobile */}
           {cart.length > 0 && (
             <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-primary p-4 pb-8 flex items-center justify-between shadow-[0_-10px_30px_-15px_rgba(0,0,0,0.4)] animate-in slide-in-from-bottom-full duration-300">
               <div className="flex flex-col">
@@ -417,7 +415,6 @@ function PDVContent() {
         </div>
       )}
 
-      {/* Modal Personalizado de Confirmação de Troca de Evento */}
       <Dialog open={showSwitchDialog} onOpenChange={setShowSwitchDialog}>
         <DialogContent className="rounded-[2.5rem] border-none p-0 overflow-hidden sm:max-w-md w-[92vw] !top-[50%] !translate-y-[-50%] shadow-3xl">
           <DialogHeader className="bg-primary p-8 text-white text-center">
@@ -444,7 +441,6 @@ function PDVContent() {
         </DialogContent>
       </Dialog>
 
-      {/* Modal Personalizado de Pagamento */}
       <Dialog open={showPaymentModal} onOpenChange={setShowPaymentModal}>
         <DialogContent className="rounded-[2.5rem] border-none p-0 overflow-hidden sm:max-w-md w-[92vw] !top-[50%] !translate-y-[-50%] shadow-4xl">
           <DialogHeader className="bg-primary p-8 text-white">
