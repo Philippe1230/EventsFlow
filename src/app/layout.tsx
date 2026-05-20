@@ -26,13 +26,14 @@ export const metadata: Metadata = {
   icons: {
     icon: [
       {
-        url: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23f97316' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2 9V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v4a3 3 0 0 0 0 6v4a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-4a3 3 0 0 0 0-6Z'/%3E%3Cpath d='M13 3v2'/%3E%3Cpath d='M13 8v2'/%3E%3Cpath d='M13 13v2'/%3E%3Cpath d='M13 18v2'/%3E%3C/svg%3E",
+        url: '/icon.svg',
         type: 'image/svg+xml',
       },
     ],
     apple: [
       {
-        url: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23f97316' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2 9V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v4a3 3 0 0 0 0 6v4a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-4a3 3 0 0 0 0-6Z'/%3E%3Cpath d='M13 3v2'/%3E%3Cpath d='M13 8v2'/%3E%3Cpath d='M13 13v2'/%3E%3Cpath d='M13 18v2'/%3E%3C/svg%3E",
+        url: '/icon.svg',
+        type: 'image/svg+xml',
       }
     ]
   },
