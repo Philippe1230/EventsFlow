@@ -1,3 +1,4 @@
+
 "use client";
 
 import { AppShell } from '@/components/layout/AppShell';
@@ -416,18 +417,19 @@ function PDVContent() {
         </div>
       )}
 
-      {/* Pop-up de Confirmação de Troca de Evento */}
+      {/* Modal Personalizado de Confirmação de Troca de Evento */}
       <Dialog open={showSwitchDialog} onOpenChange={setShowSwitchDialog}>
-        <DialogContent className="rounded-[2.5rem] border-none p-0 overflow-hidden sm:max-w-md w-[92vw] !top-[50%] !translate-y-[-50%]">
-          <DialogHeader className="bg-primary p-6 text-white text-center">
-            <DialogTitle className="text-2xl font-black uppercase italic tracking-tighter">Trocar de Evento?</DialogTitle>
+        <DialogContent className="rounded-[2.5rem] border-none p-0 overflow-hidden sm:max-w-md w-[92vw] !top-[50%] !translate-y-[-50%] shadow-3xl">
+          <DialogHeader className="bg-primary p-8 text-white text-center">
+            <RefreshCcw className="h-12 w-12 mx-auto mb-4 opacity-50" />
+            <DialogTitle className="text-2xl font-black uppercase italic tracking-tighter">Trocar Evento?</DialogTitle>
           </DialogHeader>
-          <div className="p-6 md:p-8 text-center space-y-6">
+          <div className="p-8 text-center space-y-6">
             <div className="bg-primary/5 p-6 rounded-2xl border-2 border-primary/10">
-              <p className="text-[10px] md:text-xs font-black text-muted-foreground leading-relaxed uppercase tracking-widest">
+              <p className="text-[10px] font-black text-muted-foreground leading-relaxed uppercase tracking-widest">
                 Você quer mudar para o PDV do evento:
               </p>
-              <div className="text-lg md:text-xl font-black text-primary mt-2 uppercase tracking-tight">
+              <div className="text-xl font-black text-primary mt-2 uppercase tracking-tight">
                 {events.find(e => e.id === pendingEventId)?.name}
               </div>
             </div>
@@ -435,43 +437,45 @@ function PDVContent() {
               Atenção: O carrinho atual será esvaziado.
             </p>
           </div>
-          <DialogFooter className="p-6 md:p-8 pt-0 grid grid-cols-2 gap-3 md:gap-4">
+          <DialogFooter className="p-8 pt-0 grid grid-cols-2 gap-4">
             <Button variant="ghost" onClick={() => setShowSwitchDialog(false)} className="h-14 font-black uppercase text-[10px] rounded-xl tracking-widest">Cancelar</Button>
-            <Button onClick={confirmSwitchEvent} className="h-14 font-black uppercase text-[10px] rounded-xl shadow-lg tracking-widest">Trocar</Button>
+            <Button onClick={confirmSwitchEvent} className="h-14 font-black uppercase text-[10px] rounded-xl shadow-lg tracking-widest">Confirmar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
+      {/* Modal Personalizado de Pagamento */}
       <Dialog open={showPaymentModal} onOpenChange={setShowPaymentModal}>
-        <DialogContent className="rounded-[2.5rem] border-none p-0 overflow-hidden sm:max-w-md w-[92vw] !top-[50%] !translate-y-[-50%]">
-          <DialogHeader className="bg-primary p-6 text-white">
-            <DialogTitle className="text-2xl font-black uppercase text-center italic tracking-tighter">Pagamento</DialogTitle>
+        <DialogContent className="rounded-[2.5rem] border-none p-0 overflow-hidden sm:max-w-md w-[92vw] !top-[50%] !translate-y-[-50%] shadow-4xl">
+          <DialogHeader className="bg-primary p-8 text-white">
+            <DialogTitle className="text-3xl font-black uppercase text-center italic tracking-tighter">Pagamento</DialogTitle>
+            <p className="text-center text-white/70 font-black text-[10px] uppercase tracking-[0.2em] mt-2">Selecione a forma de entrada</p>
           </DialogHeader>
-          <div className="p-6 md:p-8 space-y-6 md:space-y-8">
-            <div className="text-center">
-              <span className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Total do Pedido</span>
-              <div className="text-4xl md:text-5xl font-black text-primary tracking-tighter italic">R$ {formatCurrency(total)}</div>
+          <div className="p-8 space-y-8">
+            <div className="text-center bg-primary/5 p-6 rounded-[2rem] border-2 border-primary/10 shadow-inner">
+              <span className="text-[10px] font-black uppercase text-muted-foreground tracking-widest mb-1 block">Total a Receber</span>
+              <div className="text-5xl font-black text-primary tracking-tighter italic">R$ {formatCurrency(total)}</div>
             </div>
-            <div className="grid grid-cols-3 gap-2 md:gap-3">
-              <Button variant={paymentMethod === 'dinheiro' ? 'default' : 'outline'} className="flex flex-col h-24 md:h-28 gap-2 border-2 rounded-2xl font-black uppercase text-[10px]" onClick={() => setPaymentMethod('dinheiro')}><Banknote className="h-8 w-8 md:h-10 md:w-10 text-primary" /><span>Dinheiro</span></Button>
-              <Button variant={paymentMethod === 'pix' ? 'default' : 'outline'} className="flex flex-col h-24 md:h-28 gap-2 border-2 rounded-2xl font-black uppercase text-[10px]" onClick={() => setPaymentMethod('pix')}><QrCode className="h-8 w-8 md:h-10 md:w-10 text-primary" /><span>Pix</span></Button>
-              <Button variant={paymentMethod === 'cartao' ? 'default' : 'outline'} className="flex flex-col h-24 md:h-28 gap-2 border-2 rounded-2xl font-black uppercase text-[10px]" onClick={() => setPaymentMethod('cartao')}><CreditCard className="h-8 w-8 md:h-10 md:w-10 text-primary" /><span>Cartão</span></Button>
+            <div className="grid grid-cols-3 gap-3">
+              <Button variant={paymentMethod === 'dinheiro' ? 'default' : 'outline'} className="flex flex-col h-28 gap-2 border-2 rounded-2xl font-black uppercase text-[9px] shadow-sm transition-all" onClick={() => setPaymentMethod('dinheiro')}><Banknote className="h-8 w-8 text-primary" /><span>Dinheiro</span></Button>
+              <Button variant={paymentMethod === 'pix' ? 'default' : 'outline'} className="flex flex-col h-28 gap-2 border-2 rounded-2xl font-black uppercase text-[9px] shadow-sm transition-all" onClick={() => setPaymentMethod('pix')}><QrCode className="h-8 w-8 text-primary" /><span>Pix</span></Button>
+              <Button variant={paymentMethod === 'cartao' ? 'default' : 'outline'} className="flex flex-col h-28 gap-2 border-2 rounded-2xl font-black uppercase text-[9px] shadow-sm transition-all" onClick={() => setPaymentMethod('cartao')}><CreditCard className="h-8 w-8 text-primary" /><span>Cartão</span></Button>
             </div>
             {paymentMethod === 'dinheiro' && (
               <div className="space-y-4 animate-in fade-in slide-in-from-top-2">
-                <Label className="text-[10px] font-black uppercase text-muted-foreground ml-1">Valor Recebido</Label>
-                <Input type="text" inputMode="decimal" className="h-16 md:h-20 text-3xl md:text-4xl font-black rounded-2xl border-primary/20 px-6 md:px-8 bg-muted/20 text-center" value={receivedAmount} onChange={(e) => setReceivedAmount(e.target.value)} autoFocus />
+                <Label className="text-[10px] font-black uppercase text-muted-foreground ml-1 tracking-widest">Valor Recebido (Dinheiro)</Label>
+                <Input type="text" inputMode="decimal" className="h-20 text-4xl font-black rounded-2xl border-primary/20 px-8 bg-muted/20 text-center shadow-inner" value={receivedAmount} onChange={(e) => setReceivedAmount(e.target.value)} autoFocus />
                 {changeAmount > 0 && (
-                  <div className="bg-primary/5 rounded-[2rem] p-4 md:p-6 text-center border-2 border-primary/10">
-                    <span className="text-[10px] font-black uppercase text-primary tracking-widest">Troco</span>
-                    <div className="text-4xl md:text-5xl font-black text-primary italic leading-none mt-1">R$ {formatCurrency(changeAmount)}</div>
+                  <div className="bg-green-500/10 rounded-[2rem] p-6 text-center border-2 border-green-500/20">
+                    <span className="text-[10px] font-black uppercase text-green-600 tracking-widest">Troco ao Cliente</span>
+                    <div className="text-5xl font-black text-green-600 italic leading-none mt-1">R$ {formatCurrency(changeAmount)}</div>
                   </div>
                 )}
               </div>
             )}
           </div>
-          <DialogFooter className="p-6 md:p-8 pt-0">
-            <Button className="w-full h-18 md:h-20 text-xl md:text-2xl font-black uppercase rounded-2xl shadow-2xl shadow-primary/20 bg-primary hover:bg-primary/90 tracking-tighter" onClick={finalizeOrder} disabled={submitting}>
+          <DialogFooter className="p-8 pt-0">
+            <Button className="w-full h-20 text-2xl font-black uppercase rounded-2xl shadow-3xl shadow-primary/30 bg-primary hover:bg-primary/90 tracking-tighter italic" onClick={finalizeOrder} disabled={submitting}>
               {submitting ? <Loader2 className="animate-spin h-8 w-8" /> : "Emitir Fichas"}
             </Button>
           </DialogFooter>

@@ -1,3 +1,4 @@
+
 "use client";
 
 import { AppShell } from '@/components/layout/AppShell';
@@ -13,7 +14,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Loader2, Edit3, Trash2, Store, Package, Users, ChevronLeft, Flag, TrendingUp, Target, Calculator, ArrowUpRight, BarChart3, ShieldCheck, Wallet, Lock } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Plus, Loader2, Edit3, Trash2, Store, Package, Users, ChevronLeft, Flag, TrendingUp, Target, Calculator, ArrowUpRight, BarChart3, ShieldCheck, Wallet, Lock, AlertTriangle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
@@ -54,6 +56,7 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
   const searchParams = useSearchParams();
 
   const [activeTab, setActiveTab] = useState(searchParams.get('tab') || "suppliers");
+  const [showFinalizeDialog, setShowFinalizeDialog] = useState(false);
 
   // Event Data
   const eventRef = useMemoFirebase(() => tenantId ? doc(db, 'tenants', tenantId, 'events', eventId) : null, [tenantId, db, eventId]);
@@ -178,7 +181,7 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
   };
 
   const handleFinalizeEvent = async () => {
-    if (!tenantId || !event || !confirm("Deseja finalizar o evento? Isso calculará automaticamente os repasses finais e bloqueará novas vendas no PDV.")) return;
+    if (!tenantId || !event) return;
     setSubmitting(true);
 
     try {
@@ -210,6 +213,7 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
 
       batch.update(eventRef!, { status: 'finalizado' });
       await batch.commit();
+      setShowFinalizeDialog(false);
       toast({ title: "Evento Finalizado", description: "Todos os repasses financeiros foram processados e o PDV foi encerrado." });
     } catch (e) {
       console.error(e);
@@ -281,8 +285,8 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
               {event?.status}
             </Badge>
             {event?.status === 'ativo' && (
-              <Button onClick={handleFinalizeEvent} disabled={submitting} variant="destructive" className="h-10 flex-1 md:flex-none rounded-xl font-black uppercase text-[9px] md:text-[10px] tracking-widest shadow-lg shadow-destructive/20">
-                {submitting ? <Loader2 className="animate-spin h-4 w-4" /> : <><Flag className="mr-2 h-4 w-4" /> Finalizar</>}
+              <Button onClick={() => setShowFinalizeDialog(true)} disabled={submitting} variant="destructive" className="h-10 flex-1 md:flex-none rounded-xl font-black uppercase text-[9px] md:text-[10px] tracking-widest shadow-lg shadow-destructive/20">
+                <Flag className="mr-2 h-4 w-4" /> Finalizar
               </Button>
             )}
             {isFinalized && (
@@ -712,6 +716,31 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Modal Personalizado de Confirmação de Fechamento */}
+      <Dialog open={showFinalizeDialog} onOpenChange={setShowFinalizeDialog}>
+        <DialogContent className="rounded-[2.5rem] border-none p-0 overflow-hidden sm:max-w-md w-[92vw] !top-[50%] !translate-y-[-50%] shadow-3xl">
+          <DialogHeader className="bg-destructive p-8 text-white text-center">
+            <AlertTriangle className="h-16 w-16 mx-auto mb-4 opacity-50" />
+            <DialogTitle className="text-3xl font-black uppercase tracking-tighter italic">Encerrar Evento?</DialogTitle>
+          </DialogHeader>
+          <div className="p-8 space-y-6 text-center">
+            <p className="text-sm font-bold text-muted-foreground uppercase leading-tight tracking-wide">
+              Esta ação é IRREVERSÍVEL. O PDV será bloqueado e os repasses serão calculados agora.
+            </p>
+            <div className="bg-destructive/5 p-6 rounded-2xl border-2 border-destructive/10">
+              <span className="text-[10px] font-black uppercase text-destructive tracking-widest">Saldo Final Org.</span>
+              <div className="text-4xl font-black text-destructive italic tracking-tighter">
+                R$ {formatCurrency(projections.actualProfit)}
+              </div>
+            </div>
+          </div>
+          <DialogFooter className="p-8 pt-0 grid grid-cols-2 gap-4">
+            <Button variant="ghost" onClick={() => setShowFinalizeDialog(false)} className="h-16 font-black uppercase text-xs rounded-2xl">Cancelar</Button>
+            <Button onClick={handleFinalizeEvent} className="h-16 font-black uppercase text-xs rounded-2xl shadow-xl bg-destructive hover:bg-destructive/90 text-white">Confirmar Fim</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AppShell>
   );
 }
