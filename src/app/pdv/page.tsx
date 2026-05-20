@@ -3,7 +3,7 @@
 import { AppShell } from '@/components/layout/AppShell';
 import { useAuth } from '@/hooks/use-auth-context';
 import { useState, useEffect, useMemo, useCallback, Suspense } from 'react';
-import { collection, doc, getDoc, serverTimestamp, increment } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocFromCache, serverTimestamp, increment } from 'firebase/firestore';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -167,8 +167,25 @@ function PDVContent() {
 
     try {
       const counterRef = doc(db, 'tenant_counters', tenantId);
-      const counterSnap = await getDoc(counterRef);
-      let nextNumber = (counterSnap.data()?.orderNumber || 0) + 1;
+      let nextNumber = 1;
+      
+      try {
+        // Tenta obter o contador em tempo real do servidor
+        const counterSnap = await getDoc(counterRef);
+        nextNumber = (counterSnap.data()?.orderNumber || 0) + 1;
+      } catch (error) {
+        console.warn("Flow Events: Erro ao obter contador do servidor (provavelmente offline). Tentando cache local...", error);
+        try {
+          // Fallback Offline: Lê o último valor salvo no cache local do IndexedDB
+          const counterSnap = await getDocFromCache(counterRef);
+          nextNumber = (counterSnap.data()?.orderNumber || 0) + 1;
+        } catch (cacheError) {
+          console.warn("Flow Events: Falha ao ler contador do cache local. Gerando número offline provisório...", cacheError);
+          // Fallback Emergencial: Se for o primeiro acesso sem internet e o cache estiver limpo,
+          // gera um número baseado no timestamp atual para evitar colisão e não travar a impressão.
+          nextNumber = Math.floor(Date.now() / 1000) % 100000;
+        }
+      }
       
       // Atualiza contador imediatamente (Offline-Safe)
       updateDocumentNonBlocking(counterRef, { orderNumber: increment(1) });
