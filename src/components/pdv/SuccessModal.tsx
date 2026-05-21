@@ -7,7 +7,7 @@ import { CheckCircle2, Printer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { OrderTicketIcon } from '@/components/layout/AppShell';
 
-export function SuccessModal({ isOpen, onClose, orderNumber }: SuccessModalProps) {
+export function SuccessModal({ isOpen, onClose, orderNumber, onPrint }: SuccessModalProps) {
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="sm:max-w-md border-none bg-background p-0 overflow-hidden rounded-[2.5rem] shadow-3xl animate-in zoom-in-95 duration-300 !top-[50%] !translate-y-[-50%] max-h-[92vh] overflow-y-auto flex flex-col scrollbar-thin scrollbar-thumb-muted">
@@ -25,17 +25,18 @@ export function SuccessModal({ isOpen, onClose, orderNumber }: SuccessModalProps
         </div>
         
         <div className="p-6 md:p-8 text-center bg-card flex-1 flex flex-col justify-between">
-          <div className="mb-6 md:mb-8">
-            <span className="text-muted-foreground font-black text-[9px] md:text-[10px] uppercase block mb-2 md:mb-3 tracking-widest">Controle de Ficha</span>
-            <div className="inline-block px-8 py-4 md:px-10 md:py-6 bg-primary/5 rounded-[2rem] md:rounded-[2.5rem] border-2 border-primary/10 shadow-inner group transition-all">
-              <span className="text-5xl md:text-7xl font-black text-primary tracking-tighter italic">#{orderNumber}</span>
-            </div>
-          </div>
           
-          <div className="flex flex-col gap-4 md:gap-6">
-            <div className="flex items-center justify-center gap-3 text-primary font-black animate-pulse text-[10px] md:text-[11px] uppercase tracking-widest bg-primary/5 py-2.5 md:py-3 rounded-xl">
-              <Printer className="h-4 w-4" /> Imprimindo Cupons...
-            </div>
+          <div className="flex flex-col gap-3 md:gap-4">
+            {onPrint && (
+              <Button 
+                onClick={onPrint} 
+                variant="outline"
+                className="w-full h-14 md:h-16 rounded-2xl font-black uppercase text-sm md:text-base border-primary/20 text-primary hover:bg-primary/5 flex items-center justify-center gap-2 active:scale-95 transition-all tracking-tighter italic"
+              >
+                <Printer className="h-5 w-5" /> Imprimir Fichas (Manual)
+              </Button>
+            )}
+            
             <Button 
               onClick={onClose} 
               className="w-full h-14 md:h-16 rounded-2xl font-black uppercase text-xl md:text-2xl shadow-2xl shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all bg-primary hover:bg-primary/90 tracking-tighter italic"
@@ -53,4 +54,5 @@ interface SuccessModalProps {
   isOpen: boolean;
   onClose: () => void;
   orderNumber: number;
+  onPrint?: () => void;
 }

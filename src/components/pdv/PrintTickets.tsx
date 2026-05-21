@@ -64,9 +64,6 @@ export function PrintTickets({ tickets }: { tickets: TicketProps[] }) {
             <h2 className="text-[18px] font-black uppercase leading-none tracking-tighter mb-1.5 break-words w-full">
               {ticket.productName}
             </h2>
-            <div className="bg-black text-white px-3.5 py-0.5 text-[16px] font-black tracking-tighter rounded-sm">
-              #{ticket.orderNumber}
-            </div>
           </div>
           
           {/* Rodapé de Segurança */}

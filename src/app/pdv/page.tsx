@@ -244,11 +244,6 @@ function PDVContent() {
         clearCart();
         setSubmitting(false);
         setReceivedAmount('');
-        
-        // Mantém as fichas no DOM por 2 segundos para dar tempo de qualquer celular capturar para a impressão
-        setTimeout(() => {
-          setPrintableTickets([]);
-        }, 2000);
       }, 300);
 
     } catch (e) {
@@ -499,7 +494,15 @@ function PDVContent() {
         </DialogContent>
       </Dialog>
       <PrintTickets tickets={printableTickets} />
-      <SuccessModal isOpen={showSuccessModal} onClose={() => setShowSuccessModal(false)} orderNumber={lastOrderNumber || 0} />
+      <SuccessModal 
+        isOpen={showSuccessModal} 
+        onClose={() => {
+          setShowSuccessModal(false);
+          setPrintableTickets([]);
+        }} 
+        orderNumber={lastOrderNumber || 0} 
+        onPrint={() => window.print()}
+      />
     </div>
   );
 }
