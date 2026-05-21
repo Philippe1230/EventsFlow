@@ -243,9 +243,13 @@ function PDVContent() {
         localStorage.setItem(`last_order_${activeEventId}`, JSON.stringify(cart));
         clearCart();
         setSubmitting(false);
-        setPrintableTickets([]);
         setReceivedAmount('');
-      }, 100);
+        
+        // Mantém as fichas no DOM por 2 segundos para dar tempo de qualquer celular capturar para a impressão
+        setTimeout(() => {
+          setPrintableTickets([]);
+        }, 2000);
+      }, 300);
 
     } catch (e) {
       console.error("Erro ao processar pedido:", e);
@@ -371,7 +375,7 @@ function PDVContent() {
       </div>
 
       {!isEventFinalized && (
-        <div className="lg:col-span-5 xl:col-span-4 flex flex-col gap-6 lg:h-[calc(100vh-140px)] lg:sticky lg:top-4">
+        <div className="lg:col-span-5 xl:col-span-4 flex flex-col gap-6 lg:h-[calc(100vh-140px)] lg:sticky lg:top-4 self-start">
           {cart.length > 0 && (
             <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-primary p-4 pb-8 flex items-center justify-between shadow-[0_-10px_30px_-15px_rgba(0,0,0,0.4)] animate-in slide-in-from-bottom-full duration-300">
               <div className="flex flex-col">

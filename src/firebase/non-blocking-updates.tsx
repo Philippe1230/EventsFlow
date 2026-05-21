@@ -18,6 +18,12 @@ import {FirestorePermissionError} from '@/firebase/errors';
  */
 export function setDocumentNonBlocking(docRef: DocumentReference, data: any, options: SetOptions) {
   setDoc(docRef, data, options).catch(error => {
+    // Se for na coleção de contadores (tenant_counters), silencia o erro global
+    if (docRef.path.includes('tenant_counters')) {
+      console.warn("Flow Events: Silenciando erro de permissão no contador de pedidos (fallback ativo):", error);
+      return;
+    }
+
     errorEmitter.emit(
       'permission-error',
       new FirestorePermissionError({
@@ -59,6 +65,13 @@ export function addDocumentNonBlocking(colRef: CollectionReference, data: any) {
 export function updateDocumentNonBlocking(docRef: DocumentReference, data: any) {
   updateDoc(docRef, data)
     .catch(error => {
+      // Se for na coleção de contadores (tenant_counters), silencia o erro global
+      // para evitar travar o app do caixa, registrando apenas como aviso no console.
+      if (docRef.path.includes('tenant_counters')) {
+        console.warn("Flow Events: Silenciando erro de permissão no contador de pedidos (fallback ativo):", error);
+        return;
+      }
+
       errorEmitter.emit(
         'permission-error',
         new FirestorePermissionError({

@@ -7,28 +7,28 @@
     /* Cores Principais - Tema Flow Events */
     --background: 12 53% 98%;
     --foreground: 18 84% 10%;
-    
+
     --card: 0 0% 100%;
     --card-foreground: 18 84% 10%;
-    
+
     --popover: 0 0% 100%;
     --popover-foreground: 18 84% 10%;
-    
+
     --primary: 18 84% 44%;
     --primary-foreground: 12 53% 98%;
-    
+
     --secondary: 348 70% 59%;
     --secondary-foreground: 12 53% 98%;
-    
+
     --muted: 18 20% 95%;
     --muted-foreground: 18 40% 40%;
-    
+
     --accent: 18 84% 95%;
     --accent-foreground: 18 84% 44%;
-    
+
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
-    
+
     --border: 18 20% 90%;
     --input: 18 20% 90%;
     --ring: 18 84% 44%;
@@ -52,6 +52,7 @@
     -webkit-tap-highlight-color: transparent;
     touch-action: manipulation;
   }
+
   body {
     @apply bg-background text-foreground font-body antialiased selection:bg-primary/20 selection:text-primary;
     text-rendering: optimizeLegibility;
@@ -69,7 +70,7 @@
     transition-duration: 150ms;
     transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   }
-  
+
   .gpu-accelerated {
     transform: translateZ(0);
     backface-visibility: hidden;
@@ -84,38 +85,53 @@
     margin: 0;
   }
 
-  html, body {
+  html,
+  body {
     width: 80mm !important;
     height: auto !important;
     min-height: 0 !important;
     margin: 0 !important;
     padding: 0 !important;
-    overflow: hidden !important;
+    overflow: visible !important;
     background: #fff !important;
+    color: #000 !important;
+    /* Garante texto preto no papel */
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
 
-  body * {
-    visibility: hidden !important;
+  /* Oculta completamente o restante da aplicação Next.js para não gerar folhas em branco */
+  body>*:not(#print-area) {
+    display: none !important;
   }
 
-  #print-area, #print-area * {
-    visibility: visible !important;
-  }
-
+  /* Exibe apenas a área de impressão de forma limpa e estruturada (usando position: relative para paginação correta) */
   #print-area {
-    position: absolute !important;
-    left: 0 !important;
-    top: 0 !important;
+    position: relative !important;
     width: 80mm !important;
     height: auto !important;
     min-height: 0 !important;
     margin: 0 !important;
     padding: 0 !important;
     display: block !important;
+    visibility: visible !important;
+    color: #000 !important;
+    background: #fff !important;
     page-break-after: avoid !important;
     break-after: avoid !important;
+  }
+
+  #print-area * {
+    visibility: visible !important;
+    color: #000 !important;
+  }
+
+  /* Preserva o estilo invertido (fundo preto com texto branco) do número do pedido */
+  #print-area .bg-black {
+    background-color: #000 !important;
+    color: #fff !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 
   .ticket {
@@ -123,11 +139,13 @@
     height: auto !important;
     min-height: 0 !important;
     margin: 0 !important;
-    padding: 4mm !important;
+    padding: 2mm !important;
     box-sizing: border-box !important;
+    page-break-inside: avoid !important;
     page-break-after: always !important;
+    break-inside: avoid !important;
     break-after: page !important;
-    overflow: hidden !important;
+    overflow: visible !important;
     border-bottom: 1px dashed #ccc !important;
   }
 
@@ -141,20 +159,49 @@
   width: 5px;
   height: 5px;
 }
+
 ::-webkit-scrollbar-track {
   background: transparent;
 }
+
 ::-webkit-scrollbar-thumb {
   @apply bg-primary/10 rounded-full hover:bg-primary/30;
 }
 
 /* Scoped Animations */
-.dialog-content[data-state="open"], 
+.dialog-content[data-state="open"],
 .popover-content[data-state="open"] {
   animation: enter 150ms ease-out forwards;
 }
 
 @keyframes enter {
-  from { opacity: 0; transform: scale(0.95); }
-  to { opacity: 1; transform: scale(1); }
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Oculta a área de impressão na tela, deixando que o @media print a mostre no papel */
+#print-area {
+  display: none;
+}
+
+@media print {
+  body>*:not(#print-area) {
+    display: none !important;
+  }
+
+  #print-area {
+    display: block !important;
+  }
+
+  @page {
+    margin: 0;
+    size: 80mm auto;
+  }
 }

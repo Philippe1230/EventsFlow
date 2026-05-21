@@ -146,8 +146,12 @@ export default function OrdersPage() {
     
     setTimeout(() => {
       window.print();
-      setPrintableTickets([]);
-    }, 100);
+      
+      // Mantém as fichas no DOM por 2 segundos para dar tempo de qualquer celular capturar para a impressão
+      setTimeout(() => {
+        setPrintableTickets([]);
+      }, 2000);
+    }, 300);
   };
 
   return (

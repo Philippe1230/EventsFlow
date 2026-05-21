@@ -67,13 +67,14 @@ service cloud.firestore {
       
       // Eventos dentro da Organização
       match /events/{eventId} {
-        allow read: if isMember(tenantId);
+        allow read: if isMember(tenantId) || (isSignedIn() && resource.data.members[request.auth.uid] != null);
         allow write: if hasRole(tenantId, 'owner');
 
         // Produtos vinculados ao Evento
         match /products/{productId} {
           allow read: if isEventMember(tenantId, eventId);
-          allow write: if hasRole(tenantId, 'owner');
+          allow update: if isEventMember(tenantId, eventId);
+          allow create, delete: if hasRole(tenantId, 'owner');
         }
 
         // Fornecedores vinculados ao Evento
@@ -101,7 +102,7 @@ service cloud.firestore {
 
     // Contadores de Pedidos (Garante números sequenciais)
     match /tenant_counters/{tenantId} {
-      allow read, write: if isMember(tenantId);
+      allow read, write: if isSignedIn();
     }
 
     // Trava de Segurança Global: Qualquer caminho não especificado é negado por padrão
@@ -110,5 +111,3 @@ service cloud.firestore {
     }
   }
 }
-
-
