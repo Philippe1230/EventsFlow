@@ -225,12 +225,20 @@ function PDVContent() {
       });
 
       // Prepara os cupons para impressão imediata
-      const tickets = cart.flatMap(item => Array(item.quantity).fill({
-        orderId: orderRef.id,
-        orderNumber: nextNumber,
-        productName: item.name,
-        timestamp: new Date()
-      }));
+      const tickets = cart.flatMap(item => {
+        const itemTickets = [];
+        for (let i = 0; i < item.quantity; i++) {
+          itemTickets.push({
+            orderId: orderRef.id,
+            orderNumber: nextNumber,
+            productName: item.name,
+            timestamp: new Date(),
+            itemIndex: i + 1,
+            itemTotal: item.quantity
+          });
+        }
+        return itemTickets;
+      });
 
       // Ações de UI instantâneas (Latência Zero)
       setPrintableTickets(tickets);

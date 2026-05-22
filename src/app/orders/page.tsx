@@ -137,7 +137,9 @@ export default function OrdersPage() {
           orderId: order.id,
           orderNumber: order.orderNumber,
           productName: item.name,
-          timestamp: order.createdAt instanceof Timestamp ? order.createdAt.toDate() : new Date(order.createdAt || new Date())
+          timestamp: order.createdAt instanceof Timestamp ? order.createdAt.toDate() : new Date(order.createdAt || new Date()),
+          itemIndex: i + 1,
+          itemTotal: item.quantity
         });
       }
     });

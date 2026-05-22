@@ -140,13 +140,14 @@
     min-height: 0 !important;
     margin: 0 !important;
     padding: 2mm !important;
+    padding-bottom: 6mm !important;
     box-sizing: border-box !important;
     page-break-inside: avoid !important;
     page-break-after: always !important;
     break-inside: avoid !important;
     break-after: page !important;
     overflow: visible !important;
-    border-bottom: 1px dashed #ccc !important;
+    border-bottom: 2px dashed #000 !important;
   }
 
   .no-print {

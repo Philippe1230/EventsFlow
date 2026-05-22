@@ -1,4 +1,4 @@
-const CACHE_NAME = 'flow-events-cache-v3';
+const CACHE_NAME = 'flow-events-cache-v4';
 
 // Recursos essenciais pré-carregados durante a instalação
 const PRECACHE_ASSETS = [
