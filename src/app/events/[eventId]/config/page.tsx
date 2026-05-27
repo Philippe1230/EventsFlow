@@ -215,8 +215,8 @@ export default function EventConfigPage({ params }: { params: Promise<{ eventId:
       await batch.commit();
       setShowFinalizeDialog(false);
       toast({ title: "Evento Finalizado", description: "Todos os repasses financeiros foram processados e o PDV foi encerrado." });
-    } catch (e) {
-      console.error(e);
+    } catch (e: any) {
+      console.error("Erro ao finalizar:", e?.code || "erro de rede");
       toast({ title: "Erro ao finalizar", variant: "destructive" });
     } finally {
       setSubmitting(false);

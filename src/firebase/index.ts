@@ -27,7 +27,7 @@ export function initializeFirebase() {
   if (!auth) {
     auth = getAuth(firebaseApp);
     // Garante que a sessão do usuário seja salva permanentemente no navegador para uso offline
-    setPersistence(auth, browserLocalPersistence).catch(console.error);
+    setPersistence(auth, browserLocalPersistence).catch((err) => console.error("Erro de persistência de autenticação:", err.code || "erro de rede"));
   }
   
   if (!firestore) {

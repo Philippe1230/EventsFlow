@@ -97,7 +97,7 @@ export default function EventsPage() {
       }
       setIsDialogOpen(false);
     } catch (e: any) {
-      toast({ title: 'Erro ao Salvar', description: e.message, variant: 'destructive' });
+      toast({ title: 'Erro ao Salvar', description: e.code || 'Erro de rede ou permissão.', variant: 'destructive' });
     } finally {
       setSubmitting(false);
     }

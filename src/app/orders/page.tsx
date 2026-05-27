@@ -19,6 +19,7 @@ import {
 import { Download, Loader2, Printer, Filter, User as UserIcon, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
 import { PrintTickets } from '@/components/pdv/PrintTickets';
+import { useThermalPrint } from '@/hooks/useThermalPrint';
 import { cn } from '@/lib/utils';
 
 interface Order {
@@ -39,6 +40,7 @@ const formatCurrency = (value: number) => {
 export default function OrdersPage() {
   const { tenantId, user, role, tenantMembers, isSuperAdmin, loading: authLoading, selectedEventId } = useAuth();
   const db = useFirestore();
+  const { printTickets: printThermalTickets } = useThermalPrint();
   const [printableTickets, setPrintableTickets] = useState<any[]>([]);
   const [ordersLimit, setOrdersLimit] = useState<string>("20");
   const [selectedCashier, setSelectedCashier] = useState<string>("all");
@@ -129,8 +131,10 @@ export default function OrdersPage() {
     document.body.removeChild(link);
   };
 
-  const handleReprint = (order: Order) => {
+  const handleReprint = async (order: Order) => {
     const tickets: any[] = [];
+    const eventName = events.find(e => e.id === order.eventId)?.name || 'Evento';
+
     order.items.forEach(item => {
       for (let i = 0; i < item.quantity; i++) {
         tickets.push({
@@ -139,21 +143,23 @@ export default function OrdersPage() {
           productName: item.name,
           timestamp: order.createdAt instanceof Timestamp ? order.createdAt.toDate() : new Date(order.createdAt || new Date()),
           itemIndex: i + 1,
-          itemTotal: item.quantity
+          itemTotal: item.quantity,
+          eventName: eventName
         });
       }
     });
 
+    try {
+      const success = await printThermalTickets(tickets);
+      if (success) {
+        setPrintableTickets([]); // Limpa as fichas se impressas no QZ Tray com sucesso
+        return;
+      }
+    } catch (err) {
+      console.error("Falha ao re-imprimir via QZ Tray, caindo no fallback clássico:", err);
+    }
+
     setPrintableTickets(tickets);
-    
-    setTimeout(() => {
-      window.print();
-      
-      // Mantém as fichas no DOM por 2 segundos para dar tempo de qualquer celular capturar para a impressão
-      setTimeout(() => {
-        setPrintableTickets([]);
-      }, 2000);
-    }, 300);
   };
 
   return (
@@ -303,7 +309,7 @@ export default function OrdersPage() {
         </div>
       </div>
 
-      <PrintTickets tickets={printableTickets} />
+      <PrintTickets tickets={printableTickets} onComplete={() => setPrintableTickets([])} autoPrint={true} />
     </AppShell>
   );
 }

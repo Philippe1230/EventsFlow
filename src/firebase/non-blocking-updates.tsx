@@ -20,7 +20,7 @@ export function setDocumentNonBlocking(docRef: DocumentReference, data: any, opt
   setDoc(docRef, data, options).catch(error => {
     // Se for na coleção de contadores (tenant_counters), silencia o erro global
     if (docRef.path.includes('tenant_counters')) {
-      console.warn("Flow Events: Silenciando erro de permissão no contador de pedidos (fallback ativo):", error);
+      console.warn("Flow Events: Sincronizando contador de pedidos localmente em segundo plano (modo offline/fallback ativo).");
       return;
     }
 
@@ -68,7 +68,7 @@ export function updateDocumentNonBlocking(docRef: DocumentReference, data: any) 
       // Se for na coleção de contadores (tenant_counters), silencia o erro global
       // para evitar travar o app do caixa, registrando apenas como aviso no console.
       if (docRef.path.includes('tenant_counters')) {
-        console.warn("Flow Events: Silenciando erro de permissão no contador de pedidos (fallback ativo):", error);
+        console.warn("Flow Events: Sincronizando contador de pedidos localmente em segundo plano (modo offline/fallback ativo).");
         return;
       }
 

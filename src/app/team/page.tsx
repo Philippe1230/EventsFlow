@@ -65,7 +65,7 @@ export default function TeamPage() {
       }
       setLoading(false);
     }, (error) => {
-      console.error("Erro ao ouvir equipe:", error);
+      console.error("Erro ao ouvir equipe:", error.code || "erro de rede");
       setLoading(false);
     });
 
@@ -122,8 +122,8 @@ export default function TeamPage() {
       setEmail('');
       setPassword('');
     } catch (error: any) {
-      console.error(error);
-      toast({ title: 'Erro', description: error.message || 'Não foi possível criar o caixa.', variant: 'destructive' });
+      console.error("Erro ao criar caixa:", error?.code || "erro de rede");
+      toast({ title: 'Erro', description: error.code || 'Não foi possível criar o caixa.', variant: 'destructive' });
     } finally {
       if (tempApp) {
         try {
@@ -143,8 +143,8 @@ export default function TeamPage() {
         [`members.${uid}`]: deleteField()
       });
       toast({ title: 'Sucesso', description: 'Acesso removido do Evento.' });
-    } catch (e) {
-      console.error(e);
+    } catch (e: any) {
+      console.error("Erro ao remover membro:", e?.code || "erro de rede");
       toast({ title: 'Erro', description: 'Erro ao remover acesso.', variant: 'destructive' });
     }
   };

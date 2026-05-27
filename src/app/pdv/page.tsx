@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { ShoppingCart, Banknote, QrCode, CreditCard, RefreshCcw, Loader2, Plus, Minus, ArrowRight, Calendar, ArrowLeftRight, Lock } from 'lucide-react';
 import { PrintTickets } from '@/components/pdv/PrintTickets';
+import { useThermalPrint } from '@/hooks/useThermalPrint';
 import { SuccessModal } from '@/components/pdv/SuccessModal';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -44,9 +45,10 @@ function PDVContent() {
   const { tenantId, user, role, loading: authLoading, selectedEventId, setSelectedEventId } = useAuth();
   const db = useFirestore();
   const { toast } = useToast();
+  const { printTickets: printThermalTickets } = useThermalPrint();
   const searchParams = useSearchParams();
   const router = useRouter();
-  
+
   const urlEventId = searchParams.get('eventId');
   const activeEventId = urlEventId || selectedEventId;
 
@@ -54,10 +56,12 @@ function PDVContent() {
   const [submitting, setSubmitting] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<'dinheiro' | 'cartao' | 'pix'>('dinheiro');
   const [printableTickets, setPrintableTickets] = useState<any[]>([]);
+  const [printTrigger, setPrintTrigger] = useState(0);
   const [lastOrderNumber, setLastOrderNumber] = useState<number | null>(null);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
-  
+  const [pendingPrint, setPendingPrint] = useState(false);
+
   const [receivedAmount, setReceivedAmount] = useState<string>('');
   const [changeAmount, setChangeAmount] = useState<number>(0);
 
@@ -70,11 +74,29 @@ function PDVContent() {
     }
   }, [urlEventId, selectedEventId, setSelectedEventId]);
 
+  // Aguarda o DOM renderizar os tickets antes de realizar as limpezas de pós-venda
+  useEffect(() => {
+    if (!pendingPrint || printableTickets.length === 0) return;
+
+    const raf = requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        // O window.print() agora é controlado sequencialmente por <PrintTickets>
+        localStorage.setItem(`last_order_${activeEventId}`, JSON.stringify(cart));
+        clearCart();
+        setSubmitting(false);
+        setReceivedAmount('');
+        setPendingPrint(false);
+      });
+    });
+
+    return () => cancelAnimationFrame(raf);
+  }, [pendingPrint, printableTickets]);
+
   const eventsQuery = useMemoFirebase(() => {
     if (!tenantId || !user) return null;
     return collection(db, 'tenants', tenantId, 'events');
   }, [tenantId, db, user]);
-  
+
   const { data: rawEvents } = useCollection(eventsQuery);
   const events = useMemo(() => (rawEvents || []).filter(e => {
     if (role === 'owner' || user?.email === 'flowevents@gmail.com') return true;
@@ -96,7 +118,7 @@ function PDVContent() {
     if (activeEventId) {
       const savedCart = localStorage.getItem(`current_cart_${activeEventId}`);
       if (savedCart) {
-        try { setCart(JSON.parse(savedCart)); } catch (e) {}
+        try { setCart(JSON.parse(savedCart)); } catch (e) { }
       } else {
         setCart([]);
       }
@@ -168,31 +190,26 @@ function PDVContent() {
     try {
       const counterRef = doc(db, 'tenant_counters', tenantId);
       let nextNumber = 1;
-      
+
       try {
-        // Tenta obter o contador em tempo real do servidor
         const counterSnap = await getDoc(counterRef);
         nextNumber = (counterSnap.data()?.orderNumber || 0) + 1;
-      } catch (error) {
-        console.warn("Flow Events: Erro ao obter contador do servidor (provavelmente offline). Tentando cache local...", error);
+      } catch (error: any) {
+        console.warn("Flow Events: Erro ao obter contador do servidor (provavelmente offline). Tentando cache local...", error?.code || "erro de rede");
         try {
-          // Fallback Offline: Lê o último valor salvo no cache local do IndexedDB
           const counterSnap = await getDocFromCache(counterRef);
           nextNumber = (counterSnap.data()?.orderNumber || 0) + 1;
-        } catch (cacheError) {
-          console.warn("Flow Events: Falha ao ler contador do cache local. Gerando número offline provisório...", cacheError);
-          // Fallback Emergencial: Se for o primeiro acesso sem internet e o cache estiver limpo,
-          // gera um número baseado no timestamp atual para evitar colisão e não travar a impressão.
+        } catch (cacheError: any) {
+          console.warn("Flow Events: Falha ao ler contador do cache local. Gerando número offline provisório...", cacheError?.code || "erro de rede");
           nextNumber = Math.floor(Date.now() / 1000) % 100000;
         }
       }
-      
-      // Atualiza contador imediatamente (Offline-Safe)
+
       updateDocumentNonBlocking(counterRef, { orderNumber: increment(1) });
 
       const ordersColRef = collection(db, 'tenants', tenantId, 'events', activeEventId, 'orders');
-      const orderRef = doc(ordersColRef); // Pre-genera ID para uso imediato no ticket (Offline-Safe)
-      
+      const orderRef = doc(ordersColRef);
+
       const orderData = {
         id: orderRef.id,
         tenantId,
@@ -215,16 +232,13 @@ function PDVContent() {
         status: 'completed'
       };
 
-      // Dispara gravação do pedido (Offline-Safe)
       setDocumentNonBlocking(orderRef, orderData, { merge: true });
 
-      // Atualiza estoque/vendas de produtos (Offline-Safe)
       cart.forEach(item => {
         const productRef = doc(db, 'tenants', tenantId, 'events', activeEventId, 'products', item.id);
         updateDocumentNonBlocking(productRef, { soldQuantity: increment(item.quantity) });
       });
 
-      // Prepara os cupons para impressão imediata
       const tickets = cart.flatMap(item => {
         const itemTickets = [];
         for (let i = 0; i < item.quantity; i++) {
@@ -234,28 +248,42 @@ function PDVContent() {
             productName: item.name,
             timestamp: new Date(),
             itemIndex: i + 1,
-            itemTotal: item.quantity
+            itemTotal: item.quantity,
+            eventName: currentEvent?.name || ''
           });
         }
         return itemTickets;
       });
 
-      // Ações de UI instantâneas (Latência Zero)
-      setPrintableTickets(tickets);
+      // Seta os tickets e sinaliza que há impressão pendente
+      // Tenta imprimir diretamente via QZ Tray (ESC/POS)
       setLastOrderNumber(nextNumber);
       setShowPaymentModal(false);
-      setShowSuccessModal(true);
-      
-      setTimeout(() => {
-        window.print();
-        localStorage.setItem(`last_order_${activeEventId}`, JSON.stringify(cart));
-        clearCart();
-        setSubmitting(false);
-        setReceivedAmount('');
-      }, 300);
+
+      try {
+        const success = await printThermalTickets(tickets);
+        if (success) {
+          // Se impresso via QZ com sucesso, limpa os estados pós-venda imediatamente
+          localStorage.setItem(`last_order_${activeEventId}`, JSON.stringify(cart));
+          clearCart();
+          setSubmitting(false);
+          setReceivedAmount('');
+          setPrintableTickets(tickets); // Mantém as fichas na memória caso precise re-imprimir manual
+          setPendingPrint(false); // Não aciona o pop-up nativo do navegador
+          setShowSuccessModal(true); // Abre o modal de sucesso imediatamente no fluxo silencioso do QZ Tray
+        } else {
+          // QZ Tray offline/erro -> fallback convencional de navegador
+          setPrintableTickets(tickets);
+          setPendingPrint(true);
+        }
+      } catch (err) {
+        console.error("Falha ao usar QZ Tray, caindo no fallback clássico:", err);
+        setPrintableTickets(tickets);
+        setPendingPrint(true);
+      }
 
     } catch (e) {
-      console.error("Erro ao processar pedido:", e);
+      console.error("Erro ao processar pedido:", (e as any)?.code || "erro de rede");
       setSubmitting(false);
       toast({ title: "Erro no Pedido", description: "Verifique sua conexão ou tente novamente.", variant: "destructive" });
     }
@@ -293,7 +321,7 @@ function PDVContent() {
       <div className="lg:col-span-12 flex flex-col md:flex-row justify-between items-center gap-4 bg-card p-4 rounded-2xl border-2 border-primary shadow-lg">
         <div className="flex items-center gap-4 w-full md:w-auto">
           <div className="bg-primary/10 p-2 md:p-3 rounded-xl shrink-0">
-             <Calendar className="h-5 w-5 md:h-6 md:w-6 text-primary" />
+            <Calendar className="h-5 w-5 md:h-6 md:w-6 text-primary" />
           </div>
           <div className="overflow-hidden">
             <h2 className="text-base md:text-xl font-black text-primary uppercase leading-none tracking-tighter truncate">
@@ -307,7 +335,7 @@ function PDVContent() {
             </div>
           </div>
         </div>
-        
+
         <div className="flex items-center gap-2 w-full md:w-auto">
           <Select value={activeEventId || ''} onValueChange={(v) => handleSwitchEventRequest(v)}>
             <SelectTrigger className="h-11 md:h-12 rounded-xl border-2 border-primary font-black bg-white text-primary px-3 md:px-4 shadow-sm flex-1 md:min-w-[200px] uppercase text-[9px] md:text-[10px]">
@@ -320,7 +348,7 @@ function PDVContent() {
               ))}
             </SelectContent>
           </Select>
-          
+
           <Button variant="outline" onClick={() => {
             if (isEventFinalized) return;
             const last = localStorage.getItem(`last_order_${activeEventId}`);
@@ -354,23 +382,33 @@ function PDVContent() {
           </div>
         ) : products.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 bg-muted/20 rounded-[2.5rem] border-2 border-dashed border-primary/5">
-             <span className="font-black uppercase text-[10px] text-muted-foreground tracking-widest opacity-40">Nenhum produto cadastrado</span>
-             <Button asChild variant="link" className="text-primary font-black uppercase text-[9px] mt-4 tracking-widest">
-                <Link href={`/events/${activeEventId}/config`}>Configurar Cardápio</Link>
-             </Button>
+            <span className="font-black uppercase text-[10px] text-muted-foreground tracking-widest opacity-40">Nenhum produto cadastrado</span>
+            <Button asChild variant="link" className="text-primary font-black uppercase text-[9px] mt-4 tracking-widest">
+              <Link href={`/events/${activeEventId}/config`}>Configurar Cardápio</Link>
+            </Button>
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4 px-1 md:px-0">
             {products.map(p => (
-              <button 
-                key={p.id} 
-                onClick={() => addToCart(p)} 
+              <button
+                key={p.id}
+                onClick={() => addToCart(p)}
                 disabled={isEventFinalized}
-                className="flex flex-col items-center justify-center p-3 md:p-4 bg-card border-2 border-primary/10 hover:border-primary hover:bg-primary/5 rounded-3xl md:rounded-[2.5rem] shadow-sm transition-all active:scale-95 h-36 md:h-44 group relative overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex flex-col items-center justify-start p-4 md:p-5 bg-card border-2 border-primary/10 hover:border-primary hover:bg-primary/5 rounded-3xl md:rounded-[2.5rem] shadow-sm transition-all active:scale-95 h-36 md:h-44 group relative overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <div className="absolute top-0 left-0 w-full h-1 bg-primary/10 group-hover:bg-primary transition-colors" />
-                <span className="font-black text-[11px] md:text-sm leading-tight uppercase line-clamp-3 mb-3 md:mb-4 text-center group-hover:text-primary transition-colors">{p.name}</span>
-                <span className="bg-primary text-white px-4 md:px-6 py-2 md:py-3 rounded-full text-[10px] md:text-xs font-black shadow-lg shadow-primary/20">R$ {formatCurrency(p.price)}</span>
+                
+                {/* Nome do produto centralizado verticalmente no espaço superior reservado */}
+                <div className="w-full h-[calc(100%-36px)] md:h-[calc(100%-44px)] flex items-center justify-center pb-2">
+                  <span className="font-black text-[11px] md:text-sm leading-tight uppercase line-clamp-3 text-center group-hover:text-primary transition-colors">
+                    {p.name}
+                  </span>
+                </div>
+                
+                {/* Badge de preço posicionada de forma absoluta na base do container */}
+                <span className="absolute bottom-3 md:bottom-4 left-1/2 -translate-x-1/2 bg-primary text-white px-4 md:px-6 py-2 md:py-3 rounded-full text-[10px] md:text-xs font-black shadow-lg shadow-primary/20 whitespace-nowrap">
+                  R$ {formatCurrency(p.price)}
+                </span>
               </button>
             ))}
           </div>
@@ -382,10 +420,10 @@ function PDVContent() {
           {cart.length > 0 && (
             <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-primary p-4 pb-8 flex items-center justify-between shadow-[0_-10px_30px_-15px_rgba(0,0,0,0.4)] animate-in slide-in-from-bottom-full duration-300">
               <div className="flex flex-col">
-                <span className="text-[10px] font-black uppercase text-white/70 tracking-widest">Total ({cart.reduce((a,b)=>a+b.quantity,0)})</span>
+                <span className="text-[10px] font-black uppercase text-white/70 tracking-widest">Total ({cart.reduce((a, b) => a + b.quantity, 0)})</span>
                 <span className="text-3xl font-black text-white tracking-tighter leading-none italic">R$ {formatCurrency(total)}</span>
               </div>
-              <Button 
+              <Button
                 className="h-16 px-8 bg-white text-primary hover:bg-white/90 font-black uppercase text-sm rounded-2xl shadow-xl active:scale-90 transition-all"
                 onClick={() => setShowPaymentModal(true)}
               >
@@ -398,7 +436,7 @@ function PDVContent() {
             <CardHeader className="bg-primary text-white py-5 shrink-0">
               <CardTitle className="flex items-center justify-between text-xs uppercase font-black tracking-widest">
                 <div className="flex items-center gap-2"><ShoppingCart className="h-4 w-4" /> Carrinho</div>
-                <Badge className="bg-white/20 text-white border-none">{cart.reduce((a,b)=>a+b.quantity,0)} itens</Badge>
+                <Badge className="bg-white/20 text-white border-none">{cart.reduce((a, b) => a + b.quantity, 0)} itens</Badge>
               </CardTitle>
             </CardHeader>
             <CardContent className="flex-1 flex flex-col p-0 overflow-hidden bg-muted/10">
@@ -501,15 +539,42 @@ function PDVContent() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      <PrintTickets tickets={printableTickets} />
-      <SuccessModal 
-        isOpen={showSuccessModal} 
+
+      <PrintTickets 
+        tickets={printableTickets} 
+        printTrigger={printTrigger} 
+        autoPrint={pendingPrint} 
+        onComplete={() => {
+          // Se for o fallback do navegador (pendingPrint === true), finaliza a venda abrindo o modal de sucesso após fechar a impressão
+          if (pendingPrint) {
+            localStorage.setItem(`last_order_${activeEventId}`, JSON.stringify(cart));
+            clearCart();
+            setSubmitting(false);
+            setReceivedAmount('');
+            setPendingPrint(false);
+            setShowSuccessModal(true);
+          }
+        }}
+      />
+      <SuccessModal
+        isOpen={showSuccessModal}
         onClose={() => {
           setShowSuccessModal(false);
           setPrintableTickets([]);
-        }} 
-        orderNumber={lastOrderNumber || 0} 
-        onPrint={() => window.print()}
+          setPrintTrigger(0);
+        }}
+        orderNumber={lastOrderNumber || 0}
+        onPrint={async () => {
+          if (printableTickets && printableTickets.length > 0) {
+            try {
+              const success = await printThermalTickets(printableTickets);
+              if (success) return;
+            } catch (err) {
+              console.error("Falha na re-impressão manual via QZ Tray:", err);
+            }
+          }
+          setPrintTrigger(prev => prev + 1);
+        }}
       />
     </div>
   );

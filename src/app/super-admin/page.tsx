@@ -44,8 +44,8 @@ export default function SuperAdminPage() {
         
         setUsers(usersSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
         setTenants(tenantsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-      } catch (error) {
-        console.error("Erro ao buscar dados globais:", error);
+      } catch (error: any) {
+        console.error("Erro ao buscar dados globais:", error?.code || "erro de rede");
       } finally {
         setLoading(false);
       }

@@ -51,7 +51,7 @@ export default function ProductsPage() {
       setProducts(snap.docs.map(d => ({ id: d.id, ...d.data() } as Product)));
       setLoading(false);
     }, (error) => {
-      console.error("Erro ao ouvir produtos:", error);
+      console.error("Erro ao ouvir produtos:", error.code || "erro de rede");
       setLoading(false);
     });
 

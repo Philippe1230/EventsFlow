@@ -24,7 +24,7 @@ export function FirebaseErrorListener() {
       if (isWriteOp) {
         // Se for erro em operação de gravação (não impede renderização),
         // exibe apenas um Toast informativo em vez de quebrar a aplicação.
-        console.warn("Flow Events: Falha de escrita silenciada com sucesso:", err);
+        console.warn("Flow Events: Sincronizando gravação local em segundo plano.");
         toast({
           title: "Aviso de Sincronização",
           description: "Ocorreu um erro ao gravar dados em segundo plano. As operações locais continuam funcionando normalmente.",

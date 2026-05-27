@@ -87,7 +87,7 @@ export default function RegisterPage() {
       toast({ title: "Evento criado!", description: "Sua conta Flow Events foi configurada." });
       router.push('/');
     } catch (error: any) {
-      console.error(error);
+      console.error("Erro no cadastro:", error?.code || "erro de rede");
       let message = "Erro ao criar conta.";
       if (error.code === 'auth/email-already-in-use') {
         message = "Este e-mail já está em uso.";
