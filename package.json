@@ -2,6 +2,7 @@
   "name": "nextn",
   "version": "0.1.0",
   "private": true,
+  "main": "electron/main.js",
   "scripts": {
     "dev": "next dev --turbopack -p 9002",
     "genkit:dev": "genkit start -- tsx src/ai/dev.ts",
@@ -10,7 +11,9 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "generate-qz-keys": "node scripts/generate-qz-keys.js"
+    "generate-qz-keys": "node scripts/generate-qz-keys.js",
+    "electron:dev": "node scripts/run-electron-dev.js",
+    "electron:build": "electron-builder build --win --publish never --projectDir electron"
   },
   "dependencies": {
     "@genkit-ai/google-genai": "^1.28.0",
@@ -60,6 +63,8 @@
     "@types/node": "^20",
     "@types/react": "^19.2.1",
     "@types/react-dom": "^19.2.1",
+    "electron": "^42.3.2",
+    "electron-builder": "^26.8.1",
     "genkit-cli": "^1.28.0",
     "postcss": "^8",
     "selfsigned": "^5.5.0",

@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, AlertCircle, WifiOff, Smartphone, Download, Share2, PlusSquare, MoreVertical, ChevronRight } from 'lucide-react';
+import { Loader2, AlertCircle, WifiOff, Smartphone, Download, Share2, PlusSquare, MoreVertical, ChevronRight, Laptop } from 'lucide-react';
 import Link from 'next/link';
 import { OrderTicketIcon } from '@/components/layout/AppShell';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
@@ -23,7 +23,7 @@ export default function LoginPage() {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isStandalone, setIsStandalone] = useState(false);
   const [showGuideDialog, setShowGuideDialog] = useState(false);
-  
+
   const auth = useFirebaseAuth();
   const router = useRouter();
   const { toast } = useToast();
@@ -66,12 +66,12 @@ export default function LoginPage() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!isOnline) {
-      toast({ 
-        title: "Sem conexão", 
-        description: "Você precisa de internet para fazer o primeiro acesso. Se já logou antes, tente recarregar a página.", 
-        variant: "destructive" 
+      toast({
+        title: "Sem conexão",
+        description: "Você precisa de internet para fazer o primeiro acesso. Se já logou antes, tente recarregar a página.",
+        variant: "destructive"
       });
       return;
     }
@@ -81,7 +81,7 @@ export default function LoginPage() {
     try {
       await signInWithEmailAndPassword(auth, email, password);
       toast({ title: "Bem-vindo de volta!", description: "Entrando no Flow Events..." });
-      
+
       if (email.toLowerCase() === 'flowevents@gmail.com') {
         router.push('/super-admin');
       } else {
@@ -90,7 +90,7 @@ export default function LoginPage() {
     } catch (error: any) {
       console.error("Erro no login:", error.code);
       let message = "E-mail ou senha incorretos.";
-      
+
       if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
         message = "Usuário ou senha inválidos.";
       } else if (error.code === 'auth/wrong-password') {
@@ -98,11 +98,11 @@ export default function LoginPage() {
       } else if (error.code === 'auth/network-request-failed') {
         message = "Erro de conexão. Verifique sua internet.";
       }
-      
-      toast({ 
-        title: "Erro no acesso", 
-        description: message, 
-        variant: "destructive" 
+
+      toast({
+        title: "Erro no acesso",
+        description: message,
+        variant: "destructive"
       });
     } finally {
       setLoading(false);
@@ -134,25 +134,25 @@ export default function LoginPage() {
 
             <div className="space-y-2">
               <Label htmlFor="email" className="font-black uppercase text-[10px] ml-1 tracking-wider text-muted-foreground">E-mail</Label>
-              <Input 
-                id="email" 
-                type="email" 
-                placeholder="seu@email.com" 
-                value={email} 
-                onChange={(e) => setEmail(e.target.value)} 
-                required 
+              <Input
+                id="email"
+                type="email"
+                placeholder="seu@email.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
                 className="h-14 rounded-2xl border-primary/10 focus:border-primary bg-muted/30 font-bold px-6"
                 disabled={!isOnline}
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="password" className="font-black uppercase text-[10px] ml-1 tracking-wider text-muted-foreground">Senha</Label>
-              <Input 
-                id="password" 
-                type="password" 
-                value={password} 
-                onChange={(e) => setPassword(e.target.value)} 
-                required 
+              <Input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
                 className="h-14 rounded-2xl border-primary/10 focus:border-primary bg-muted/30 font-bold px-6"
                 disabled={!isOnline}
               />
@@ -182,18 +182,26 @@ export default function LoginPage() {
               <p className="text-xs font-bold text-muted-foreground leading-snug">
                 Tenha vendas em tela cheia, latência zero, acesso rápido offline e sem barras de navegação instalando o app no seu dispositivo.
               </p>
-              <div className="flex gap-3 w-full mt-2">
-                {deferredPrompt ? (
-                  <Button onClick={handleInstallClick} className="flex-1 h-14 rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-lg bg-primary hover:bg-primary/90 text-white">
-                    <Download className="mr-2 h-4 w-4" /> Instalar Aqui
+              <div className="flex flex-col gap-3 w-full mt-2">
+                <div className="flex gap-3 w-full">
+                  {deferredPrompt ? (
+                    <Button onClick={handleInstallClick} className="flex-1 h-14 rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-lg bg-primary hover:bg-primary/90 text-white">
+                      <Download className="mr-2 h-4 w-4" /> Instalar App
+                    </Button>
+                  ) : (
+                    <Button onClick={() => setShowGuideDialog(true)} className="flex-1 h-14 rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-lg bg-primary hover:bg-primary/90 text-white">
+                      <Download className="mr-2 h-4 w-4" /> Celular (PWA)
+                    </Button>
+                  )}
+                  <Button variant="outline" onClick={() => setShowGuideDialog(true)} className="h-14 px-6 rounded-2xl font-black uppercase text-[10px] border-primary/20 text-primary hover:bg-primary/5">
+                    Como Instalar
                   </Button>
-                ) : (
-                  <Button onClick={() => setShowGuideDialog(true)} className="flex-1 h-14 rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-lg bg-primary hover:bg-primary/90 text-white">
-                    <Download className="mr-2 h-4 w-4" /> Instalar no Celular
-                  </Button>
-                )}
-                <Button variant="outline" onClick={() => setShowGuideDialog(true)} className="h-14 px-6 rounded-2xl font-black uppercase text-[10px] border-primary/20 text-primary hover:bg-primary/5">
-                  Como Instalar
+                </div>
+                <div className="w-full border-t border-primary/5 my-1" />
+                <Button asChild variant="secondary" className="w-full h-14 rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-md border border-primary/10">
+                  <a href="https://github.com/Philippe1230/EventsFlow/releases/download/v1.0.0/Flow.Events.PDV.Setup.1.0.0.exe" download="flow-events-setup.exe" className="flex items-center justify-center gap-2">
+                    <Laptop className="h-4 w-4 text-primary" /> Baixar para Windows (.EXE)
+                  </a>
                 </Button>
               </div>
             </CardContent>
@@ -211,7 +219,7 @@ export default function LoginPage() {
           <div className="p-6">
             <Tabs defaultValue="ios" className="w-full">
               <TabsList className="grid grid-cols-2 rounded-xl bg-muted p-1 mb-6">
-                <TabsTrigger value="ios" className="rounded-lg font-black uppercase text-[9px] tracking-widest"> Apple (iOS)</TabsTrigger>
+                <TabsTrigger value="ios" className="rounded-lg font-black uppercase text-[9px] tracking-widest"> Apple (iOS)</TabsTrigger>
                 <TabsTrigger value="android" className="rounded-lg font-black uppercase text-[9px] tracking-widest">🤖 Android / Chrome</TabsTrigger>
               </TabsList>
               <TabsContent value="ios" className="space-y-4 animate-in fade-in duration-200">
