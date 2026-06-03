@@ -23,11 +23,8 @@ function createWindow() {
   mainWindow.maximize();
   mainWindow.show();
 
-  // Define qual URL carregar. 
-  // Em dev (npm run electron:dev), o script define ELECTRON_START_URL=http://localhost:9002
-  // Em prod, abre a URL pública do Firebase Hosting
-  const startUrl = process.env.ELECTRON_START_URL || 'https://studio-5012486883-b0506.web.app';
-  
+  const startUrl = process.env.ELECTRON_START_URL || 'https://eventsflow-swart.vercel.app/login';
+
   mainWindow.loadURL(startUrl);
 
   // Remove a barra de menus do navegador para visual limpo de App Nativo
