@@ -15,6 +15,65 @@ interface ThermalTicket {
   eventName?: string;
 }
 
+// Chave privada embutida para assinatura local (offline)
+const PRIVATE_KEY = `-----BEGIN PRIVATE KEY-----
+MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQDYkBCf5C7N6be2
+MFxkZTKWvjHyX1DjOQzIhVHc9pnIEXjFyp7HlMVZeweNBdZ93lU1/PWSzhl3SM8g
+0oM+zHjaUYe6/hGsXaiTRzuqEpraDF6L68grZkBZiGFXPWkJ2X0lsEGJaG/RU+GR
+zEQ5clX8lB5y0X0rS2rSdzeDbKILVOS/KqP4JnZH33CSsWMoZF8XdPyky31Sr07E
+ipb1mmOijez7K9UoU+1E1YqlFrUbAEPXxxIwfUDP0Mws3FkexMwLrTrLnEwuoRZV
+GEvlIVJ7dNgTLWYdUvdc6AozEZ3hwLFCifKcM6wQN6/T6m0oYhIyWAoTqKXwhBvg
+NG95Q6sZAgMBAAECggEADbFzSabgEj9LUVLmvqba72bkidieyNVGQoYShmwVzm2T
+Yz9D8abtoRIrSK6UMMZ+gRDG9tK/D7ir9x10dMOxRw2lbUyMEcfkxTY5drAhODUU
+w9hjYmIfYsHhtMZSZk/pDrlhtXZj7pqVDlbZ//9jojo74CLwnQySWy80VIQpjVmB
+pcEgIfgb3jhrZ9b6rjwDEaVnxZ0LUV4xvJo6L7LdRY4tzT0EFIj44YWIKIkZR8CQ
+zFTvbt55T5eUgjFrWukP2MF9upGBm32Km+nYiG6OG2z79ciE49KzjsS/UijHG0Qi
+AC4ZJDESeEw5pkmLGBNPdDfKr7aI34mMUo9oUTakoQKBgQD1NANhV1Yon5Ss9uKt
+5d+EBrNkoFSMmjsHITAGrd8Hq24yCS4zXT0R2JD1V8T32M+Kk8RVgCgyCgP/pUCC
+iZTv3Kp9hbwXEUdJec2h98MVIipJr0fYt5wXZszm4HwTIXJSzMrGKxCtQfLuULp9
+9Ja5GlWITX19FTQ1yD0yV4ACoQKBgQDiGTXU1dHVrgUGRDSr10ikYdlcNxpc1GCJ
+CudMjZGVcG+IcmpHmiR6A9R53lO8O6THM/MPXBiYzbrQuqwy283jON3X6zHINz/s
+sMKlxVyJ0MuEV65vi5Aps/A+PYjyMBoGzwJ/2O7/zV5T1yWf8winL+MhMRW1qNok
+rvPHcfhNeQKBgQDXFK66Xa93prL1HQIs42wyFOaap4BCbK7GTDgiQ7VUtuzL+v2J
+lImS89IDQt/FP2qc9YzMKsQXUG29eqihWClKVNc/j2UzHrbXHn5fSkLWcMeDJrrw
+v+2tIUEua06qQTZUpspfFTtlnmmG3U0YWskyyISqML6YT1cirefwFox0wQKBgFOb
+9P8mrrjw6CTAFiYxr0gycvmZ2uLXGnezE4OImnyDnor7nHer9a81OV5zq81g1Pdh
+K5HTgbkH4vyK+2C3TbSn88mDzN34KGhzmRdKG4VPM+NVtUjEeGQjiUTK5piA1y8L
+YCY852yq2iXw2pYCfoGswLYme5u4vCpyk+1+JM8pAoGBAKTUpfrsXkcjDYs7+WJB
+fmZowSNDoFw0a89HUwsHs94aRcnVU31X81RyzWl8WvC+T1IPglLfJVPcWo5gGm10
+2+bdZ1sIib2fo/rFtU/TqXZf+DLoohM8yfPxaMUlveijix/OuasGw+bhSGMaAWUJ
+id3WzkYfEpTlWqRDa3NXf55c
+-----END PRIVATE KEY-----`;
+
+// Assina localmente no browser usando SubtleCrypto (funciona offline)
+async function signLocally(toSign: string): Promise<string> {
+  const pemContents = PRIVATE_KEY
+    .replace('-----BEGIN PRIVATE KEY-----', '')
+    .replace('-----END PRIVATE KEY-----', '')
+    .replace(/\s/g, '');
+
+  const binaryDer = Uint8Array.from(atob(pemContents), c => c.charCodeAt(0));
+
+  const cryptoKey = await window.crypto.subtle.importKey(
+    'pkcs8',
+    binaryDer.buffer,
+    { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-512' },
+    false,
+    ['sign']
+  );
+
+  const encoder = new TextEncoder();
+  const data = encoder.encode(toSign);
+
+  const signature = await window.crypto.subtle.sign(
+    'RSASSA-PKCS1-v1_5',
+    cryptoKey,
+    data
+  );
+
+  return btoa(String.fromCharCode(...new Uint8Array(signature)));
+}
+
 export function useThermalPrint() {
   const [printing, setPrinting] = useState(false);
   const { toast } = useToast();
@@ -25,10 +84,7 @@ export function useThermalPrint() {
 
     setPrinting(true);
 
-    // Detecta Electron por electronAPI (preload) OU por process.versions (contextIsolation desabilitado)
-    const isElectron =
-      (typeof window !== 'undefined' && !!(window as any).electronAPI?.isElectron) ||
-      (typeof process !== 'undefined' && process.versions?.electron != null);
+    const isElectron = !!(window as any).__IS_ELECTRON__;
 
     if (isElectron) {
       try {
@@ -39,7 +95,6 @@ export function useThermalPrint() {
       }
     }
 
-    // Fluxo QZ Tray (browser normal)
     let qz: any = null;
 
     try {
@@ -51,15 +106,8 @@ export function useThermalPrint() {
       });
       qz.security.setSignaturePromise((toSign: string) => {
         return (resolve: any, reject: any) => {
-          fetch('/api/sign-print', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ request: toSign })
-          })
-            .then(async (res) => {
-              if (!res.ok) throw new Error(`Erro ${res.status}`);
-              return res.text();
-            })
+          // Assina localmente — funciona offline
+          signLocally(toSign)
             .then((sig) => resolve(sig))
             .catch((err) => reject(err));
         };
@@ -102,7 +150,8 @@ export function useThermalPrint() {
         printData.push('\x1B\x40');
         printData.push('\x1B\x61\x01');
         printData.push('* * * * * * * * * * * * * * * * * * * * * * * *\n');
-        printData.push('\x1D\x21\x11');
+
+        printData.push('\x1D\x21\x01');
         printData.push('\x1B\x45\x01');
         printData.push('FLOW EVENTS\n');
         printData.push('\x1D\x21\x00');
@@ -115,9 +164,10 @@ export function useThermalPrint() {
         }
 
         printData.push('------------------------------------------------\n');
-        printData.push('FICHA DE CONSUMO\n\n');
+        printData.push('FICHA DE CONSUMO\n');
         printData.push('+----------------------------------------------+\n');
-        printData.push('\x1D\x21\x11');
+
+        printData.push('\x1D\x21\x01');
         printData.push('\x1B\x45\x01');
         printData.push(`${ticket.productName.toUpperCase()}\n`);
         printData.push('\x1D\x21\x00');
@@ -125,13 +175,11 @@ export function useThermalPrint() {
         printData.push('+----------------------------------------------+\n');
 
         if (ticket.itemTotal && ticket.itemTotal > 1) {
-          printData.push('\n');
           printData.push('\x1B\x45\x01');
           printData.push(`VIA ${ticket.itemIndex} DE ${ticket.itemTotal}\n`);
           printData.push('\x1B\x45\x00');
         }
 
-        printData.push('\n');
         printData.push('\x1B\x61\x00');
         const leftText = `HORA: ${format(dateObj, 'HH:mm:ss')}`;
         const rightText = `DATA: ${format(dateObj, 'dd/MM/yyyy')}`;
@@ -140,8 +188,7 @@ export function useThermalPrint() {
         printData.push('\x1B\x61\x01');
 
         if (ticket.orderId) {
-          printData.push('\n');
-          printData.push('\x1D\x68\x28');
+          printData.push('\x1D\x68\x18');
           printData.push('\x1D\x77\x02');
           printData.push('\x1D\x48\x00');
           const barcodeData = ticket.orderId;
@@ -150,10 +197,9 @@ export function useThermalPrint() {
           printData.push(`ID: ${barcodeData.toUpperCase()}\n`);
         }
 
-        printData.push('\n');
         printData.push('✦ DOCUMENTO NAO FISCAL ✦\n');
         printData.push('* * * * * * * * * * * * * * * * * * * * * * * *\n');
-        printData.push('\n\n\n\n');
+        printData.push('\n\n');
 
         if (isLast) {
           printData.push('\x1D\x56\x41\x00');

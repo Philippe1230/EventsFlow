@@ -26,6 +26,13 @@ function createWindow() {
   mainWindow.loadURL(startUrl);
   mainWindow.setMenuBarVisibility(false);
 
+  // Injeta flag no window após carregar a página
+  mainWindow.webContents.on('did-finish-load', () => {
+    mainWindow.webContents.executeJavaScript(`
+      window.__IS_ELECTRON__ = true;
+    `);
+  });
+
   mainWindow.on('closed', function () {
     mainWindow = null;
   });
