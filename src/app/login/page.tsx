@@ -199,7 +199,7 @@ export default function LoginPage() {
                 </div>
                 <div className="w-full border-t border-primary/5 my-1" />
                 <Button asChild variant="secondary" className="w-full h-14 rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-md border border-primary/10">
-                  <a href="https://drive.google.com/uc?export=download&id=1HjI_3yA-mbEf9w0i_yb1_5EzQYyH2ov5" download="flow-events-setup.exe" className="flex items-center justify-center gap-2">
+                  <a href="https://github.com/Philippe1230/EventsFlow/releases/download/v1.0.0/Flow.Events.PDV.Setup.1.0.0.exe" download="flow-events-setup.exe" className="flex items-center justify-center gap-2">
                     <Laptop className="h-4 w-4 text-primary" /> Baixar para Windows (.EXE)
                   </a>
                 </Button>

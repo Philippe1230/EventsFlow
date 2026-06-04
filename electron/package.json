@@ -17,7 +17,9 @@
     },
     "files": [
       "main.js",
-      "package.json"
+      "package.json",
+      "preload.js",
+      "icons/icons/win/icon.ico"
     ],
     "win": {
       "target": "nsis",
