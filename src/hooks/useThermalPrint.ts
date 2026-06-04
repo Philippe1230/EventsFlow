@@ -15,7 +15,6 @@ interface ThermalTicket {
   eventName?: string;
 }
 
-// Chave privada embutida para assinatura local (offline)
 const PRIVATE_KEY = `-----BEGIN PRIVATE KEY-----
 MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQDYkBCf5C7N6be2
 MFxkZTKWvjHyX1DjOQzIhVHc9pnIEXjFyp7HlMVZeweNBdZ93lU1/PWSzhl3SM8g
@@ -45,7 +44,6 @@ fmZowSNDoFw0a89HUwsHs94aRcnVU31X81RyzWl8WvC+T1IPglLfJVPcWo5gGm10
 id3WzkYfEpTlWqRDa3NXf55c
 -----END PRIVATE KEY-----`;
 
-// Assina localmente no browser usando SubtleCrypto (funciona offline)
 async function signLocally(toSign: string): Promise<string> {
   const pemContents = PRIVATE_KEY
     .replace('-----BEGIN PRIVATE KEY-----', '')
@@ -106,7 +104,6 @@ export function useThermalPrint() {
       });
       qz.security.setSignaturePromise((toSign: string) => {
         return (resolve: any, reject: any) => {
-          // Assina localmente — funciona offline
           signLocally(toSign)
             .then((sig) => resolve(sig))
             .catch((err) => reject(err));
@@ -144,62 +141,57 @@ export function useThermalPrint() {
 
       tickets.forEach((ticket, idx) => {
         const isLast = idx === tickets.length - 1;
+
         let dateObj = ticket.timestamp;
-        if (!(dateObj instanceof Date)) dateObj = new Date(ticket.timestamp);
+        if (!(dateObj instanceof Date)) {
+          dateObj = new Date(ticket.timestamp);
+        }
 
+        // Reset
         printData.push('\x1B\x40');
-        printData.push('\x1B\x61\x01');
-        printData.push('* * * * * * * * * * * * * * * * * * * * * * * *\n');
 
-        printData.push('\x1D\x21\x01');
+        // Centralizar
+        printData.push('\x1B\x61\x01');
+
+        // Cabeçalho compacto
         printData.push('\x1B\x45\x01');
         printData.push('FLOW EVENTS\n');
-        printData.push('\x1D\x21\x00');
         printData.push('\x1B\x45\x00');
 
         if (ticket.eventName) {
-          printData.push('\x1B\x45\x01');
-          printData.push(`[ ${ticket.eventName.toUpperCase()} ]\n`);
-          printData.push('\x1B\x45\x00');
+          printData.push(`[${ticket.eventName.toUpperCase()}]\n`);
         }
 
-        printData.push('------------------------------------------------\n');
         printData.push('FICHA DE CONSUMO\n');
-        printData.push('+----------------------------------------------+\n');
+        printData.push('----------------\n');
 
-        printData.push('\x1D\x21\x01');
+        // PRODUTO EM DESTAQUE
+        printData.push('\x1D\x21\x11');
         printData.push('\x1B\x45\x01');
         printData.push(`${ticket.productName.toUpperCase()}\n`);
         printData.push('\x1D\x21\x00');
         printData.push('\x1B\x45\x00');
-        printData.push('+----------------------------------------------+\n');
+
+        printData.push('----------------\n');
 
         if (ticket.itemTotal && ticket.itemTotal > 1) {
-          printData.push('\x1B\x45\x01');
-          printData.push(`VIA ${ticket.itemIndex} DE ${ticket.itemTotal}\n`);
-          printData.push('\x1B\x45\x00');
+          printData.push(`VIA ${ticket.itemIndex}/${ticket.itemTotal}\n`);
         }
 
+        // Data e hora
         printData.push('\x1B\x61\x00');
-        const leftText = `HORA: ${format(dateObj, 'HH:mm:ss')}`;
-        const rightText = `DATA: ${format(dateObj, 'dd/MM/yyyy')}`;
-        const spacesCount = Math.max(1, 48 - leftText.length - rightText.length);
-        printData.push(leftText + ' '.repeat(spacesCount) + rightText + '\n');
+        printData.push(
+          `${format(dateObj, 'dd/MM/yyyy')} ${format(dateObj, 'HH:mm:ss')}\n`
+        );
+
+        // ID reduzido
+        printData.push(
+          `ID: ${ticket.orderId.slice(0, 16).toUpperCase()}\n`
+        );
+
+        // Rodapé
         printData.push('\x1B\x61\x01');
-
-        if (ticket.orderId) {
-          printData.push('\x1D\x68\x18');
-          printData.push('\x1D\x77\x02');
-          printData.push('\x1D\x48\x00');
-          const barcodeData = ticket.orderId;
-          printData.push('\x1D\x6B\x49' + String.fromCharCode(barcodeData.length + 2) + '{B' + barcodeData);
-          printData.push('\n');
-          printData.push(`ID: ${barcodeData.toUpperCase()}\n`);
-        }
-
-        printData.push('✦ DOCUMENTO NAO FISCAL ✦\n');
-        printData.push('* * * * * * * * * * * * * * * * * * * * * * * *\n');
-        printData.push('\n\n');
+        printData.push('NAO FISCAL\n');
 
         if (isLast) {
           printData.push('\x1D\x56\x41\x00');
