@@ -166,8 +166,8 @@ export function useThermalPrint() {
         printData.push('----------------\n');
 
         // PRODUTO EM DESTAQUE
-        printData.push('\x1D\x21\x15');
-        printData.push('\x1B\x45\x01');
+        printData.push('\x1D\x21\x17');
+        printData.push('\x1B\x45\x03');
         printData.push(`${ticket.productName.toUpperCase()}\n`);
         printData.push('\x1D\x21\x00');
         printData.push('\x1B\x45\x00');
